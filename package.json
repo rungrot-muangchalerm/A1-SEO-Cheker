@@ -1,21 +1,59 @@
 {
-  "name": "seo-checker",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Stateless SEO audits with the DevTeam Express and EJS structure",
+  "name": "devteam-ejs-framework",
+  "version": "2.0.0",
+  "description": "DevTeam Framework 2 สำหรับพัฒนาเว็บด้วย Node.js, Express และ EJS Layouts แบบ Single Port",
   "main": "index.js",
-  "type": "commonjs",
-  "engines": { "node": ">=22" },
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js",
-    "test": "node --test",
-    "check": "node --check index.js && node --check assets/js/app.js"
+    "pack:check": "npm pack --dry-run",
+    "dev": "nodemon index.js"
+  },
+  "files": [
+    "app",
+    "assets",
+    "docs",
+    "tools",
+    "views",
+    "example.env",
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rungrotlnwza/DevTeam-EJS-FrameWork.git"
+  },
+  "keywords": [
+    "devteam",
+    "express",
+    "ejs",
+    "framework",
+    "mysql2"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rungrotlnwza/DevTeam-EJS-FrameWork/issues"
+  },
+  "homepage": "https://github.com/rungrotlnwza/DevTeam-EJS-FrameWork#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
+    "connect-livereload": "^0.6.1",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.3",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
-    "express-ejs-layouts": "^2.5.1"
+    "express-ejs-layouts": "^2.5.1",
+    "jsonwebtoken": "^9.0.3",
+    "livereload": "^0.10.3",
+    "multer": "^2.4.0",
+    "mysql2": "^3.16.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

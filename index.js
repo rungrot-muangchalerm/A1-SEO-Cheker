@@ -1,35 +1,33 @@
-require("dotenv").config({ quiet: true });
-const express = require("express");
-const path = require("node:path");
-const expressLayouts = require("express-ejs-layouts");
-const config = require("./app/config/server.config");
-const responseMiddleware = require("./app/middleware/response.middleware");
+console.clear();
+require('dotenv').config({ quiet: true });
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const expressLayouts = require('express-ejs-layouts');
 
-function createApp() {
-  const app = express();
-  app.disable("x-powered-by");
-  app.set("view engine", "ejs");
-  app.set("views", path.join(__dirname, "views"));
-  app.set("layout", "layouts/main.layout.ejs");
-  app.use(expressLayouts);
-  app.use(responseMiddleware.headers);
-  app.use(express.json({ limit: "4kb" }));
-  app.use("/assets", express.static(path.join(__dirname, "assets"), {
-    dotfiles: "deny", index: false
-  }));
-  app.use(require("./app/routes/router"));
-  app.use(responseMiddleware.error);
-  return app;
-}
+const app = express();
+const port = process.env.PORT || 3000;
 
-if (require.main === module) {
-  const app = createApp();
-  app.listen(config.port, config.host, () => {
-    console.log("SEO Checker: http://" + config.host + ":" + config.port);
-  }).on("error", () => {
-    console.error("Unable to start SEO Checker. Check HOST and PORT.");
-    process.exitCode = 1;
-  });
-}
+// View engine
+app.set('view engine', 'ejs');
+app.set('layout', false);
+app.use(expressLayouts);
 
-module.exports = { createApp };
+// Body & cookies
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Static: /assets and fallback to assets
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+app.use(express.static(path.join(__dirname, 'assets')));
+
+// LiveReload (optional, when LIVERELOAD=true)
+require('./tools/live_server.js')(app);
+
+// Main router (frontend + API)
+app.use(require('./app/routes/router.js'));
+
+app.listen(port, () => {
+  console.log(`App listening at http://localhost:${port}`);
+});
