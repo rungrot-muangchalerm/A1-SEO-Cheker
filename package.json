@@ -1,0 +1,21 @@
+{
+  "name": "seo-checker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stateless SEO audits with the DevTeam Express and EJS structure",
+  "main": "index.js",
+  "type": "commonjs",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test",
+    "check": "node --check index.js && node --check assets/js/app.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1"
+  }
+}
