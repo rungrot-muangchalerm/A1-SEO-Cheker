@@ -22,6 +22,7 @@ module.exports = {
     const robotsCache = new Map();
     const seen = new Set();
     const pages = [];
+    const responses = [];
     const skipped = [];
     const stats = { requests: 0, attemptedPages: 0, htmlBytes: 0 };
     let lastRequest = null;
@@ -62,6 +63,8 @@ module.exports = {
       controller.signal.throwIfAborted();
       page.checks = seo.analyze(page);
       pages.push(page);
+      responses.push({ requestedUrl: page.requestedUrl, url: page.finalUrl, status: page.status, headers: page.headers,
+        rawHeaders: page.rawHeaders, redirects: page.redirects, terminal: true });
       seen.add(page.requestedUrl);
       seen.add(page.finalUrl);
       for (const redirect of page.redirects) seen.add(redirect.url);
@@ -101,12 +104,13 @@ module.exports = {
           let reason = error instanceof website.WebsiteError ? error.code : controller.signal.aborted ? controller.signal.reason.code : 'CRAWL_FAILED';
           if (reason === 'RESPONSE_TOO_LARGE' && remainingBytes < website.limits.maxBytes) reason = 'CRAWL_BYTE_LIMIT';
           if (stopCodes.has(reason)) stopReason = reason;
+          if (error.observation) responses.push({ ...error.observation, fetchError: reason });
           skipped.push({ url: entry.url, reason });
         } finally { seen.add(entry.url); }
         await notify('crawling', entry.url);
       }
       await notify('completed');
-      return { page: root, pages, discovery, skipped, limits, stats, stopReason, limitReached: !!stopReason };
+      return { page: root, pages, responses, discovery, skipped, limits, stats, stopReason, limitReached: !!stopReason };
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener('abort', cancel);

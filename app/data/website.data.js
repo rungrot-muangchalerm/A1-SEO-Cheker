@@ -94,9 +94,12 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
     }, (response) => {
       const status = response.statusCode;
       const headers = { ...response.headers };
+      const observedFailure = (code) => Object.assign(failure(code), {
+        observation: { url: url.href, status, headers, rawHeaders: response.rawHeaders || [] }
+      });
       if (redirectStatuses.has(status)) {
         response.destroy();
-        if (!headers.location) return reject(failure('INVALID_REDIRECT'));
+        if (!headers.location) return reject(observedFailure('INVALID_REDIRECT'));
         return resolve({ status, headers, redirect: headers.location });
       }
       if (kind !== 'html' && (status < 200 || status >= 300)) {
@@ -106,23 +109,23 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
       let mediaType;
       try { mediaType = new MIMEType(kind === 'robots' ? 'text/plain; charset=utf-8' : headers['content-type'] || ''); } catch {
         response.destroy();
-        return reject(failure('UNSUPPORTED_TYPE'));
+        return reject(observedFailure('UNSUPPORTED_TYPE'));
       }
       const supportedType = kind === 'robots' || (kind === 'sitemap' ?
         ['application/xml', 'text/xml'].includes(mediaType.essence) || mediaType.essence.endsWith('+xml') :
         ['text/html', 'application/xhtml+xml'].includes(mediaType.essence));
       if (!supportedType) {
         response.destroy();
-        return reject(failure('UNSUPPORTED_TYPE'));
+        return reject(observedFailure('UNSUPPORTED_TYPE'));
       }
       const encoding = String(headers['content-encoding'] || 'identity').trim().toLowerCase();
       if (!['identity', 'gzip', 'deflate', 'br'].includes(encoding)) {
         response.destroy();
-        return reject(failure('UNSUPPORTED_ENCODING'));
+        return reject(observedFailure('UNSUPPORTED_ENCODING'));
       }
       if (Number(headers['content-length']) > maxBytes) {
         response.destroy();
-        return reject(failure('RESPONSE_TOO_LARGE'));
+        return reject(observedFailure('RESPONSE_TOO_LARGE'));
       }
       const chunks = [];
       let size = 0;
@@ -133,7 +136,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
       else if (encoding === 'br') decoder = zlib.createBrotliDecompress();
       const body = decoder || response;
       const stop = (code) => {
-        reject(failure(code));
+        reject(observedFailure(code));
         decoder?.destroy();
         response.destroy();
         request.destroy();
@@ -150,7 +153,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         }
         chunks.push(chunk);
       });
-      response.on('error', () => reject(signal.aborted ? signal.reason : failure('NETWORK_ERROR')));
+      response.on('error', () => reject(observedFailure(signal.aborted ? signal.reason.code : 'NETWORK_ERROR')));
       response.on('aborted', () => stop(signal.aborted ? signal.reason.code : 'NETWORK_ERROR'));
       decoder?.on('error', () => stop('DECOMPRESSION_FAILED'));
       body.on('end', () => {
@@ -168,7 +171,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
             status, headers, rawHeaders: response.rawHeaders || [],
             ...(kind !== 'html' ? { text: content } : { html: content }), encoding, bytes: size, receivedBytes
           });
-        } catch { reject(failure('UNSUPPORTED_CHARSET')); }
+        } catch { reject(observedFailure('UNSUPPORTED_CHARSET')); }
       });
       if (decoder) response.pipe(decoder);
     });
@@ -185,10 +188,12 @@ async function fetchResource(value, options, kind) {
   const timer = setTimeout(() => controller.abort(failure('TIMEOUT')), options.timeoutMs || limits.timeoutMs);
   const maxBytes = options.maxBytes || limits.maxBytes;
   const maxRedirects = options.maxRedirects ?? limits.maxRedirects;
+  let requestedUrl;
+  let lastObservation;
+  const redirects = [];
   try {
     let url = parseUrl(value);
-    const requestedUrl = url.href;
-    const redirects = [];
+    requestedUrl = url.href;
     const seen = new Set();
     for (; ;) {
       controller.signal.throwIfAborted();
@@ -199,6 +204,7 @@ async function fetchResource(value, options, kind) {
       controller.signal.throwIfAborted();
       const addresses = await resolvePublicTarget(url, controller.signal);
       const result = await requestPage(url, addresses, controller.signal, maxBytes, kind);
+      lastObservation = { url: url.href, status: result.status, headers: result.headers, rawHeaders: result.rawHeaders || [] };
       if (!result.redirect) return { requestedUrl, finalUrl: url.href, redirects, ...result };
       if (redirects.length >= maxRedirects) throw failure('TOO_MANY_REDIRECTS');
       let next;
@@ -207,8 +213,12 @@ async function fetchResource(value, options, kind) {
       url = parseUrl(next.href);
     }
   } catch (error) {
-    if (controller.signal.aborted) throw controller.signal.reason;
-    throw error;
+    const result = controller.signal.aborted ? controller.signal.reason : error;
+    const observation = error.observation || lastObservation;
+    if (result instanceof WebsiteError && observation && result.code !== 'CANCELLED') {
+      result.observation = { ...observation, requestedUrl, redirects: [...redirects], terminal: !redirectStatuses.has(observation.status) };
+    }
+    throw result;
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener('abort', cancel);

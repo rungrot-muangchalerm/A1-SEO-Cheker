@@ -73,7 +73,7 @@ module.exports = {
       issues,
       notChecked,
       ...(discovery ? { discovery } : {}),
-      ...(crawl ? { crawl: { limits: crawl.limits, stats: crawl.stats, stopReason: crawl.stopReason } } : {}),
+      ...(crawl ? { crawl: { limits: crawl.limits, stats: crawl.stats, stopReason: crawl.stopReason }, responses: crawl.responses } : {}),
       lighthouse: { status: 'not-checked', categories: [], reason: 'not-requested' }
     };
   }

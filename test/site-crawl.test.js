@@ -35,7 +35,8 @@ test('bounded crawl actually fetches links discovered on later pages, preserves 
   assert.equal(report.summary.review, 1);
   assert.equal(report.summary.affected, 2);
   assert.equal(report.pages.flatMap((page) => page.checks).length, 32);
-  assert.equal(report.summary.checks.pass + report.summary.checks.fail + report.summary.checks.review, 34);
+  assert.equal(report.summary.warning, 1);
+  assert.equal(report.summary.checks.pass + report.summary.checks.fail + report.summary.checks.review, 35);
   assert.equal(new Set(report.issues.map((entry) => entry.id)).size, report.issues.length);
   assert.equal(report.pages[1].robots.crawlerAllowed, true);
   assert.equal(report.pages[1].robots.googlebotAllowed, false);

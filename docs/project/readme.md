@@ -6,6 +6,17 @@ and data modules. Do not add audit history or persistence.
 
 ## Current Implementation
 
+- Bounded crawling checks internal href destinations using only observed HTTP
+  responses. Findings retain source pages, HTML positions, destination URLs,
+  actual statuses and redirect chains. Non-HTML 404/410 responses remain evidence;
+  successful PDFs are not called broken links. Access restrictions (401/403),
+  rate limiting (429), and terminal 3xx require confirmation. Blocked/unread URLs
+  stay not checked, and redirect loops never receive a guessed terminal status.
+  Existing response aliases are reused without extra requests. Target/evidence
+  caps and incomplete extraction are disclosed. Response facts live only in the
+  current round and report; no history, response-body archive or persistent cache
+  is created.
+
 - `POST /api/audits` accepts JSON `{ "url": "https://example.com/" }`.
 - Optional `crawl: true` follows same-origin links from every fetched HTML page
   plus the initial sitemap discovery. The separate crawl checkbox enables this.

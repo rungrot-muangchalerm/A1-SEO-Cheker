@@ -77,6 +77,27 @@ Empty declarations and non-2xx templates are excluded. Ambiguous or truncated
 metadata leaves incomplete coverage; fewer than two eligible pages is not checked.
 An absence claim applies only to eligible fetched pages, never undiscovered pages.
 
+`responses` records HTTP headers/status and redirect hops actually observed during
+the crawl, including non-HTML responses rejected by the HTML analyzer. It contains
+no response bodies for those rejected resources. `terminal: false` means the last
+observed response was a redirect whose destination was not read; its status is not
+presented as the destination's status. `fetchError` preserves the refusal/failure.
+These records exist only in the current request/report, not a server-side cache.
+
+`internal-link-target` groups an unavailable/broken destination with all source
+page URLs and parsed href evidence. `details.httpStatus` is the actual terminal
+status or null; `lastHttpStatus` may be the last observed redirect. A real redirect
+loop is reported with its observed chain, never an invented final HTTP code.
+401/403/429 and unresolved terminal 3xx require review; other observed 4xx/5xx
+are findings. A successful non-HTML response is not called a broken HTTP link.
+Known redirect aliases reuse observed terminal responses without another request.
+Targets blocked by robots, outside scope, failed before headers, or beyond crawl
+limits remain not checked. URL fragments are removed and queries remain distinct.
+`internal-link-coverage` discloses examined/retained targets and invalid/omitted
+references. Limits are 200 targets and 200 source evidence entries per target;
+all related source page URLs are retained even when snippets are truncated.
+HTTP availability does not establish content quality, indexing or anchor validity.
+
 `crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
 time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes
 crawl and discovery limits. Even an exhausted discovered queue does not establish
