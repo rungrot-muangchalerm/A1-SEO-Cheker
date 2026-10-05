@@ -6,11 +6,16 @@ const maxSourceLength = 4096;
 
 module.exports = {
   parse: (page) => {
-    const $ = cheerio.load(page.html);
+    const $ = cheerio.load(page.html, { sourceCodeLocationInfo: true });
     const text = (value) => String(value || '').replace(/\s+/g, ' ').trim();
     const source = (element, selector) => {
       const html = $.html(element);
-      return { kind: 'html', selector, source: html.slice(0, maxSourceLength), sourceTruncated: html.length > maxSourceLength };
+      const position = element.sourceCodeLocation;
+      const location = position ? {
+        startLine: position.startLine, startColumn: position.startCol, endLine: position.endLine,
+        endColumn: position.endCol, startOffset: position.startOffset, endOffset: position.endOffset
+      } : null;
+      return { kind: 'html', selector, location, source: html.slice(0, maxSourceLength), sourceTruncated: html.length > maxSourceLength };
     };
     const resolveUrl = (value, base) => {
       if (typeof value !== 'string' || !value.trim()) return null;

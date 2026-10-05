@@ -48,6 +48,8 @@ and data modules. Do not add audit history or persistence.
   A monotonically increasing request round guards success, failure and finalization.
   An obsolete response cannot replace the current report or stop its loading state,
   including consecutive requests for the same URL.
+  Evidence details display fetched document URLs, parser-reported HTML lines/columns,
+  HTTP header names and matching robots.txt lines, never assumed repository filenames.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and

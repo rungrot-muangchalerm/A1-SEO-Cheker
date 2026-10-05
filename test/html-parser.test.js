@@ -67,3 +67,17 @@ test('actual service response contains metadata extracted from fetched bytes', a
   assert.equal(result.data.pages[0].metadata.headings[0].value, 'Fetched heading');
   assert.equal(result.data.status, 'partial');
 });
+
+test('HTML locations point into fetched bytes before serialization, including CRLF and repeated elements', () => {
+  const html = '<!doctype html>\r\n<html><head>\r\n<TITLE> A &amp; B </TITLE>\r\n</head><body>\r\n<img src=first>\r\n<img src="second">\r\n</body></html>';
+  const data = parse(html);
+  assert.equal(data.titles[0].location.startLine, 3);
+  assert.equal(data.images[0].location.startLine, 5);
+  assert.equal(data.images[1].location.startLine, 6);
+  assert.equal(data.images[1].location.startColumn, 1);
+  const position = data.images[0].location;
+  assert.equal(html.slice(position.startOffset, position.endOffset), '<img src=first>');
+  assert.equal(data.images[0].source, '<img src="first">');
+  assert.equal(data.images[0].location.endLine, 5);
+  assert.equal(parse('\n' + html).images[0].location.startLine, 6);
+});

@@ -164,8 +164,35 @@
       '<button type="button" class="btn btn-sm btn-outline-success" data-copy-kind="steps" aria-label="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49" title="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49" data-bs-toggle="tooltip">' + icon('copy', 16) + '</button></div><ol class="small ps-3 mb-0">' +
       issue.steps.map((step) => '<li class="mb-2">' + escapeHtml(step) + '</li>').join('') + '</ol></section>' +
       '<section class="mb-4"><div class="d-flex align-items-center justify-content-between mb-2"><h3 class="h6 mb-0">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19</h3>' +
-      '<button type="button" class="btn btn-sm btn-outline-success" data-copy-kind="evidence" aria-label="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19" title="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19" data-bs-toggle="tooltip">' + icon('copy', 16) + '</button></div><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto mb-0"><code>' +
-      escapeHtml(JSON.stringify(issue.evidence, null, 2)) + '</code></pre></section>' +
+      '<button type="button" class="btn btn-sm btn-outline-success" data-copy-kind="evidence" aria-label="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19" title="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19" data-bs-toggle="tooltip">' + icon('copy', 16) + '</button></div>' +
+      issue.evidence.slice(0, 50).map((entry) => {
+        let details = '';
+        if (entry.kind === 'html') {
+          details = '<p class="small text-break mb-2">HTML &middot; <code>' + escapeHtml(entry.selector) + '</code>' +
+            (entry.location ? ' &middot; \u0e1a\u0e23\u0e23\u0e17\u0e31\u0e14 ' + escapeHtml(entry.location.startLine) + ':' + escapeHtml(entry.location.startColumn) : '') + '</p>';
+        } else if (entry.kind === 'header') {
+          details = '<p class="small mb-2">HTTP header: <code>' + escapeHtml(entry.name) + '</code></p>';
+        } else if (entry.kind === 'robots') {
+          details = '<p class="small mb-2">robots.txt &middot; HTTP ' + escapeHtml(entry.httpStatus) + '</p>' +
+            (entry.rules || []).filter((rule) => rule.line).map((rule) => '<p class="small mb-1 text-break">' +
+              escapeHtml(rule.agent) + ' &middot; \u0e1a\u0e23\u0e23\u0e17\u0e31\u0e14 ' + escapeHtml(rule.line) + '</p><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto"><code>' +
+              escapeHtml(rule.source) + '</code></pre>').join('');
+        } else if (entry.kind === 'response') {
+          details = '<p class="small mb-2">HTTP ' + escapeHtml(entry.status) + '</p>' +
+            (entry.redirects?.length ? '<pre class="bg-dark text-light p-3 rounded-1 small overflow-auto"><code>' + escapeHtml(JSON.stringify(entry.redirects, null, 2)) + '</code></pre>' : '');
+        } else {
+          details = '<p class="small mb-2 text-break">' + (entry.selector ? 'HTML: <code>' + escapeHtml(entry.selector) + '</code>' : '') +
+            (entry.header ? ' &middot; HTTP header: <code>' + escapeHtml(entry.header) + '</code>' : '') +
+            (entry.count !== undefined ? ' &middot; \u0e1e\u0e1a ' + escapeHtml(entry.count) + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23' : '') + '</p>';
+        }
+        return '<div class="mb-3 border-bottom border-info-subtle pb-3" data-evidence-kind="' + escapeHtml(entry.kind) + '">' +
+          '<p class="small text-break mb-2">' + escapeHtml(entry.sourceUrl) + '</p>' +
+          (entry.finalUrl && entry.finalUrl !== entry.sourceUrl ? '<p class="small text-break mb-2">URL \u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22: ' + escapeHtml(entry.finalUrl) + '</p>' : '') +
+          details + (entry.source !== undefined ? '<pre class="bg-dark text-light p-3 rounded-1 small overflow-auto mb-2"><code>' + escapeHtml(entry.source) + '</code></pre>' : '') +
+          (entry.sourceFormat === 'serialized-html' ? '<p class="small mb-0">HTML \u0e08\u0e32\u0e01 parser</p>' : '') +
+          (entry.sourceTruncated ? '<p class="small mb-0">\u0e2a\u0e48\u0e27\u0e19\u0e02\u0e2d\u0e07\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e16\u0e39\u0e01\u0e15\u0e31\u0e14\u0e17\u0e2d\u0e19</p>' : '') +
+          (entry.complete === false ? '<p class="small mb-0">\u0e02\u0e2d\u0e1a\u0e40\u0e02\u0e15\u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a</p>' : '') + '</div>';
+      }).join('') + (issue.evidence.length > 50 ? '<p class="small">\u0e41\u0e2a\u0e14\u0e07 50 \u0e08\u0e32\u0e01 ' + issue.evidence.length + ' \u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19</p>' : '') + '</section>' +
       '<p class="small mb-3" id="copy-status" role="status" aria-live="polite"></p>' +
       '<section class="mb-4"><h3 class="h6">\u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e1e\u0e1a</h3><ul class="list-unstyled small mb-0">' +
       issue.urls.map((url) => '<li class="mb-2"><button type="button" class="btn btn-link text-primary-emphasis text-decoration-none text-start text-break p-0 small" data-page-url="' +
