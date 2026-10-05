@@ -119,6 +119,29 @@ Unavailable targets, declaration/robots extraction gaps and the 200-entry eviden
 cap produce `complete: false` and a disclosed reason, even alongside a proven issue.
 The rule describes direct target facts, not an exhaustive canonical graph audit.
 
+`sitemap-url-target` groups each parsed urlset target with the sitemap files/loc
+entry indices where it appears and compares it with observed HTTP/redirect facts
+and applicable target noindex directives. Index entries locate sitemap files, not
+page targets. `parsed-xml-value` evidence is the decoded/trimmed loc value from the
+XML parser, never an invented raw XML snippet or repository/line location. The UI
+shows these values as escaped text. Existing response aliases are reused.
+
+Observed HTTP failures/loops are findings; redirects, 401/403/429 and noindex require
+confirmation. Unknown/blocked/foreign/unread targets cannot be called HTTP failures.
+Non-HTML/header-only results disclose unavailable HTML and do not establish absence
+of noindex. `sitemap-invalid-loc` identifies unusable parsed location entries, while
+`sitemap-restricted-loc` separately discloses syntactically valid URLs excluded by
+the checker's port/credentials/length policy. Such exclusions are not SEO errors.
+Missing/unread sitemap files do not become mandatory-file issues.
+
+`sitemap-url-coverage` describes only parsed urlsets/observed targets, with a
+200-target and 50-total-evidence-per-target cap, omitted/invalid/restricted entry
+counts and truncated/unread file coverage. All related sitemap file URLs remain
+in `details.sitemapFiles` even when repeated loc proof is capped. `summary.affected`
+counts distinct affected URLs, including actually observed non-HTML resources and
+sitemap documents with invalid loc entries; `summary.pages` separately counts
+fetched HTML. The UI never creates fake page rows/detail buttons for non-HTML URLs.
+
 `crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
 time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes
 crawl and discovery limits. Even an exhausted discovered queue does not establish

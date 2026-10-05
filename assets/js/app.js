@@ -149,7 +149,7 @@
     ["critical", "warning", "review"].forEach((level) => {
       byId("summary-" + level).textContent = summary[level];
     });
-    byId("affected-summary").textContent = "\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e41\u0e01\u0e49\u0e2b\u0e23\u0e37\u0e2d\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e43\u0e19 " + summary.affected + " \u0e08\u0e32\u0e01 " + summary.pages + " \u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08";
+    byId("affected-summary").textContent = "\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e41\u0e01\u0e49\u0e2b\u0e23\u0e37\u0e2d\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e43\u0e19 " + summary.affected + " URL \u00b7 \u0e2d\u0e48\u0e32\u0e19 HTML " + summary.pages + " \u0e2b\u0e19\u0e49\u0e32";
     byId("report-host").textContent = state.report.requestedUrl;
     const report = state.report;
     byId("report-scope").textContent = "\u0e02\u0e2d\u0e1a\u0e40\u0e02\u0e15: " + (report.scope.type === "single-page" ? "URL \u0e40\u0e14\u0e35\u0e22\u0e27" : report.scope.origin) +
@@ -215,6 +215,9 @@
             (entry.rules || []).filter((rule) => rule.line).map((rule) => '<p class="small mb-1 text-break">' +
               escapeHtml(rule.agent) + ' &middot; \u0e1a\u0e23\u0e23\u0e17\u0e31\u0e14 ' + escapeHtml(rule.line) + '</p><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto"><code>' +
               escapeHtml(rule.source) + '</code></pre>').join('');
+        } else if (entry.kind === 'sitemap') {
+          details = '<p class="small text-break mb-2">XML &middot; <code>' + escapeHtml(entry.selector) + '</code> &middot; loc #' +
+            escapeHtml(entry.entryIndex) + '</p><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto"><code>' + escapeHtml(entry.value) + '</code></pre>';
         } else if (entry.kind === 'response') {
           details = '<p class="small mb-2">HTTP ' + escapeHtml(entry.status) + '</p>' +
             (entry.redirects?.length ? '<pre class="bg-dark text-light p-3 rounded-1 small overflow-auto"><code>' + escapeHtml(JSON.stringify(entry.redirects, null, 2)) + '</code></pre>' : '');
@@ -232,9 +235,10 @@
           (entry.complete === false ? '<p class="small mb-0">\u0e02\u0e2d\u0e1a\u0e40\u0e02\u0e15\u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a</p>' : '') + '</div>';
       }).join('') + (issue.evidence.length > 50 ? '<p class="small">\u0e41\u0e2a\u0e14\u0e07 50 \u0e08\u0e32\u0e01 ' + issue.evidence.length + ' \u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19</p>' : '') + '</section>' +
       '<p class="small mb-3" id="copy-status" role="status" aria-live="polite"></p>' +
-      '<section class="mb-4"><h3 class="h6">\u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e1e\u0e1a</h3><ul class="list-unstyled small mb-0">' +
-      issue.urls.map((url) => '<li class="mb-2"><button type="button" class="btn btn-link text-primary-emphasis text-decoration-none text-start text-break p-0 small" data-page-url="' +
-        escapeHtml(url) + '">' + escapeHtml(url) + '</button></li>').join('') + '</ul></section>' +
+      '<section class="mb-4"><h3 class="h6">URL \u0e17\u0e35\u0e48\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e02\u0e49\u0e2d\u0e07</h3><ul class="list-unstyled small mb-0">' +
+      issue.urls.map((url) => '<li class="mb-2 text-break">' + (state.report.pages.some((page) => page.finalUrl === url) ?
+        '<button type="button" class="btn btn-link text-primary-emphasis text-decoration-none text-start text-break p-0 small" data-page-url="' +
+        escapeHtml(url) + '">' + escapeHtml(url) + '</button>' : '<span data-unfetched-url="' + escapeHtml(url) + '">' + escapeHtml(url) + '</span>') + '</li>').join('') + '</ul></section>' +
       issue.references.map((reference) => {
         let url;
         try { url = new URL(reference.url); } catch { return ''; }

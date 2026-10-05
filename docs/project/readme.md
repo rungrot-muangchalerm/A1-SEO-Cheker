@@ -6,6 +6,15 @@ and data modules. Do not add audit history or persistence.
 
 ## Current Implementation
 
+- Bounded crawling compares parsed sitemap urlset entries with actual HTTP,
+  redirect and target noindex evidence. Nested index files are distinguished from
+  page URL entries. Findings identify sitemap files and loc entry indices with
+  parsed values displayed as text, not guessed source lines. Missing/blocked/
+  unread maps or targets stay unavailable; noindex/redirect intent needs review.
+  Syntactically valid URLs excluded by fetch policy are not called malformed SEO
+  URLs. Caps are 200 targets and 50 evidence entries per target, with omitted work
+  disclosed. Affected URLs and fetched HTML page counts remain separate.
+
 - Canonical comparison is enabled by bounded crawling. Canonical-only internal
   targets enter the same queue, pacing, robots rules and page/request/time budgets.
   It compares observed target HTTP/redirects, initial-HTML/header noindex directives
