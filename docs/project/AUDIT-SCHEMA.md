@@ -163,6 +163,18 @@ Block IDs include their 1-based script index, preserved when adding crawl page U
 so two blocks on one page cannot select each other's evidence. HTML evidence is
 always escaped in the checker; CSV remains manual and current-round only.
 
+`pages[].metadata.openGraph` is information for link sharing, not an SEO score or
+mandatory ranking checklist. It records observed ordered `meta[property="og:..."]`
+entries, including repeated/structured properties, decoded content, parsed HTML
+positions and resolved URL values. No property is substituted for title/canonical,
+and no image/audio/video/URL is fetched or loaded into the browser automatically.
+The checker is not an Open Graph consumer/preview validator.
+At most 100 entries are retained; the original 5,000-meta-node parser cap also
+applies. `complete: false` discloses missing observation coverage in `notChecked`.
+The page detail view shows values/source as escaped text, previews at most 1,024
+characters per value with a shortening notice and retains bounded source evidence.
+Missing, empty, repeated or unresolved fields never create SEO issues or scores.
+
 `crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
 time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes
 crawl and discovery limits. Even an exhausted discovered queue does not establish

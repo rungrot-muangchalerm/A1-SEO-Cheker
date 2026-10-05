@@ -6,6 +6,12 @@ and data modules. Do not add audit history or persistence.
 
 ## Current Implementation
 
+- Page details show Open Graph link-sharing fields and actual meta-tag evidence.
+  They are informational, not mandatory SEO/ranking rules. Missing or repeated
+  OG never adds issues or scores. Properties remain in source order; no advertised
+  image/audio/video URL is loaded automatically. All values/markup are escaped,
+  with entry/parser/display truncation disclosed and no replacement data on refresh.
+
 - Initial HTML JSON-LD data blocks are read without execution or remote context
   fetching. Native `JSON.parse()` checks syntax; malformed JSON has real script
   location/snippet evidence. Literal type strings/top-level shape are observations,

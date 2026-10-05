@@ -57,6 +57,7 @@ module.exports = {
     }));
     const titles = limited(titleNodes, (element) => ({ value: text($(element).text()), ...source(element, 'head > title') }));
     const descriptions = meta.filter((entry) => entry.name === 'description');
+    const openGraphEntries = meta.filter((entry) => entry.property.startsWith('og:'));
     const canonical = limited(canonicalNodes, (element) => ({
       value: $(element).attr('href') ?? '',
       url: resolveUrl($(element).attr('href'), baseUrl),
@@ -88,6 +89,11 @@ module.exports = {
       lang: $('html').attr('lang') || '', baseUrl, meta, canonical: canonical.slice(0, maxElements), linkHeaderError, counts,
       jsonLd: { count: jsonLdNodes.length, scripts: jsonScripts, bytes: jsonBytes,
         complete: jsonLdNodes.length === jsonScripts.length && jsonScripts.every((entry) => entry.contentComplete) },
+      openGraph: { scope: 'initial-html-sharing-metadata', observedCount: openGraphEntries.length,
+        complete: metaNodes.length <= maxElements && openGraphEntries.length <= 100, limit: 100,
+        entries: openGraphEntries.slice(0, 100).map((entry) => ({ ...entry, sourceUrl: page.finalUrl, sourceFormat: 'serialized-html',
+          ...(['og:url', 'og:image', 'og:image:url', 'og:image:secure_url', 'og:video', 'og:video:url', 'og:video:secure_url',
+            'og:audio', 'og:audio:url', 'og:audio:secure_url'].includes(entry.property) ? { resolvedUrl: resolveUrl(entry.content, baseUrl) } : {}) })) },
       truncated: Object.keys(counts).filter((key) => counts[key] > maxElements),
       headings: limited(headingNodes, (element) => ({
         level: Number(element.tagName.slice(1)), value: text($(element).text()), ...source(element, element.tagName)

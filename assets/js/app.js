@@ -254,6 +254,7 @@
     state.selectedIssue = null;
     const related = pageIssues(url);
     const canonical = page.metadata?.canonical || [];
+    const openGraph = page.metadata?.openGraph;
     const indexing = page.checks.find((entry) => entry.ruleId === 'robots-indexing');
     openDrawer('\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e2b\u0e19\u0e49\u0e32',
       '<p class="small text-break mb-3">' + escapeHtml(url) + '</p><div class="mb-4">' + badge(pageLevel(url)) + '</div>' +
@@ -261,7 +262,18 @@
       '</dd><dt>Title</dt><dd class="mb-3 text-break">' + escapeHtml(page.metadata?.title || '\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21 title') +
       '</dd><dt>Canonical</dt><dd class="mb-3 text-break">' + escapeHtml(canonical.length ? canonical.map((item) => item.url || item.value).join('\n') : '\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 canonical') +
       '</dd><dt>\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07 index</dt><dd class="mb-3 text-break">' + escapeHtml(indexing?.found || '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e23\u0e27\u0e08') +
-      '</dd></dl><section class="mb-4"><h3 class="h6">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08</h3><ul class="list-unstyled mb-0">' +
+      '</dd></dl><section class="mb-4" data-open-graph><h3 class="h6">Open Graph &middot; \u0e41\u0e0a\u0e23\u0e4c\u0e25\u0e34\u0e07\u0e01\u0e4c</h3>' +
+      (openGraph?.entries.length ? '<dl class="small mb-0">' + openGraph.entries.map((entry) => '<dt class="text-break"><code>' + escapeHtml(entry.property) +
+        '</code></dt><dd class="mb-3 text-break" data-og-property="' + escapeHtml(entry.property) + '">' + escapeHtml(entry.content.slice(0, 1024) || '\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21') +
+        (entry.content.length > 1024 ? '<span class="d-block">\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19</span>' : '') +
+        (entry.resolvedUrl && entry.resolvedUrl !== entry.content ? '<span class="d-block mt-1">URL: ' + escapeHtml(entry.resolvedUrl.slice(0, 1024)) +
+          (entry.resolvedUrl.length > 1024 ? ' (\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') + '</span>' : '') +
+        '<details class="mt-2"><summary>HTML' + (entry.location ? ' &middot; \u0e1a\u0e23\u0e23\u0e17\u0e31\u0e14 ' + escapeHtml(entry.location.startLine) + ':' + escapeHtml(entry.location.startColumn) : '') +
+        '</summary><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto mt-2 mb-0"><code>' + escapeHtml(entry.source) + '</code></pre>' +
+        (entry.sourceTruncated ? '<span class="d-block">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e16\u0e39\u0e01\u0e15\u0e31\u0e14\u0e17\u0e2d\u0e19</span>' : '') + '</details></dd>').join('') + '</dl>' :
+        '<p class="small mb-0">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e1a Open Graph \u0e43\u0e19 HTML \u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e14\u0e49</p>') +
+      (openGraph?.complete === false ? '<p class="small mt-2 mb-0">\u0e2d\u0e48\u0e32\u0e19 metadata \u0e44\u0e14\u0e49\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19</p>' : '') + '</section>' +
+      '<section class="mb-4"><h3 class="h6">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08</h3><ul class="list-unstyled mb-0">' +
       page.checks.map((entry) => '<li class="mb-3">' + badge(entry.severity || entry.outcome) +
         '<p class="small text-break mt-1 mb-0">' + escapeHtml(entry.title) + ': ' + escapeHtml(entry.found) + '</p></li>').join('') +
       '</ul></section><section class="mb-4"><h3 class="h6">\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19</h3>' +
