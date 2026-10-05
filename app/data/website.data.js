@@ -26,7 +26,11 @@ function parseUrl(value) {
 }
 
 function isPublicIp(address) {
-  try { return ipaddr.parse(address).range() === 'unicast'; } catch { return false; }
+  try {
+    const parsed = ipaddr.parse(address);
+    if (parsed.range() !== 'unicast') return false;
+    return parsed.kind() === 'ipv4' || parsed.match(ipaddr.parse('2000::'), 3);
+  } catch { return false; }
 }
 
 function withSignal(promise, signal) {
@@ -39,6 +43,7 @@ function withSignal(promise, signal) {
 }
 
 async function resolvePublicTarget(url, signal) {
+  signal.throwIfAborted();
   const hostname = url.hostname.replace(/^\[|\]$/g, '');
   let addresses;
   if (net.isIP(hostname)) {
