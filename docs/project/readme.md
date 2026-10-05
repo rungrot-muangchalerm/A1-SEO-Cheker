@@ -13,8 +13,10 @@ and data modules. Do not add audit history or persistence.
 - Each page includes parsed metadata, headings, links, and images with HTML
   evidence. Relative URLs honor the document base URL. HTML byte decoding respects
   BOM, response charset, and meta charset. Element/evidence limits are disclosed.
-- Status is currently `partial`: fetching is complete but SEO analysis has not yet
-  been implemented. Empty issues must not be read as a passing audit.
+- Status is currently `partial`: HTTP status and Googlebot meta/header rules are
+  checked, but other SEO rules are still pending. Each check separates facts from
+  required owner confirmation; noindex is not assumed to be unintentional.
+  Empty issues must not be read as a complete passing audit.
 - There is no audit ID, saved report, database write, cookie, or resume endpoint.
 - The frontend still uses mockup data until TODO round 3.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public

@@ -7,7 +7,8 @@ test('returns exact decoded HTML, final status, upstream headers and redirect ev
   const html = '<!doctype html><html lang="th"><title>\u0e17\u0e14\u0e2a\u0e2d\u0e1a</title><script>globalThis.__unexpectedAuditCode = true;</script></html>';
   const transport = stubTransport(t, [
     { status: 301, headers: { location: '/final?version=2' } },
-    { status: 404, headers: { 'x-robots-tag': 'noindex', 'x-test': 'actual-header' }, html }
+    { status: 404, headers: { 'x-robots-tag': 'noindex', 'x-test': 'actual-header' },
+      rawHeaders: ['X-Robots-Tag', 'otherbot: noindex', 'X-Robots-Tag', 'noindex'], html }
   ]);
   const result = await website.fetchPage('https://public.example/first?version=1#section');
   assert.equal(result.requestedUrl, 'https://public.example/first?version=1');
@@ -18,6 +19,7 @@ test('returns exact decoded HTML, final status, upstream headers and redirect ev
   assert.equal(result.receivedBytes, Buffer.byteLength(html));
   assert.equal(result.headers['x-robots-tag'], 'noindex');
   assert.equal(result.headers['x-test'], 'actual-header');
+  assert.deepEqual(result.rawHeaders, ['X-Robots-Tag', 'otherbot: noindex', 'X-Robots-Tag', 'noindex']);
   assert.deepEqual(result.redirects, [{
     url: 'https://public.example/first?version=1', status: 301,
     destination: 'https://public.example/final?version=2'

@@ -17,10 +17,11 @@ test('report distinguishes fetched evidence from analysis that was not performed
   assert.equal(report.schemaVersion, auditModel.version);
   assert.equal(report.status, 'partial');
   assert.deepEqual(report.scope, { type: 'single-page', origin: 'https://new.example', maxPages: 1 });
-  assert.deepEqual(report.coverage, { discovered: 1, fetched: 1, analyzed: 0, skipped: [], limitReached: false });
+  assert.deepEqual(report.coverage, { discovered: 1, fetched: 1, analyzed: 1, skipped: [], limitReached: false });
   assert.equal(report.pages.length, 1);
-  assert.equal(report.pages[0].analysisStatus, 'not-checked');
-  assert.deepEqual(report.pages[0].checks, []);
+  assert.equal(report.pages[0].analysisStatus, 'partial');
+  assert.equal(report.pages[0].checks.length, 3);
+  assert.ok(report.pages[0].checks.every((entry) => entry.outcome === 'pass'));
   assert.equal(report.pages[0].html, page.html);
   assert.equal(report.notChecked[0].id, 'seo-analysis');
   assert.equal(report.notChecked[0].url, page.finalUrl);

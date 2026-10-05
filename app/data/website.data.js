@@ -156,7 +156,7 @@ function requestPage(url, addresses, signal, maxBytes) {
             defaultEncoding: mediaType.essence === 'application/xhtml+xml' ? 'UTF-8' : undefined
           });
           const html = new TextDecoder(encoding).decode(buffer);
-          resolve({ status, headers, html, encoding, bytes: size, receivedBytes });
+          resolve({ status, headers, rawHeaders: response.rawHeaders || [], html, encoding, bytes: size, receivedBytes });
         } catch { reject(failure('UNSUPPORTED_CHARSET')); }
       });
       if (decoder) response.pipe(decoder);

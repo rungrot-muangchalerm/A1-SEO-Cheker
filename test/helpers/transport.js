@@ -40,6 +40,7 @@ module.exports = {
           response = new PassThrough();
           response.statusCode = item.status || 200;
           response.headers = { 'content-type': 'text/html; charset=utf-8', ...item.headers };
+          response.rawHeaders = item.rawHeaders || [];
           response.on('close', () => {
             options.signal.removeEventListener('abort', aborted);
             clearTimeout(timer);
