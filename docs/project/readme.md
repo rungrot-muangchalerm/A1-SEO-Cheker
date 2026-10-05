@@ -13,6 +13,8 @@ and data modules. Do not add audit history or persistence.
 - The frontend still uses mockup data until TODO round 3.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
+- gzip, deflate, and Brotli are decoded with limits on both transferred and
+  decompressed bytes. Redirect hops share the same deadline.
 
 ## Run
 

@@ -4,6 +4,7 @@ const dns = require('node:dns/promises');
 const net = require('node:net');
 const { MIMEType } = require('node:util');
 const ipaddr = require('ipaddr.js');
+const zlib = require('node:zlib');
 
 const limits = Object.freeze({ timeoutMs: 15000, maxBytes: 2 * 1024 * 1024, maxRedirects: 5 });
 const redirectStatuses = new Set([301, 302, 303, 307, 308]);
@@ -35,7 +36,10 @@ function isPublicIp(address) {
 
 function withSignal(promise, signal) {
   return new Promise((resolve, reject) => {
-    const aborted = () => reject(signal.reason || failure('CANCELLED'));
+    const aborted = () => {
+      signal.removeEventListener('abort', aborted);
+      reject(signal.reason || failure('CANCELLED'));
+    };
     if (signal.aborted) return aborted();
     signal.addEventListener('abort', aborted, { once: true });
     promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', aborted));
@@ -97,7 +101,8 @@ function requestPage(url, addresses, signal, maxBytes) {
         response.destroy();
         return reject(failure('UNSUPPORTED_TYPE'));
       }
-      if (headers['content-encoding'] && headers['content-encoding'] !== 'identity') {
+      const encoding = String(headers['content-encoding'] || 'identity').trim().toLowerCase();
+      if (!['identity', 'gzip', 'deflate', 'br'].includes(encoding)) {
         response.destroy();
         return reject(failure('UNSUPPORTED_ENCODING'));
       }
@@ -107,23 +112,40 @@ function requestPage(url, addresses, signal, maxBytes) {
       }
       const chunks = [];
       let size = 0;
+      let receivedBytes = 0;
+      let decoder;
+      if (encoding === 'gzip') decoder = zlib.createGunzip();
+      else if (encoding === 'deflate') decoder = zlib.createInflate();
+      else if (encoding === 'br') decoder = zlib.createBrotliDecompress();
+      const body = decoder || response;
+      const stop = (code) => {
+        reject(failure(code));
+        decoder?.destroy();
+        response.destroy();
+        request.destroy();
+      };
       response.on('data', (chunk) => {
+        receivedBytes += chunk.length;
+        if (receivedBytes > maxBytes) stop('RESPONSE_TOO_LARGE');
+      });
+      body.on('data', (chunk) => {
         size += chunk.length;
         if (size > maxBytes) {
-          response.destroy();
-          request.destroy();
-          reject(failure('RESPONSE_TOO_LARGE'));
+          stop('RESPONSE_TOO_LARGE');
           return;
         }
         chunks.push(chunk);
       });
       response.on('error', () => reject(signal.aborted ? signal.reason : failure('NETWORK_ERROR')));
-      response.on('end', () => {
+      response.on('aborted', () => stop(signal.aborted ? signal.reason.code : 'NETWORK_ERROR'));
+      decoder?.on('error', () => stop('DECOMPRESSION_FAILED'));
+      body.on('end', () => {
         try {
           const html = new TextDecoder(mediaType.params.get('charset') || 'utf-8').decode(Buffer.concat(chunks));
-          resolve({ status, headers, html, bytes: size });
+          resolve({ status, headers, html, bytes: size, receivedBytes });
         } catch { reject(failure('UNSUPPORTED_CHARSET')); }
       });
+      if (decoder) response.pipe(decoder);
     });
     request.on('error', () => reject(signal.aborted ? signal.reason : failure('NETWORK_ERROR')));
     request.end();
