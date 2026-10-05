@@ -195,6 +195,10 @@ or set backend-only `RENDER_BROWSER_CHANNEL=chrome` to use installed Google Chro
 Chromium sandbox stays enabled; use a non-root, OS/container-isolated service
 account for public untrusted-site rendering. Missing browser/sandbox prerequisites
 produce `BROWSER_UNAVAILABLE` without substituting a fake rendered report.
+PageSpeed Insights is separately opt-in and requires a backend-only
+`PAGESPEED_API_KEY` in this application. Without it, HTML auditing still works
+and the score panel reports `not-configured`, not placeholder scores. Follow
+[PageSpeed setup](PAGESPEED.md) to enable the Google API and restrict its key.
 Focused test discovery is available with `node --test test/*.test.js`. The suite
 includes good/bad HTML fixtures served through real HTTP, changing bytes on the
 same URL, and changing only response headers through the framework API routes.

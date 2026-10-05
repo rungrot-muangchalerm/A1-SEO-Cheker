@@ -104,13 +104,15 @@
 - [x] feat: ใช้ Playwright เปรียบเทียบ HTML เริ่มต้นกับเนื้อหาหลัง JavaScript ทำงานสำหรับหน้าที่จำเป็น
 - [x] feat: ใช้ข้อจำกัด URL เครือข่าย เวลา และทรัพยากรกับ browser renderer ด้วย
 - [x] feat: แยกข้อเท็จจริงว่าเนื้อหามาหลัง JavaScript ออกจากข้อสรุปว่าหน้าเข้า index ไม่ได้
-- [ ] เชื่อม PageSpeed Insights API โดยระบุทั้ง Performance, Accessibility, Best Practices และ SEO เพราะค่าปริยายตรวจเฉพาะ Performance ดู [API reference](https://developers.google.com/speed/docs/insights/v5/reference/pagespeedapi/runpagespeed)
+- [x] feat: เชื่อม PageSpeed Insights API ครบสี่หมวดคะแนน
 - [ ] ให้เลือกมือถือหรือเดสก์ท็อป และแนบ URL เวลาตรวจ รุ่น engine และโหมดที่ใช้ในรายงานรอบปัจจุบัน
 - [ ] ตรวจว่า engine รองรับ Agentic Browsing ก่อนแสดงผลจริง หมวดนี้ใช้จำนวนรายการที่ผ่าน ไม่ใช่คะแนนเต็ม 100 ดู [เอกสาร Agentic Browsing](https://developer.chrome.com/docs/lighthouse/agentic-browsing/scoring)
 - [ ] เมื่อ API ไม่มีคะแนนหรือเรียกไม่สำเร็จ ให้แสดงสถานะตามจริง ไม่ใช้ 69/88/96/100 หรือ 1/2 จาก mockup แทน
 - [ ] ระบุว่าคะแนน Lighthouse เป็นผลของ URL ที่ตรวจ ไม่ใช่คะแนนรวมทั้งเว็บไซต์
 
 เสร็จเมื่อ: คะแนนมาจาก engine จริง และผล JavaScript มีหลักฐานก่อน/หลัง render โดยไม่มีการสร้างคะแนนเอง
+
+PageSpeed ขอ Performance, Accessibility, Best Practices และ SEO อย่างชัดเจน เพราะค่าปริยายตรวจเฉพาะ Performance ตาม [API reference](https://developers.google.com/speed/docs/insights/v5/reference/pagespeedapi/runpagespeed) โค้ดและขั้นตอนตั้ง key พร้อมแล้วตามที่ผู้ใช้ขอ แต่ยังไม่มี key จึงยังไม่ได้ยืนยันคะแนนจาก Google จริง ทดสอบ contract/failure/UI และชุดรวม 221 ข้อผ่าน ทดลอง API กับ example.com จริงได้ HTML และ `not-configured` โดยไม่มีคะแนนแทน ดู [ขั้นตอนตั้งค่า](docs/project/PAGESPEED.md)
 
 ## รอบที่ 7: ดาวน์โหลดรายงานลงเครื่อง
 

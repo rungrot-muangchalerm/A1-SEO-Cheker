@@ -125,6 +125,22 @@ Console errors (including CSP refusals) are counted without retaining/logging th
 messages. A real infinite-script deadline and pending-asset cancellation are
 covered by browser-backed tests; both close the browser and transport work.
 
+## PageSpeed Insights
+
+Explicit `pagespeed: true` requests four Lighthouse categories from the fixed
+Google HTTPS provider endpoint, with a backend-only `PAGESPEED_API_KEY`.
+Missing configuration makes no provider request. `lighthouse` includes status,
+reason, provider, URL, request timestamps, requested/final URL, source fetchTime,
+engine/version and returned mode when available. `categories` keeps source scores
+in [0,1]; `displayScore` only rounds score * 100 for presentation. Null/missing/
+invalid values are unavailable, not zero. Runtime errors never publish scores.
+Partial means some source scores are unavailable. HTML issues/summary stay separate.
+No provider body/error/screenshot is logged or retained; only allowlisted facts
+enter the current report. API failures keep the HTML report with no fallback scores.
+The request is cancelled on disconnect, is capped at 90 seconds/8 MiB, refuses
+provider redirects, and uses shared pinned public DNS transport. See
+[setup and external validation still needed](PAGESPEED.md).
+
 ## URL Discovery
 
 Opt-in discovery adds `discovery.urls`, sitemap evidence and bounded skipped records.

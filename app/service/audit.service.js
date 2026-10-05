@@ -10,6 +10,7 @@ const internalLinksService = require('./internal-links.service');
 const canonicalService = require('./canonical.service');
 const sitemapChecksService = require('./sitemap-checks.service');
 const renderService = require('./render.service');
+const pagespeedService = require('./pagespeed.service');
 
 module.exports = {
   create: async (body, options = {}) => {
@@ -24,8 +25,9 @@ module.exports = {
         const siteChecks = [...crossPageService.analyze(crawl.pages), ...internalLinksService.analyze(crawl),
           ...canonicalService.analyze(crawl), ...sitemapChecksService.analyze(crawl)];
         if (body.render === true) await renderService.run(crawl.pages, { signal: options.signal });
+        const lighthouse = body.pagespeed === true ? await pagespeedService.run(crawl.page.requestedUrl, { signal: options.signal }) : undefined;
         options.signal?.throwIfAborted();
-        return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks) };
+        return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks, lighthouse) };
       }
       const page = await websiteData.fetchPage(body.url, options);
       options.signal?.throwIfAborted();
@@ -36,8 +38,9 @@ module.exports = {
       const discovery = body.discover === true ? await discoveryService.discover(page, options) : undefined;
       options.signal?.throwIfAborted();
       if (body.render === true) await renderService.run([page], { signal: options.signal });
+      const lighthouse = body.pagespeed === true ? await pagespeedService.run(page.requestedUrl, { signal: options.signal }) : undefined;
       options.signal?.throwIfAborted();
-      return { ok: true, data: auditModel.createReport(page, startedAt, discovery) };
+      return { ok: true, data: auditModel.createReport(page, startedAt, discovery, undefined, [], lighthouse) };
     } catch (error) {
       return { ok: false, code: error instanceof websiteData.WebsiteError ? error.code : 'INTERNAL_ERROR' };
     }

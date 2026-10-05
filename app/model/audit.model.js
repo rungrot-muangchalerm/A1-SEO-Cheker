@@ -2,7 +2,7 @@ const version = '1.0';
 
 module.exports = {
   version,
-  createReport: (page, startedAt, discovery, crawl, siteChecks = []) => {
+  createReport: (page, startedAt, discovery, crawl, siteChecks = [], lighthouse) => {
     const pages = (crawl?.pages || [page]).map((item) => {
       const checks = (item.checks || []).map((entry) => crawl ? { ...entry, id: entry.id + ':' + entry.url } : entry);
       return { ...item, fetchStatus: 'success', analysisStatus: !checks.length ? 'not-checked' :
@@ -37,7 +37,8 @@ module.exports = {
       ...(!page.render || page.render.status !== 'completed' ? [{ id: 'javascript-render', url: page.finalUrl,
         reason: page.render?.reason || (page.render ? 'render-incomplete' : 'not-requested'),
         message: 'JavaScript: ' + page.finalUrl }] : []),
-      { id: 'lighthouse', url: page.finalUrl, reason: 'not-requested', message: '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e40\u0e23\u0e35\u0e22\u0e01 engine \u0e15\u0e23\u0e27\u0e08\u0e04\u0e30\u0e41\u0e19\u0e19 Lighthouse' },
+      ...(lighthouse?.status !== 'completed' ? [{ id: 'lighthouse', url: lighthouse?.url || page.finalUrl,
+        reason: lighthouse?.reason || (lighthouse ? 'PAGESPEED_SCORE_UNAVAILABLE' : 'not-requested'), message: 'Lighthouse: ' + (lighthouse?.url || page.finalUrl) }] : []),
       { id: 'site-crawl', url: page.finalUrl, reason: 'outside-scope', message: '\u0e23\u0e2d\u0e1a\u0e19\u0e35\u0e49\u0e15\u0e23\u0e27\u0e08\u0e40\u0e09\u0e1e\u0e32\u0e30 URL \u0e17\u0e35\u0e48\u0e23\u0e30\u0e1a\u0e38 \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e44\u0e25\u0e48\u0e15\u0e23\u0e27\u0e08\u0e17\u0e31\u0e49\u0e07\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c' }
     );
     if (!siteChecks.some((entry) => entry.ruleId === 'canonical-target')) notChecked.push({ id: 'canonical-target', url: page.finalUrl,
@@ -97,7 +98,7 @@ module.exports = {
       notChecked,
       ...(discovery ? { discovery } : {}),
       ...(crawl ? { crawl: { limits: crawl.limits, stats: crawl.stats, stopReason: crawl.stopReason }, responses: crawl.responses } : {}),
-      lighthouse: { status: 'not-checked', categories: [], reason: 'not-requested' }
+      lighthouse: lighthouse || { status: 'not-checked', categories: [], reason: 'not-requested' }
     };
   }
 };
