@@ -38,7 +38,7 @@ test('actual crawl reports broken HTML and JSON destinations with every source U
   clock(t);
   const transport = stubTransport(t, [{ status: 404 }, { html: markup('Root', '/', '<a href="/source">Source</a><a href="/missing?v=1#fragment">Missing</a><a href="/json?v=2">JSON</a>') },
     { status: 404 }, { html: markup('Source', '/source', '<a href="/missing?v=1">Missing again</a>') },
-    { status: 404, html: markup('Missing', '/missing') }, { status: 410, html: '{}', headers: { 'content-type': 'application/json' } }]);
+    { status: 404, html: markup('Missing', '/missing?v=1') }, { status: 410, html: '{}', headers: { 'content-type': 'application/json' } }]);
   const report = (await audit.create({ url: 'https://site.example/', crawl: true })).data;
   const checks = rules(report);
   assert.equal(checks.length, 2);

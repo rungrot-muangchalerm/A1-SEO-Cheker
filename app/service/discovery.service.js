@@ -20,13 +20,19 @@ function add(collection, value, evidence) {
   collection.urls.push({ url: url.href, sources: [evidence] });
 }
 
-function extend(collection, page, includePage = true) {
+function extend(collection, page, includePage = true, includeCanonical = false) {
   if (includePage) add(collection, page.finalUrl, { kind: 'fetched-page', sourceUrl: page.requestedUrl || page.finalUrl });
   collection.linkExtractionComplete &&= !page.metadata.truncated.includes('links');
   for (const link of page.metadata.links) {
     if (!link.url) continue;
     add(collection, link.url, { kind: 'html-link', sourceUrl: page.finalUrl, selector: link.selector, location: link.location,
       source: link.source, sourceTruncated: link.sourceTruncated });
+  }
+  if (includeCanonical) {
+    for (const entry of page.metadata.canonical) {
+      if (!entry.url || Object.keys(entry.parameters || {}).length) continue;
+      add(collection, entry.url, { ...entry, kind: entry.kind === 'header' ? 'header-canonical' : 'html-canonical', sourceUrl: page.finalUrl });
+    }
   }
 }
 
@@ -37,7 +43,7 @@ module.exports = {
     const skipped = [];
     const collection = { origin, urls: [], skipped, skippedOmitted: 0, limitReached: false, linkExtractionComplete: true, limits };
     add(collection, page.finalUrl, { kind: 'requested-page', sourceUrl: page.finalUrl });
-    extend(collection, page, false);
+    extend(collection, page, false, options.includeCanonical === true);
     const queue = [];
     const queued = new Set();
     const enqueue = (value, evidence = {}) => {

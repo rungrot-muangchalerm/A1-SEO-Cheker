@@ -79,8 +79,8 @@ test('actual crawl report includes cross-page checks in issue summaries and late
   assert.equal(first.summary.review, 2);
   assert.equal(first.summary.affected, 3);
   assert.equal(first.issues.length, 2);
-  assert.equal(first.siteChecks.length, 3);
-  assert.equal(first.summary.checks.pass + first.summary.checks.review, 35);
+  assert.equal(first.siteChecks.length, 7);
+  assert.equal(first.summary.checks.pass + first.summary.checks.review, 39);
   assert.ok(first.issues.every((entry) => entry.ruleId.startsWith('duplicate-')));
   const second = (await audit.create({ url: 'https://site.example/', crawl: true })).data;
   assert.equal(second.issues.length, 0);

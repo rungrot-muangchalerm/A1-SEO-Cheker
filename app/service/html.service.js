@@ -47,6 +47,8 @@ module.exports = {
     const canonical = limited(canonicalNodes, (element) => ({
       value: $(element).attr('href') ?? '',
       url: resolveUrl($(element).attr('href'), baseUrl),
+      parameters: Object.fromEntries(['hreflang', 'lang', 'media', 'type'].filter((name) => $(element).attr(name) !== undefined)
+        .map((name) => [name, $(element).attr(name)])),
       ...source(element, 'head link[rel]')
     }));
     let linkHeaderError = false;
@@ -56,6 +58,8 @@ module.exports = {
           if (!(entry.rel || '').toLowerCase().split(/\s+/).includes('canonical')) continue;
           canonical.push({
             value: entry.uri, url: resolveUrl(entry.uri, page.finalUrl),
+            parameters: Object.fromEntries(['hreflang', 'lang', 'media', 'type', 'anchor'].filter((name) => entry[name] !== undefined)
+              .map((name) => [name, entry[name]])),
             kind: 'header', name: 'Link', source: header, sourceTruncated: false
           });
         }

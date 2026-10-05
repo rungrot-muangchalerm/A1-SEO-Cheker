@@ -7,6 +7,7 @@ const discoveryService = require('./discovery.service');
 const crawlService = require('./crawl.service');
 const crossPageService = require('./cross-page.service');
 const internalLinksService = require('./internal-links.service');
+const canonicalService = require('./canonical.service');
 
 module.exports = {
   create: async (body, options = {}) => {
@@ -18,7 +19,7 @@ module.exports = {
       if (body.crawl === true) {
         const crawl = await crawlService.run(body.url, { signal: options.signal, onProgress: options.onProgress });
         options.signal?.throwIfAborted();
-        const siteChecks = [...crossPageService.analyze(crawl.pages), ...internalLinksService.analyze(crawl)];
+        const siteChecks = [...crossPageService.analyze(crawl.pages), ...internalLinksService.analyze(crawl), ...canonicalService.analyze(crawl)];
         return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks) };
       }
       const page = await websiteData.fetchPage(body.url, options);

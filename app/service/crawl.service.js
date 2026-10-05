@@ -55,7 +55,7 @@ module.exports = {
       if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
       await throttle(url, signal, rules.crawlDelay);
     };
-    const networkOptions = { signal: controller.signal, beforeRequest,
+    const networkOptions = { signal: controller.signal, beforeRequest, includeCanonical: true,
       onDiscovery: async (collection) => { discovery = collection; await notify('discovering'); } };
     const analyze = async (page) => {
       page.metadata = html.parse(page);
@@ -81,7 +81,7 @@ module.exports = {
         stopReason = error.code;
         discovery = { origin: new URL(root.finalUrl).origin, urls: [], sitemaps: [], skipped: [], skippedOmitted: 0,
           limitReached: true, linkExtractionComplete: false, limits: discoveryService.limits };
-        discoveryService.extend(discovery, root);
+        discoveryService.extend(discovery, root, true, true);
       }
       // The array grows as fetched documents contribute links; URL identity and all budgets stay bounded.
       for (const entry of discovery.urls) {
@@ -98,7 +98,7 @@ module.exports = {
           const page = await website.fetchPage(entry.url, { ...networkOptions, scopeOrigin: discovery.origin,
             maxBytes: Math.min(website.limits.maxBytes, remainingBytes) });
           await analyze(page);
-          discoveryService.extend(discovery, page);
+          discoveryService.extend(discovery, page, true, true);
         } catch (error) {
           if (options.signal?.aborted) throw new website.WebsiteError('CANCELLED');
           let reason = error instanceof website.WebsiteError ? error.code : controller.signal.aborted ? controller.signal.reason.code : 'CRAWL_FAILED';

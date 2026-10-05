@@ -6,6 +6,15 @@ and data modules. Do not add audit history or persistence.
 
 ## Current Implementation
 
+- Canonical comparison is enabled by bounded crawling. Canonical-only internal
+  targets enter the same queue, pacing, robots rules and page/request/time budgets.
+  It compares observed target HTTP/redirects, initial-HTML/header noindex directives
+  and the target's canonical declaration. Different healthy targets require owner
+  confirmation; they are not automatically errors. HTTP failures retain actual
+  status; outside-scope/unread targets and unavailable HTML remain incomplete.
+  Source/target declaration positions and headers are evidence. Similarity of
+  content, Google-selected canonical and a full canonical graph are not verified.
+
 - Bounded crawling checks internal href destinations using only observed HTTP
   responses. Findings retain source pages, HTML positions, destination URLs,
   actual statuses and redirect chains. Non-HTML 404/410 responses remain evidence;

@@ -98,6 +98,27 @@ references. Limits are 200 targets and 200 source evidence entries per target;
 all related source page URLs are retained even when snippets are truncated.
 HTTP availability does not establish content quality, indexing or anchor validity.
 
+`canonical-target` compares each fetched page's canonical declaration with observed
+target HTTP status/redirects, applicable robots directives and the target's own
+canonical declarations. Same-origin canonical-only targets join the existing
+bounded crawl queue; other origins and refused/unread targets are not fetched.
+Default ports/fragments are normalized for fetching, but fragment declarations
+remain review evidence. Conflicting/invalid/incomplete declarations cannot pass.
+Annotation parameters are retained and require review, not an assumed accepted
+Google canonical annotation. No new limits or client-controlled budgets are added.
+
+A different healthy target is review for owner confirmation, not proof that the
+source page is defective. `details.contentComparison: not-performed` makes clear
+that duplicate-content similarity and Google's selected canonical are unverified.
+Observed 4xx/5xx and HTTP loops are findings; 401/403/429, redirects, target noindex,
+expiry directives and target canonical chains/direct two-page cycles need review.
+`urls` contains affected source pages, not healthy target pages. Evidence identifies
+the target's actual HTML location or response header. Non-HTML targets expose only
+known HTTP/header facts; absent HTML directives are never inferred from them.
+Unavailable targets, declaration/robots extraction gaps and the 200-entry evidence
+cap produce `complete: false` and a disclosed reason, even alongside a proven issue.
+The rule describes direct target facts, not an exhaustive canonical graph audit.
+
 `crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
 time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes
 crawl and discovery limits. Even an exhausted discovered queue does not establish
