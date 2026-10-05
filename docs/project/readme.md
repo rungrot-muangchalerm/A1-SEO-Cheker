@@ -50,6 +50,9 @@ and data modules. Do not add audit history or persistence.
   including consecutive requests for the same URL.
   Evidence details display fetched document URLs, parser-reported HTML lines/columns,
   HTTP header names and matching robots.txt lines, never assumed repository filenames.
+  Starting a new round aborts the previous fetch with AbortController. Manual cancel
+  and leaving/reloading the page also abort in-flight requests; API disconnect handling
+  stops backend work. Refresh starts with empty URL, filters, tables and details.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and

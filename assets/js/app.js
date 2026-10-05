@@ -13,7 +13,7 @@
     sitemap: "Sitemap", images: "\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e", render: "JavaScript"
   };
 
-  const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false, round: 0 };
+  const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false, round: 0, controller: null };
   const byId = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -297,6 +297,9 @@
     }
     input.setCustomValidity("");
     const round = ++state.round;
+    state.controller?.abort();
+    const controller = new AbortController();
+    state.controller = controller;
     state.report = null;
     state.origin = null;
     state.busy = true;
@@ -317,9 +320,11 @@
     byId("scan-status").dataset.state = "loading";
     byId("scan-status").classList.remove("text-danger-emphasis");
     byId("scan-spinner").classList.remove("d-none");
+    byId("scan-icon").classList.add("d-none");
+    byId("cancel-button").classList.remove("d-none");
     byId("report").setAttribute("aria-busy", "true");
     fetch("/api/audits", {
-      credentials: "include", method: "POST", cache: "no-store",
+      credentials: "include", method: "POST", cache: "no-store", signal: controller.signal,
       headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: url.href })
     }).then((response) => response.json().then((data) => {
       if (!response.ok || data.status === "failed") {
@@ -349,17 +354,34 @@
       if (round !== state.round) return;
       state.report = null;
       state.origin = null;
+      if (controller.signal.aborted) {
+        byId("scan-status").textContent = "\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e41\u0e25\u0e49\u0e27";
+        byId("scan-status").dataset.state = "cancelled";
+        return;
+      }
       byId("scan-status").textContent = error.publicMessage || "\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48";
       byId("scan-status").dataset.state = "failed";
       byId("scan-status").classList.add("text-danger-emphasis");
     }).finally(() => {
       if (round !== state.round) return;
       state.busy = false;
+      state.controller = null;
       byId("scan-button").disabled = false;
       byId("scan-button-label").textContent = "\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c";
       byId("scan-spinner").classList.add("d-none");
+      byId("scan-icon").classList.remove("d-none");
+      byId("cancel-button").classList.add("d-none");
       byId("report").setAttribute("aria-busy", "false");
     });
+  });
+  byId('cancel-button').addEventListener('click', () => {
+    bootstrap.Tooltip.getInstance(byId('cancel-button'))?.hide();
+    state.controller?.abort();
+  });
+  window.addEventListener('pagehide', () => {
+    ++state.round;
+    state.controller?.abort();
+    state.controller = null;
   });
   byId("website-url").addEventListener("input", () => byId("website-url").setCustomValidity(""));
 

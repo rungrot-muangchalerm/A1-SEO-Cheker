@@ -9,15 +9,18 @@
 
 <main class="container py-4">
   <form id="scan-form" class="row g-2 align-items-end mb-3" autocomplete="off">
-    <div class="col-12 col-md-9 col-lg-10">
+    <div class="col-12 col-md-8 col-lg-9">
       <label for="website-url" class="form-label">URL &#3648;&#3623;&#3655;&#3610;&#3652;&#3595;&#3605;&#3660;</label>
       <input type="url" class="form-control bg-success-subtle border-success text-success-emphasis" id="website-url" name="url" placeholder="https://example.com" autocomplete="off" inputmode="url" spellcheck="false" required>
     </div>
-    <div class="col-12 col-md-3 col-lg-2 d-grid">
-      <button type="submit" class="btn btn-success d-flex justify-content-center align-items-center gap-2" id="scan-button">
-          <i data-lucide="scan-search" width="18" height="18" aria-hidden="true"></i>
+    <div class="col-12 col-md-4 col-lg-3 d-flex gap-2">
+      <button type="submit" class="btn btn-success d-flex flex-grow-1 justify-content-center align-items-center gap-2" id="scan-button">
+          <i data-lucide="scan-search" width="18" height="18" id="scan-icon" aria-hidden="true"></i>
           <span class="spinner-border spinner-border-sm d-none" id="scan-spinner" aria-hidden="true"></span>
         <span id="scan-button-label">&#3605;&#3619;&#3623;&#3592;&#3648;&#3623;&#3655;&#3610;&#3652;&#3595;&#3605;&#3660;</span>
+      </button>
+      <button type="button" class="btn btn-outline-danger d-none" id="cancel-button" aria-label="&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;&#3585;&#3634;&#3619;&#3605;&#3619;&#3623;&#3592;" title="&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;&#3585;&#3634;&#3619;&#3605;&#3619;&#3623;&#3592;" data-bs-toggle="tooltip">
+        <i data-lucide="circle-x" width="18" height="18" aria-hidden="true"></i>
       </button>
     </div>
   </form>

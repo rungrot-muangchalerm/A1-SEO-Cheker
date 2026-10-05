@@ -17,7 +17,8 @@ async function trackResponses(page) {
   await page.evaluate(() => {
     const original = window.fetch;
     globalThis.parsedResponses = 0;
-    window.fetch = (...args) => original(...args).then((response) => {
+    // Ignore cancellation deliberately: round guards must still reject late responses.
+    window.fetch = (url, options) => original(url, { ...options, signal: undefined }).then((response) => {
       const json = response.json.bind(response);
       response.json = () => json().finally(() => { globalThis.parsedResponses++; });
       return response;
