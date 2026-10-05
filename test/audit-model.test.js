@@ -20,7 +20,7 @@ test('report distinguishes fetched evidence from analysis that was not performed
   assert.deepEqual(report.coverage, { discovered: 1, fetched: 1, analyzed: 1, skipped: [], limitReached: false });
   assert.equal(report.pages.length, 1);
   assert.equal(report.pages[0].analysisStatus, 'partial');
-  assert.equal(report.pages[0].checks.length, 6);
+  assert.equal(report.pages[0].checks.length, 7);
   assert.ok(report.pages[0].checks.slice(0, 3).every((entry) => entry.outcome === 'pass'));
   assert.equal(report.pages[0].html, page.html);
   assert.equal(report.notChecked[0].id, 'seo-analysis');
