@@ -4,6 +4,7 @@ const htmlService = require('./html.service');
 const seoService = require('./seo.service');
 const robotsService = require('./robots.service');
 const discoveryService = require('./discovery.service');
+const crawlService = require('./crawl.service');
 
 module.exports = {
   create: async (body, options = {}) => {
@@ -12,6 +13,11 @@ module.exports = {
     }
     const startedAt = new Date().toISOString();
     try {
+      if (body.crawl === true) {
+        const crawl = await crawlService.run(body.url, { signal: options.signal });
+        options.signal?.throwIfAborted();
+        return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl) };
+      }
       const page = await websiteData.fetchPage(body.url, options);
       options.signal?.throwIfAborted();
       page.metadata = htmlService.parse(page);

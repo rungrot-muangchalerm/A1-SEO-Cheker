@@ -55,3 +55,19 @@ Sitemap records retain requested/final file URLs, HTTP status, redirects, parsed
 entries, namespace verification and truncation. Index children also record their
 parent `sourceUrl` and entry index. File/entry/deadline limits mean incomplete
 discovery, not a complete site audit; skipped reasons and `notChecked` disclose it.
+
+## Bounded Crawl
+
+`crawl: true` uses scope `same-origin-crawl`. `pages` contains only fetched HTML,
+including real 4xx/5xx HTML responses; failed fetches are in `coverage.skipped` with
+a reason and no guessed HTTP code. `discovery.urls` grows as later pages yield links.
+`coverage.fetched/analyzed` and `summary.pages` count actual page records, not candidates.
+Each multi-page check ID includes its rule ID and document URL so detail buttons
+cannot select another page's instance. Outcome/severity summaries aggregate actual
+checks; `affected` counts unique affected document URLs.
+
+`crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
+time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes
+crawl and discovery limits. Even an exhausted discovered queue does not establish
+complete domain coverage or Google's index state. Robots responses are shared only
+inside that request, then released; blocked/unknown rules prevent automated fetching.

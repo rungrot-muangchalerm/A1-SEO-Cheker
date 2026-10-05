@@ -7,12 +7,23 @@ and data modules. Do not add audit history or persistence.
 ## Current Implementation
 
 - `POST /api/audits` accepts JSON `{ "url": "https://example.com/" }`.
+- Optional `crawl: true` follows same-origin links from every fetched HTML page
+  plus the initial sitemap discovery. The separate crawl checkbox enables this.
+  It checks robots.txt for SEOChecker before the initial URL and each redirect,
+  refusing unknown/disallowed rules; Googlebot findings remain separate.
+  Limits are 20 page attempts including failures/root, one request at a time,
+  at least 500 ms between all sockets (robots, sitemap and redirects included),
+  60 total request attempts, 60 seconds, and 8 MiB of retained HTML. A greater
+  SEOChecker crawl-delay is honored, never clamped down. The current round alone
+  shares robots responses; no cache survives the request. Child failures/skips
+  retain reasons without inventing HTTP status or page content. Scope, real counts,
+  skipped URLs and stop reason describe bounded coverage, not the entire domain.
 - Optional `discover: true` also finds same-origin URL candidates from the initial
   page's links, robots.txt sitemap declarations and `/sitemap.xml`. The checkbox
   enables this explicitly; ordinary single-page requests do not fetch sitemaps.
   `discovery` records URLs and their sources, sitemap HTTP/XML evidence and skipped
-  candidates. Found URLs are not added to fetched/analyzed page counts. Other pages
-  are not crawled yet. Nested sitemap indexes are traversed with parent file evidence.
+  candidates. Found URLs are not added to fetched/analyzed page counts. Discovery
+  alone does not crawl pages. Nested sitemap indexes retain parent file evidence.
   Limits: 200 candidates, 5 sitemap files including index children, 200 detailed
   skips, 1,000 XML entries per file, depth 20, and a 10-second discovery deadline;
   sitemap transport is at most 5 seconds and 512 KiB per file.
@@ -44,7 +55,7 @@ and data modules. Do not add audit history or persistence.
   required owner confirmation; noindex is not assumed to be unintentional.
   Empty issues must not be read as a complete passing audit.
 - `notChecked` identifies unavailable rules and unexamined rendered content,
-  Lighthouse, site-wide crawling, and canonical target analysis. Page analysis can
+  Lighthouse, unexamined site scope, and canonical target analysis. Page analysis can
   complete for initial-page rules while the overall report remains partial.
   See [the check contract](AUDIT-SCHEMA.md) for outcomes and evidence semantics.
 - Image checks distinguish missing alt from explicit empty alt and do not evaluate

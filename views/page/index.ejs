@@ -28,6 +28,10 @@
         <input type="checkbox" class="form-check-input" id="discover-pages" name="discover">
         <label class="form-check-label small" for="discover-pages">&#3588;&#3657;&#3609;&#3627;&#3634; URL &#3651;&#3609;&#3648;&#3623;&#3655;&#3610;&#3652;&#3595;&#3605;&#3660;</label>
       </div>
+      <div class="form-check mt-1">
+        <input type="checkbox" class="form-check-input" id="crawl-pages" name="crawl">
+        <label class="form-check-label small" for="crawl-pages">&#3652;&#3621;&#3656;&#3605;&#3619;&#3623;&#3592;&#3627;&#3609;&#3657;&#3634;&#3651;&#3609;&#3648;&#3623;&#3655;&#3610;&#3652;&#3595;&#3605;&#3660;</label>
+      </div>
     </div>
   </form>
     <p class="small text-primary-emphasis text-break mb-4" id="scan-status" role="status" aria-live="polite"></p>
@@ -75,6 +79,10 @@
         <details class="small mt-3" id="discovery-section" hidden>
           <summary>URL &#3607;&#3637;&#3656;&#3614;&#3610; <span id="discovery-count"></span></summary>
           <ul class="mt-2 mb-0 ps-3" id="discovery-list"></ul>
+        </details>
+        <details class="small mt-3" id="skipped-section" hidden>
+          <summary>URL &#3607;&#3637;&#3656;&#3586;&#3657;&#3634;&#3617; <span id="skipped-count"></span></summary>
+          <ul class="mt-2 mb-0 ps-3" id="skipped-list"></ul>
         </details>
     </section>
 

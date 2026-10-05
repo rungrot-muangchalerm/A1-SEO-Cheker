@@ -179,7 +179,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
 
 async function fetchResource(value, options, kind) {
   const controller = new AbortController();
-  const cancel = () => controller.abort(failure('CANCELLED'));
+  const cancel = () => controller.abort(options.signal?.reason instanceof WebsiteError ? options.signal.reason : failure('CANCELLED'));
   if (options.signal?.aborted) cancel();
   else options.signal?.addEventListener('abort', cancel, { once: true });
   const timer = setTimeout(() => controller.abort(failure('TIMEOUT')), options.timeoutMs || limits.timeoutMs);
@@ -195,6 +195,8 @@ async function fetchResource(value, options, kind) {
       if (options.scopeOrigin && url.origin !== options.scopeOrigin) throw failure('OUTSIDE_SCOPE');
       if (seen.has(url.href)) throw failure('REDIRECT_LOOP');
       seen.add(url.href);
+      await options.beforeRequest?.(url, controller.signal);
+      controller.signal.throwIfAborted();
       const addresses = await resolvePublicTarget(url, controller.signal);
       const result = await requestPage(url, addresses, controller.signal, maxBytes, kind);
       if (!result.redirect) return { requestedUrl, finalUrl: url.href, redirects, ...result };
@@ -204,6 +206,9 @@ async function fetchResource(value, options, kind) {
       redirects.push({ url: url.href, status: result.status, destination: next.href });
       url = parseUrl(next.href);
     }
+  } catch (error) {
+    if (controller.signal.aborted) throw controller.signal.reason;
+    throw error;
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener('abort', cancel);

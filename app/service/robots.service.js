@@ -5,7 +5,14 @@ module.exports = {
   load: async (pageUrl, options = {}) => {
     const url = new URL('/robots.txt', pageUrl).href;
     let response;
-    try { response = await website.fetchRobots(url, { signal: options.signal, scopeOrigin: new URL(pageUrl).origin }); }
+    try {
+      let operation = options.robotsCache?.get(url);
+      if (!operation) {
+        operation = website.fetchRobots(url, { signal: options.signal, scopeOrigin: new URL(pageUrl).origin, beforeRequest: options.beforeRequest });
+        options.robotsCache?.set(url, operation);
+      }
+      response = await operation;
+    }
     catch (error) {
       if (options.signal?.aborted) throw error;
       return { url, status: 'not-checked', reason: error instanceof website.WebsiteError ? error.code : 'ROBOTS_FAILED' };

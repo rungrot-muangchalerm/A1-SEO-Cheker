@@ -129,7 +129,8 @@
     byId("report-host").textContent = state.report.requestedUrl;
     const report = state.report;
     byId("report-scope").textContent = "\u0e02\u0e2d\u0e1a\u0e40\u0e02\u0e15: " + (report.scope.type === "single-page" ? "URL \u0e40\u0e14\u0e35\u0e22\u0e27" : report.scope.origin) +
-      " \u00b7 \u0e1e\u0e1a " + report.coverage.discovered + " \u0e2b\u0e19\u0e49\u0e32 \u00b7 \u0e2d\u0e48\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 " + report.coverage.fetched + " \u0e2b\u0e19\u0e49\u0e32 \u00b7 \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c " + report.coverage.analyzed + " \u0e2b\u0e19\u0e49\u0e32";
+      " \u00b7 \u0e1e\u0e1a " + report.coverage.discovered + " \u0e2b\u0e19\u0e49\u0e32 \u00b7 \u0e2d\u0e48\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 " + report.coverage.fetched + " \u0e2b\u0e19\u0e49\u0e32 \u00b7 \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c " + report.coverage.analyzed + " \u0e2b\u0e19\u0e49\u0e32" +
+      " \u00b7 \u0e02\u0e49\u0e32\u0e21 " + report.coverage.skipped.length + " URL";
     byId("report-time").textContent = "\u0e40\u0e27\u0e25\u0e32\u0e15\u0e23\u0e27\u0e08: " + new Intl.DateTimeFormat("th-TH-u-ca-gregory", {
       dateStyle: "medium", timeStyle: "medium"
     }).format(new Date(report.completedAt));
@@ -145,6 +146,10 @@
       escapeHtml(entry.url) + '">' + escapeHtml(entry.url) + '<ul class="small ps-3">' + entry.sources.map((source) =>
         '<li class="text-break">' + escapeHtml(source.kind) + ' &middot; ' + escapeHtml(source.sourceUrl) +
         (source.selector ? ' &middot; ' + escapeHtml(source.selector) : '') + '</li>').join('') + '</ul></li>').join(''));
+    byId('skipped-section').hidden = report.coverage.skipped.length === 0;
+    byId('skipped-count').textContent = '(' + report.coverage.skipped.length + ')';
+    replaceContent(byId('skipped-list'), report.coverage.skipped.map((entry) => '<li class="mb-2 text-break">' +
+      escapeHtml(entry.url) + ' &middot; ' + escapeHtml(entry.reason) + '</li>').join(''));
   }
 
   function openDrawer(title, content, trigger) {
@@ -284,10 +289,10 @@
     state.page = 1;
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
-    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'discovery-list'].forEach((id) => replaceContent(byId(id), ''));
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'discovery-list', 'skipped-list'].forEach((id) => replaceContent(byId(id), ''));
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
-      'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count'].forEach((id) => { byId(id).textContent = ''; });
+      'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count'].forEach((id) => { byId(id).textContent = ''; });
     delete byId('report-result').dataset.result;
     byId('scan-status').dataset.state = 'idle';
     byId('scan-status').classList.remove('text-danger-emphasis');
@@ -295,6 +300,8 @@
     byId('not-checked-section').open = false;
     byId('discovery-section').hidden = true;
     byId('discovery-section').open = false;
+    byId('skipped-section').hidden = true;
+    byId('skipped-section').open = false;
     ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
     ['export-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
     byId('scan-icon').classList.remove('d-none');
@@ -362,7 +369,8 @@
     fetch("/api/audits", {
       credentials: "include", method: "POST", cache: "no-store", signal: controller.signal,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}) })
+      body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}),
+        ...(byId('crawl-pages').checked ? { crawl: true } : {}) })
     }).then((response) => response.json().then((data) => {
       if (!response.ok || data.status === "failed") {
         throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
