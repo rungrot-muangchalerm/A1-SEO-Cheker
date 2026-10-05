@@ -1,0 +1,24 @@
+# Audit Check Contract
+
+The report schema is versioned by `schemaVersion`. Each page contains `checks`;
+`issues` contains only checks with a fail or review outcome, never every check.
+
+Every check includes:
+
+- `ruleId`, `ruleVersion`, and `id`: stable rule identity for comparison and export.
+- `url` and `urls`: the audited page, not a guessed repository filename.
+- `category`, `title`, `found`, `impact`, and `steps`: Thai factual findings and
+  actions. Owner confirmation is explicit when intent cannot be inferred.
+- `evidence`: actual markup, response facts, robots matching lines, or observations
+  describing the scope of an absence check. `sourceUrl` locates the source document.
+  A canonical/image entry's `url` is its resolved target, not the source document.
+- `references`: labeled HTTPS links to primary Google or W3C documentation.
+
+HTML snippets are serialized by the HTML parser, not byte-for-byte excerpts with
+invented original line numbers. `sourceFormat: serialized-html` identifies this.
+`sourceTruncated` marks shortened snippets. Absence observations contain selectors
+and counts, never invented replacement markup. Robots line numbers are 1-based
+positions in the fetched robots.txt. Filesystem paths are not inferred from URLs.
+
+Passing one rule is not a ranking score, an indexing confirmation, or proof that
+the entire website passed. JavaScript-rendered content has not been examined yet.
