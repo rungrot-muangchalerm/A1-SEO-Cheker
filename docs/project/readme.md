@@ -7,8 +7,11 @@ and data modules. Do not add audit history or persistence.
 ## Current Implementation
 
 - `POST /api/audits` accepts JSON `{ "url": "https://example.com/" }`.
-- The response contains this request's fetched page, HTTP status, headers, HTML,
-  final URL, and redirect chain. It does not yet perform SEO analysis.
+- The response uses schema version `1.0` with `pages`, `issues`, `notChecked`,
+  `coverage`, `summary`, timestamps, and a Lighthouse availability state. Each page
+  contains actual HTTP status, headers, HTML, final URL, and redirect evidence.
+- Status is currently `partial`: fetching is complete but SEO analysis has not yet
+  been implemented. Empty issues must not be read as a passing audit.
 - There is no audit ID, saved report, database write, cookie, or resume endpoint.
 - The frontend still uses mockup data until TODO round 3.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
