@@ -423,6 +423,11 @@
     }
   }
 
+  function downloadFilename(kind) {
+    const time = new Date(state.report.completedAt).toISOString().replace(/[:.]/g, '-');
+    return 'seo-' + kind + '-' + time + '-round-' + state.round;
+  }
+
   function clearRound(resetInput = false) {
     ++state.round;
     state.controller?.abort();
@@ -512,14 +517,19 @@
     if (!state.report || state.busy) return;
     const issues = filteredIssues();
     if (!issues.length) return;
-    const fields = ['ruleId', 'ruleVersion', 'outcome', 'severity', 'category', 'title', 'urls', 'found', 'impact', 'steps', 'evidence', 'references'];
-    const csv = [fields.map(csvCell).join(','), ...issues.map((issue) => fields.map((field) => csvCell(issue[field])).join(','))].join('\r\n');
-    downloadBlob(['\ufeff', csv, '\r\n'], 'text/csv;charset=utf-8', 'seo-issues.csv');
+    const metadata = { reportFormat: 'seo-checker-issues-csv', schemaVersion: state.report.schemaVersion,
+      reportRequestedUrl: state.report.requestedUrl, reportStartedAt: state.report.startedAt, reportCompletedAt: state.report.completedAt,
+      exportedAt: new Date().toISOString(), filterSeverity: byId('severity-filter').value, filterCategory: byId('category-filter').value,
+      filterQuery: byId('issue-search').value, issueView: byId('issue-view-groups').checked ? 'groups' : 'list' };
+    const fields = ['ruleId', 'ruleVersion', 'outcome', 'severity', 'category', 'title', 'urls', 'found', 'impact', 'steps', 'evidence', 'references', ...Object.keys(metadata)];
+    const csv = [fields.map(csvCell).join(','), ...issues.map((issue) => fields.map((field) => csvCell(Object.hasOwn(metadata, field) ? metadata[field] : issue[field])).join(','))].join('\r\n');
+    downloadBlob(['\ufeff', csv, '\r\n'], 'text/csv;charset=utf-8', downloadFilename('issues') + '.csv');
   });
 
   byId('export-json-button').addEventListener('click', () => {
     if (!state.report || state.busy) return;
-    downloadBlob([JSON.stringify(state.report, null, 2), '\n'], 'application/json;charset=utf-8', 'seo-report.json');
+    const report = { ...state.report, export: { format: 'seo-checker-json', scope: 'entire-round', exportedAt: new Date().toISOString() } };
+    downloadBlob([JSON.stringify(report, null, 2), '\n'], 'application/json;charset=utf-8', downloadFilename('report') + '.json');
   });
 
   byId("scan-form").addEventListener("submit", (event) => {

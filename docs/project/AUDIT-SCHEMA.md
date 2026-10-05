@@ -132,6 +132,11 @@ filters. It includes original and any rendered source proof as JSON strings, not
 an executable HTML document. Even a zero-issue report is downloadable; no report
 means no export. Generation uses a browser Blob only on an explicit click, never
 a backend file/job/download URL. Refresh/new round clears the source report.
+JSON adds an `export` metadata object (format, scope, export time) to a shallow
+copy, never to the current report. CSV appends format/schema, request URL, round
+start/completion/export times and selected filters to every exported issue row.
+Filenames use the UTC completion timestamp and a page-local round sequence, not
+the inspected URL or a stored job ID. CSV includes UTF-8 BOM for Thai spreadsheets.
 
 ## PageSpeed Insights
 

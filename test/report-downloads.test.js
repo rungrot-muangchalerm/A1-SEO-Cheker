@@ -27,7 +27,12 @@ test('manual JSON contains the entire actual API round, independent of issue fil
   assert.equal(await page.locator('#export-button').isDisabled(), true);
   assert.equal(await page.locator('#export-json-button').isDisabled(), false);
   const downloaded = await readDownload(page, '#export-json-button');
-  assert.deepEqual(JSON.parse(downloaded.text), original);
+  const parsed = JSON.parse(downloaded.text);
+  assert.equal(parsed.export.format, 'seo-checker-json');
+  assert.equal(parsed.export.scope, 'entire-round');
+  assert.ok(Number.isFinite(Date.parse(parsed.export.exportedAt)));
+  delete parsed.export;
+  assert.deepEqual(parsed, original);
   assert.equal(JSON.parse(downloaded.text).pages[0].html, bad);
   assert.equal(JSON.parse(downloaded.text).lighthouse.categories[0].displayScore, 72);
   assert.ok(JSON.parse(downloaded.text).notChecked.length > 0);
@@ -49,4 +54,23 @@ test('zero-issue rounds still export JSON; exported HTML is inert text and never
   assert.deepEqual(errors, []);
 });
 
-module.exports = { readDownload };
+test('CSV includes round times/schema/filters and filenames separate rounds even when a fixture reuses the same timestamp', async (t) => {
+  const first = report('https://fixture.example/first', bad);
+  const second = report('https://fixture.example/second', bad);
+  second.completedAt = first.completedAt;
+  const { page, errors } = await frontend(t);
+  await page.route('**/api/audits', route => route.fulfill({ json: route.request().postDataJSON().url === first.requestedUrl ? first : second }));
+  await scan(page, first.requestedUrl);
+  await page.locator('#issue-search').fill('image-alt');
+  const csv = await readDownload(page, '#export-button');
+  for (const value of ['reportFormat', 'schemaVersion', 'reportStartedAt', 'reportCompletedAt', 'exportedAt', 'filterQuery',
+    first.startedAt, first.completedAt, 'seo-checker-issues-csv', 'image-alt']) assert.ok(csv.text.includes('"' + value + '"'));
+  const firstJson = await readDownload(page, '#export-json-button');
+  await scan(page, second.requestedUrl);
+  const secondJson = await readDownload(page, '#export-json-button');
+  assert.notEqual(firstJson.filename, secondJson.filename);
+  assert.match(firstJson.filename, /^seo-report-\d{4}-\d{2}-\d{2}T[\w-]+-round-\d+\.json$/);
+  assert.match(csv.filename, /^seo-issues-\d{4}-\d{2}-\d{2}T[\w-]+-round-\d+\.csv$/);
+  assert.ok(!csv.filename.includes('fixture.example'));
+  assert.deepEqual(errors, []);
+});
