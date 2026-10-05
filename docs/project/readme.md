@@ -21,6 +21,8 @@ and data modules. Do not add audit history or persistence.
 - Audit responses, errors, and unknown-report routes use `Cache-Control: no-store`.
   An audit-scoped error middleware handles malformed JSON without logging input.
   The original entry point only adds the middleware's error hook after its router.
+- Disconnecting the client aborts DNS waiting and in-flight upstream requests;
+  completed or cancelled requests remove their abort and response listeners.
 
 ## Run
 
