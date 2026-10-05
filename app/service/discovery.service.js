@@ -46,7 +46,7 @@ module.exports = {
       const remainingMs = limits.timeoutMs - (Date.now() - started);
       if (remainingMs <= 0) { limitReached = true; skip({ url: url.href, kind: 'sitemap', reason: 'sitemap-deadline' }); continue; }
       try {
-        const response = await website.fetchSitemap(url.href, { signal: options.signal, timeoutMs: Math.min(5000, remainingMs) });
+        const response = await website.fetchSitemap(url.href, { signal: options.signal, timeoutMs: Math.min(5000, remainingMs), scopeOrigin: origin });
         options.signal?.throwIfAborted();
         seen.add(response.finalUrl);
         const evidence = { url: url.href, finalUrl: response.finalUrl, httpStatus: response.status, bytes: response.bytes, redirects: response.redirects,

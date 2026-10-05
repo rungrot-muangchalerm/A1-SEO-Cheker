@@ -70,14 +70,14 @@ test('rate limiting, server failures and DNS errors remain unknown without cache
 
 test('redirects retain the original robots origin and cannot access private destinations', async (t) => {
   stubTransport(t, [
-    { status: 302, headers: { location: 'https://cdn.example/shared-robots.txt' } },
+    { status: 302, headers: { location: '/shared-robots.txt' } },
     { html: 'User-agent: *\nDisallow: /blocked' },
     { status: 302, headers: { location: 'http://127.0.0.1/private' } }
   ]);
   const result = await robots.load('https://site.example/blocked');
   assert.equal(result.googlebotAllowed, false);
-  assert.equal(result.finalUrl, 'https://cdn.example/shared-robots.txt');
-  assert.equal((await robots.load('https://site.example/')).reason, 'PRIVATE_TARGET');
+  assert.equal(result.finalUrl, 'https://site.example/shared-robots.txt');
+  assert.equal((await robots.load('https://site.example/')).reason, 'OUTSIDE_SCOPE');
 });
 
 test('size, time and rule complexity are bounded and do not fabricate allowed crawling', async (t) => {

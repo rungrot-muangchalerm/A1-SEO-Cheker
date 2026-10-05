@@ -87,7 +87,7 @@ test('sitemap failures remain unavailable and private redirects are blocked by p
   const result = await auditService.create({ url: 'https://site.example/', discover: true });
   assert.equal(result.ok, true);
   assert.deepEqual(result.data.discovery.urls.map((entry) => entry.url), ['https://site.example/', 'https://site.example/registration?session=2']);
-  assert.equal(result.data.discovery.sitemaps[0].reason, 'PRIVATE_TARGET');
+  assert.equal(result.data.discovery.sitemaps[0].reason, 'OUTSIDE_SCOPE');
   assert.equal(result.data.discovery.sitemaps[1].reason, 'SITEMAP_INVALID_XML');
   assert.ok(transport.calls.every((entry) => !entry.url.includes('127.0.0.1')));
   assert.equal(result.data.notChecked.filter((entry) => entry.id === 'sitemap-discovery').length, 2);

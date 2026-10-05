@@ -5,7 +5,7 @@ module.exports = {
   load: async (pageUrl, options = {}) => {
     const url = new URL('/robots.txt', pageUrl).href;
     let response;
-    try { response = await website.fetchRobots(url, { signal: options.signal }); }
+    try { response = await website.fetchRobots(url, { signal: options.signal, scopeOrigin: new URL(pageUrl).origin }); }
     catch (error) {
       if (options.signal?.aborted) throw error;
       return { url, status: 'not-checked', reason: error instanceof website.WebsiteError ? error.code : 'ROBOTS_FAILED' };

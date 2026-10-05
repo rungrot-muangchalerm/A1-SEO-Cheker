@@ -16,6 +16,11 @@ and data modules. Do not add audit history or persistence.
   Limits: 200 candidates, 5 sitemap files including index children, 200 detailed
   skips, 1,000 XML entries per file, depth 20, and a 10-second discovery deadline;
   sitemap transport is at most 5 seconds and 512 KiB per file.
+  Scope uses the final requested page's exact origin (scheme, host and port), not
+  a hostname substring. Follow-up robots/sitemap requests check that origin before
+  DNS and on every redirect. Subdomains and cross-scheme URLs are outside scope;
+  cross-origin redirects are disclosed as unavailable, never fetched implicitly.
+  The explicitly requested initial URL can redirect to establish the final origin.
   Saxes strictly validates XML/namespaces/entities before Fast XML Parser extracts
   data. Real DTDs and non-UTF-8 declarations are rejected, not harmless comments.
   Wrong XML, MIME, private redirects

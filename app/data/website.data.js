@@ -192,6 +192,7 @@ async function fetchResource(value, options, kind) {
     const seen = new Set();
     for (; ;) {
       controller.signal.throwIfAborted();
+      if (options.scopeOrigin && url.origin !== options.scopeOrigin) throw failure('OUTSIDE_SCOPE');
       if (seen.has(url.href)) throw failure('REDIRECT_LOOP');
       seen.add(url.href);
       const addresses = await resolvePublicTarget(url, controller.signal);
