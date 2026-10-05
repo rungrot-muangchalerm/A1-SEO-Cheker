@@ -2,6 +2,7 @@ const websiteData = require('../data/website.data');
 const auditModel = require('../model/audit.model');
 const htmlService = require('./html.service');
 const seoService = require('./seo.service');
+const robotsService = require('./robots.service');
 
 module.exports = {
   create: async (body, options = {}) => {
@@ -13,6 +14,8 @@ module.exports = {
       const page = await websiteData.fetchPage(body.url, options);
       options.signal?.throwIfAborted();
       page.metadata = htmlService.parse(page);
+      page.robots = await robotsService.load(page.finalUrl, options);
+      options.signal?.throwIfAborted();
       page.checks = seoService.analyze(page);
       return { ok: true, data: auditModel.createReport(page, startedAt) };
     } catch (error) {

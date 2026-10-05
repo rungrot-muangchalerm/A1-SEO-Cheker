@@ -19,6 +19,14 @@ and data modules. Do not add audit history or persistence.
   Each check separates facts from
   required owner confirmation; noindex is not assumed to be unintentional.
   Empty issues must not be read as a complete passing audit.
+- Image checks distinguish missing alt from explicit empty alt and do not evaluate
+  whether a description matches the image. The robots.txt parser checks Googlebot
+  and SEOChecker independently, reports matching lines, and never treats crawl
+  blocking as noindex. A 4xx robots response except 429 means absent rules; 429,
+  5xx and network failures remain unknown without pretending to know Google's cache.
+- robots.txt uses the same protected, bounded transport: 5 seconds, 500 KiB,
+  5 redirects, UTF-8. Parsing is capped at 2,000 lines, 2,048 characters per line,
+  and a conservative wildcard work budget; exceeding a cap means not checked.
 - There is no audit ID, saved report, database write, cookie, or resume endpoint.
 - The frontend still uses mockup data until TODO round 3.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public

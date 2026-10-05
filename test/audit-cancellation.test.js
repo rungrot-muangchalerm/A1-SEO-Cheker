@@ -110,6 +110,7 @@ test('HTTP client disconnect aborts its audit without sending a later report', a
 });
 
 test('normal completion removes the response close listener', async (t) => {
+  t.mock.method(website, 'fetchRobots', async () => { throw new website.WebsiteError('DNS_FAILED'); });
   t.mock.method(website, 'fetchPage', async () => ({
     requestedUrl: 'https://public.example/', finalUrl: 'https://public.example/', status: 200,
     html: '<title>Normal</title>', headers: {}, bytes: 21, redirects: []

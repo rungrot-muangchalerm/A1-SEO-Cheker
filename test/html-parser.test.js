@@ -56,7 +56,10 @@ test('bounds extracted elements and evidence while disclosing truncation', () =>
 });
 
 test('actual service response contains metadata extracted from fetched bytes', async (t) => {
-  stubTransport(t, [{ html: '<title>Fetched title</title><meta name="description" content="Fetched description"><h1>Fetched heading</h1>' }]);
+  stubTransport(t, [
+    { html: '<title>Fetched title</title><meta name="description" content="Fetched description"><h1>Fetched heading</h1>' },
+    { status: 404 }
+  ]);
   const result = await auditService.create({ url: 'https://page.example/' });
   assert.equal(result.ok, true);
   assert.equal(result.data.pages[0].metadata.title, 'Fetched title');

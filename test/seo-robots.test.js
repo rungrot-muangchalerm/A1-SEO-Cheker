@@ -66,6 +66,7 @@ test('truncated meta cannot produce a fully checked pass', () => {
 });
 
 test('service publishes real checks and issue counters without requiring every page to index', async (t) => {
+  t.mock.method(website, 'fetchRobots', async () => { throw new website.WebsiteError('DNS_FAILED'); });
   t.mock.method(website, 'fetchPage', async () => ({ ...page('<meta name="robots" content="noindex">', {}, 404), requestedUrl: 'https://site.example/page' }));
   const result = await audit.create({ url: 'https://site.example/page' });
   assert.equal(result.ok, true);

@@ -16,6 +16,7 @@ async function startApi(t) {
 }
 
 test('POST returns data for this request only; no stored-report GET exists', async (t) => {
+  t.mock.method(websiteData, 'fetchRobots', async () => { throw new websiteData.WebsiteError('DNS_FAILED'); });
   let calls = 0;
   t.mock.method(websiteData, 'fetchPage', async (url) => ({
     requestedUrl: url, finalUrl: url, status: 200, headers: { 'content-type': 'text/html' },

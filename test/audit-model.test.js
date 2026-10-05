@@ -10,6 +10,7 @@ const page = {
 };
 
 test('report distinguishes fetched evidence from analysis that was not performed', async (t) => {
+  t.mock.method(websiteData, 'fetchRobots', async () => { throw new websiteData.WebsiteError('DNS_FAILED'); });
   t.mock.method(websiteData, 'fetchPage', async () => ({ ...page }));
   const result = await auditService.create({ url: page.requestedUrl });
   assert.equal(result.ok, true);
@@ -20,7 +21,7 @@ test('report distinguishes fetched evidence from analysis that was not performed
   assert.deepEqual(report.coverage, { discovered: 1, fetched: 1, analyzed: 1, skipped: [], limitReached: false });
   assert.equal(report.pages.length, 1);
   assert.equal(report.pages[0].analysisStatus, 'partial');
-  assert.equal(report.pages[0].checks.length, 7);
+  assert.equal(report.pages[0].checks.length, 8);
   assert.ok(report.pages[0].checks.slice(0, 3).every((entry) => entry.outcome === 'pass'));
   assert.equal(report.pages[0].html, page.html);
   assert.equal(report.notChecked[0].id, 'seo-analysis');

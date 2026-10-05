@@ -73,7 +73,7 @@ async function resolvePublicTarget(url, signal) {
   return addresses;
 }
 
-function requestPage(url, addresses, signal, maxBytes) {
+function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
   return new Promise((resolve, reject) => {
     const transport = url.protocol === 'https:' ? https : http;
     // Pin the vetted DNS records to this socket so DNS cannot change between validation and connection.
@@ -88,7 +88,7 @@ function requestPage(url, addresses, signal, maxBytes) {
       },
       headers: {
         'User-Agent': 'SEOChecker/0.1',
-        Accept: 'text/html, application/xhtml+xml',
+        Accept: kind === 'robots' ? 'text/plain, text/html;q=0.5' : 'text/html, application/xhtml+xml',
         'Accept-Encoding': 'identity'
       }
     }, (response) => {
@@ -99,12 +99,16 @@ function requestPage(url, addresses, signal, maxBytes) {
         if (!headers.location) return reject(failure('INVALID_REDIRECT'));
         return resolve({ status, headers, redirect: headers.location });
       }
+      if (kind === 'robots' && (status < 200 || status >= 300)) {
+        response.destroy();
+        return resolve({ status, headers, rawHeaders: response.rawHeaders || [], text: '', encoding: 'UTF-8', bytes: 0, receivedBytes: 0 });
+      }
       let mediaType;
-      try { mediaType = new MIMEType(headers['content-type'] || ''); } catch {
+      try { mediaType = new MIMEType(kind === 'robots' ? 'text/plain; charset=utf-8' : headers['content-type'] || ''); } catch {
         response.destroy();
         return reject(failure('UNSUPPORTED_TYPE'));
       }
-      if (!['text/html', 'application/xhtml+xml'].includes(mediaType.essence)) {
+      if (kind !== 'robots' && !['text/html', 'application/xhtml+xml'].includes(mediaType.essence)) {
         response.destroy();
         return reject(failure('UNSUPPORTED_TYPE'));
       }
@@ -151,12 +155,13 @@ function requestPage(url, addresses, signal, maxBytes) {
           const charset = mediaType.params.get('charset');
           if (charset) new TextDecoder(charset);
           const buffer = Buffer.concat(chunks);
-          const encoding = sniffEncoding(buffer, {
+          const encoding = kind === 'robots' ? 'UTF-8' : sniffEncoding(buffer, {
             transportLayerEncodingLabel: charset,
             defaultEncoding: mediaType.essence === 'application/xhtml+xml' ? 'UTF-8' : undefined
           });
-          const html = new TextDecoder(encoding).decode(buffer);
-          resolve({ status, headers, rawHeaders: response.rawHeaders || [], html, encoding, bytes: size, receivedBytes });
+          const content = new TextDecoder(encoding).decode(buffer);
+          resolve({ status, headers, rawHeaders: response.rawHeaders || [],
+            ...(kind === 'robots' ? { text: content } : { html: content }), encoding, bytes: size, receivedBytes });
         } catch { reject(failure('UNSUPPORTED_CHARSET')); }
       });
       if (decoder) response.pipe(decoder);
@@ -166,37 +171,42 @@ function requestPage(url, addresses, signal, maxBytes) {
   });
 }
 
+async function fetchResource(value, options, kind) {
+  const controller = new AbortController();
+  const cancel = () => controller.abort(failure('CANCELLED'));
+  if (options.signal?.aborted) cancel();
+  else options.signal?.addEventListener('abort', cancel, { once: true });
+  const timer = setTimeout(() => controller.abort(failure('TIMEOUT')), options.timeoutMs || limits.timeoutMs);
+  const maxBytes = options.maxBytes || limits.maxBytes;
+  const maxRedirects = options.maxRedirects ?? limits.maxRedirects;
+  try {
+    let url = parseUrl(value);
+    const requestedUrl = url.href;
+    const redirects = [];
+    const seen = new Set();
+    for (;;) {
+      controller.signal.throwIfAborted();
+      if (seen.has(url.href)) throw failure('REDIRECT_LOOP');
+      seen.add(url.href);
+      const addresses = await resolvePublicTarget(url, controller.signal);
+      const result = await requestPage(url, addresses, controller.signal, maxBytes, kind);
+      if (!result.redirect) return { requestedUrl, finalUrl: url.href, redirects, ...result };
+      if (redirects.length >= maxRedirects) throw failure('TOO_MANY_REDIRECTS');
+      let next;
+      try { next = new URL(result.redirect, url); } catch { throw failure('INVALID_REDIRECT'); }
+      redirects.push({ url: url.href, status: result.status, destination: next.href });
+      url = parseUrl(next.href);
+    }
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', cancel);
+  }
+}
+
 module.exports = {
   limits, WebsiteError, parseUrl, isPublicIp, resolvePublicTarget, requestPage,
-  fetchPage: async (value, options = {}) => {
-    const controller = new AbortController();
-    const cancel = () => controller.abort(failure('CANCELLED'));
-    if (options.signal?.aborted) cancel();
-    else options.signal?.addEventListener('abort', cancel, { once: true });
-    const timer = setTimeout(() => controller.abort(failure('TIMEOUT')), options.timeoutMs || limits.timeoutMs);
-    const maxBytes = options.maxBytes || limits.maxBytes;
-    const maxRedirects = options.maxRedirects ?? limits.maxRedirects;
-    try {
-      let url = parseUrl(value);
-      const requestedUrl = url.href;
-      const redirects = [];
-      const seen = new Set();
-      for (;;) {
-        controller.signal.throwIfAborted();
-        if (seen.has(url.href)) throw failure('REDIRECT_LOOP');
-        seen.add(url.href);
-        const addresses = await resolvePublicTarget(url, controller.signal);
-        const result = await requestPage(url, addresses, controller.signal, maxBytes);
-        if (!result.redirect) return { requestedUrl, finalUrl: url.href, redirects, ...result };
-        if (redirects.length >= maxRedirects) throw failure('TOO_MANY_REDIRECTS');
-        let next;
-        try { next = new URL(result.redirect, url); } catch { throw failure('INVALID_REDIRECT'); }
-        redirects.push({ url: url.href, status: result.status, destination: next.href });
-        url = parseUrl(next.href);
-      }
-    } finally {
-      clearTimeout(timer);
-      options.signal?.removeEventListener('abort', cancel);
-    }
-  }
+  fetchPage: (value, options = {}) => fetchResource(value, options, 'html'),
+  fetchRobots: (value, options = {}) => fetchResource(value, {
+    timeoutMs: 5000, maxBytes: 500 * 1024, maxRedirects: 5, ...options
+  }, 'robots')
 };
