@@ -15,10 +15,14 @@ and data modules. Do not add audit history or persistence.
   BOM, response charset, and meta charset. Element/evidence limits are disclosed.
 - Status is currently `partial`: HTTP status, Googlebot meta/header rules,
   missing title/description, and canonical declaration validity are checked,
-  but other SEO rules are still pending. Canonical reads HTML and HTTP Link headers.
-  Each check separates facts from
+  alongside image alt and robots.txt crawl rules (eight initial-page rules).
+  Canonical reads HTML and HTTP Link headers. Each check separates facts from
   required owner confirmation; noindex is not assumed to be unintentional.
   Empty issues must not be read as a complete passing audit.
+- `notChecked` identifies unavailable rules and unexamined rendered content,
+  Lighthouse, site-wide crawling, and canonical target analysis. Page analysis can
+  complete for initial-page rules while the overall report remains partial.
+  See [the check contract](AUDIT-SCHEMA.md) for outcomes and evidence semantics.
 - Image checks distinguish missing alt from explicit empty alt and do not evaluate
   whether a description matches the image. The robots.txt parser checks Googlebot
   and SEOChecker independently, reports matching lines, and never treats crawl
@@ -48,6 +52,9 @@ node --test
 ```
 
 Node.js 20.18.1 or newer is required by the HTML parser.
+Focused test discovery is available with `node --test test/*.test.js`. The suite
+includes good/bad HTML fixtures served through real HTTP, changing bytes on the
+same URL, and changing only response headers through the framework API routes.
 
 The upstream framework's dev dependencies currently produce three high-severity
 `npm audit` entries in the nodemon dependency chain. They have been left unchanged
