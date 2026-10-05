@@ -125,6 +125,14 @@ Console errors (including CSP refusals) are counted without retaining/logging th
 messages. A real infinite-script deadline and pending-asset cancellation are
 covered by browser-backed tests; both close the browser and transport work.
 
+## Manual Downloads
+
+Manual JSON download serializes the entire current report, independently of issue
+filters. It includes original and any rendered source proof as JSON strings, not
+an executable HTML document. Even a zero-issue report is downloadable; no report
+means no export. Generation uses a browser Blob only on an explicit click, never
+a backend file/job/download URL. Refresh/new round clears the source report.
+
 ## PageSpeed Insights
 
 Explicit `pagespeed: true` requests four Lighthouse categories from the fixed

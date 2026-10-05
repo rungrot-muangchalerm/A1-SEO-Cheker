@@ -168,6 +168,7 @@
 
   function renderSummary() {
     if (!state.report) return;
+    byId('export-json-button').disabled = false;
     const summary = state.report.summary;
     byId("summary-pages").textContent = summary.pages;
     ["critical", "warning", "review"].forEach((level) => {
@@ -409,6 +410,19 @@
     return '"' + text.replace(/"/g, '""') + '"';
   }
 
+  function downloadBlob(content, type, filename) {
+    const objectUrl = URL.createObjectURL(new Blob(content, { type }));
+    downloadUrls.add(objectUrl);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    try { link.click(); } finally {
+      link.remove();
+      setTimeout(() => { URL.revokeObjectURL(objectUrl); downloadUrls.delete(objectUrl); }, 1000);
+    }
+  }
+
   function clearRound(resetInput = false) {
     ++state.round;
     state.controller?.abort();
@@ -443,7 +457,7 @@
     byId('crawl-limit').hidden = true;
     byId('progress-limit').hidden = true;
     ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
-    ['export-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
+    ['export-button', 'export-json-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
     byId('scan-icon').classList.remove('d-none');
     byId('scan-button').disabled = false;
     byId('scan-button-label').textContent = '\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c';
@@ -500,16 +514,12 @@
     if (!issues.length) return;
     const fields = ['ruleId', 'ruleVersion', 'outcome', 'severity', 'category', 'title', 'urls', 'found', 'impact', 'steps', 'evidence', 'references'];
     const csv = [fields.map(csvCell).join(','), ...issues.map((issue) => fields.map((field) => csvCell(issue[field])).join(','))].join('\r\n');
-    const objectUrl = URL.createObjectURL(new Blob(['\ufeff', csv, '\r\n'], { type: 'text/csv;charset=utf-8' }));
-    downloadUrls.add(objectUrl);
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = 'seo-issues.csv';
-    document.body.appendChild(link);
-    try { link.click(); } finally {
-      link.remove();
-      setTimeout(() => { URL.revokeObjectURL(objectUrl); downloadUrls.delete(objectUrl); }, 1000);
-    }
+    downloadBlob(['\ufeff', csv, '\r\n'], 'text/csv;charset=utf-8', 'seo-issues.csv');
+  });
+
+  byId('export-json-button').addEventListener('click', () => {
+    if (!state.report || state.busy) return;
+    downloadBlob([JSON.stringify(state.report, null, 2), '\n'], 'application/json;charset=utf-8', 'seo-report.json');
   });
 
   byId("scan-form").addEventListener("submit", (event) => {
