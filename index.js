@@ -27,6 +27,7 @@ require('./tools/live_server.js')(app);
 
 // Main router (frontend + API)
 app.use(require('./app/routes/router.js'));
+app.use(require('./app/middleware/audit.middleware.js').error);
 
 app.listen(port, () => {
   console.log(`App listening at http://localhost:${port}`);

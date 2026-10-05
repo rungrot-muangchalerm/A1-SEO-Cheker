@@ -11,6 +11,9 @@ module.exports = {
       const result = await auditService.create(req.body, { signal: controller.signal });
       if (controller.signal.aborted || res.destroyed) return;
       if (!result.ok) {
+        if (result.code === 'INTERNAL_ERROR') {
+          return res.status(500).json({ schemaVersion: auditModel.version, status: 'failed', error: 'INTERNAL_ERROR', message: '\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08' });
+        }
         if (['INVALID_URL', 'URL_CREDENTIALS', 'PORT_NOT_ALLOWED', 'PRIVATE_TARGET'].includes(result.code)) {
           return res.status(400).json({ schemaVersion: auditModel.version, status: 'failed', error: result.code, message: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e43\u0e0a\u0e49 URL HTTP/HTTPS \u0e2a\u0e32\u0e18\u0e32\u0e23\u0e13\u0e30 \u0e1e\u0e2d\u0e23\u0e4c\u0e15 80 \u0e2b\u0e23\u0e37\u0e2d 443 \u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e43\u0e2a\u0e48\u0e23\u0e2b\u0e31\u0e2a\u0e1c\u0e48\u0e32\u0e19' });
         }

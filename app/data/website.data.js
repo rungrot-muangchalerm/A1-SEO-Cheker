@@ -9,10 +9,16 @@ const zlib = require('node:zlib');
 const limits = Object.freeze({ timeoutMs: 15000, maxBytes: 2 * 1024 * 1024, maxRedirects: 5 });
 const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 
+class WebsiteError extends Error {
+  constructor(code) {
+    super(code);
+    this.name = 'WebsiteError';
+    this.code = code;
+  }
+}
+
 function failure(code) {
-  const error = new Error(code);
-  error.code = code;
-  return error;
+  return new WebsiteError(code);
 }
 
 function parseUrl(value) {
@@ -153,7 +159,7 @@ function requestPage(url, addresses, signal, maxBytes) {
 }
 
 module.exports = {
-  limits, parseUrl, isPublicIp, resolvePublicTarget, requestPage,
+  limits, WebsiteError, parseUrl, isPublicIp, resolvePublicTarget, requestPage,
   fetchPage: async (value, options = {}) => {
     const controller = new AbortController();
     const cancel = () => controller.abort(failure('CANCELLED'));

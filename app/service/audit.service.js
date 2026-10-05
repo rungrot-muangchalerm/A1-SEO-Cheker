@@ -11,7 +11,7 @@ module.exports = {
       const page = await websiteData.fetchPage(body.url, options);
       return { ok: true, data: auditModel.createReport(page, startedAt) };
     } catch (error) {
-      return { ok: false, code: error.code || 'NETWORK_ERROR' };
+      return { ok: false, code: error instanceof websiteData.WebsiteError ? error.code : 'INTERNAL_ERROR' };
     }
   }
 };

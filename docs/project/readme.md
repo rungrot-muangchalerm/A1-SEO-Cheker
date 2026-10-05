@@ -18,6 +18,9 @@ and data modules. Do not add audit history or persistence.
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and
   decompressed bytes. Redirect hops share the same deadline.
+- Audit responses, errors, and unknown-report routes use `Cache-Control: no-store`.
+  An audit-scoped error middleware handles malformed JSON without logging input.
+  The original entry point only adds the middleware's error hook after its router.
 
 ## Run
 
