@@ -4,7 +4,7 @@ module.exports = {
   version,
   createReport: (page, startedAt, discovery, crawl, siteChecks = []) => {
     const pages = (crawl?.pages || [page]).map((item) => {
-      const checks = (item.checks || []).map((entry) => crawl ? { ...entry, id: entry.ruleId + ':' + entry.url } : entry);
+      const checks = (item.checks || []).map((entry) => crawl ? { ...entry, id: entry.id + ':' + entry.url } : entry);
       return { ...item, fetchStatus: 'success', analysisStatus: !checks.length ? 'not-checked' :
         checks.some((entry) => entry.outcome === 'not-checked' || entry.complete === false) ? 'partial' : 'complete', checks };
     });
@@ -14,6 +14,8 @@ module.exports = {
     const notChecked = unavailable.map((entry) => ({
       id: entry.ruleId, url: entry.url, reason: entry.reason || 'incomplete', message: entry.found
     }));
+    for (const item of pages.filter((entry) => entry.metadata?.jsonLd?.count)) notChecked.push({ id: 'jsonld-semantics', url: item.finalUrl,
+      reason: 'outside-scope', message: '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 context/\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e21\u0e32\u0e22 JSON-LD \u0e2b\u0e23\u0e37\u0e2d\u0e04\u0e38\u0e13\u0e2a\u0e21\u0e1a\u0e31\u0e15\u0e34 rich results' });
     notChecked.push(
       { id: 'javascript-render', url: page.finalUrl, reason: 'not-implemented', message: '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e23\u0e27\u0e08\u0e40\u0e19\u0e37\u0e49\u0e2d\u0e2b\u0e32\u0e2b\u0e25\u0e31\u0e07 JavaScript \u0e17\u0e33\u0e07\u0e32\u0e19' },
       { id: 'lighthouse', url: page.finalUrl, reason: 'not-requested', message: '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e40\u0e23\u0e35\u0e22\u0e01 engine \u0e15\u0e23\u0e27\u0e08\u0e04\u0e30\u0e41\u0e19\u0e19 Lighthouse' },

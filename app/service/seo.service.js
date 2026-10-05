@@ -1,4 +1,5 @@
 const robotsDirectives = require('./robots-directives.service');
+const structuredData = require('./structured-data.service');
 
 const robotsReference = 'https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag';
 
@@ -138,7 +139,7 @@ module.exports = {
         '\u0e2d\u0e48\u0e32\u0e19 meta \u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a \u0e08\u0e36\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49' : '\u0e44\u0e21\u0e48\u0e1e\u0e1a nofollow \u0e2b\u0e23\u0e37\u0e2d none \u0e43\u0e19 HTML \u0e41\u0e25\u0e30 headers \u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e14\u0e49',
       'nofollow \u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e32\u0e21\u0e25\u0e34\u0e07\u0e01\u0e4c \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e2b\u0e49\u0e32\u0e21 index \u0e02\u0e2d\u0e07\u0e2b\u0e19\u0e49\u0e32\u0e19\u0e35\u0e49',
       ['\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32\u0e40\u0e1b\u0e47\u0e19\u0e02\u0e49\u0e2d\u0e08\u0e33\u0e01\u0e31\u0e14\u0e17\u0e35\u0e48\u0e15\u0e31\u0e49\u0e07\u0e43\u0e08\u0e43\u0e0a\u0e49', '\u0e16\u0e49\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e43\u0e2b\u0e49 Googlebot \u0e04\u0e49\u0e19\u0e1e\u0e1a\u0e25\u0e34\u0e07\u0e01\u0e4c \u0e43\u0e2b\u0e49\u0e15\u0e23\u0e27\u0e08 meta \u0e41\u0e25\u0e30 X-Robots-Tag'], evidence, robotsReference);
-    const checks = [http, index, follow, ...metadataChecks(page), imageCheck(page), crawlCheck(page)];
+    const checks = [http, index, follow, ...metadataChecks(page), imageCheck(page), crawlCheck(page), ...structuredData.analyze(page)];
     index.complete = !uncertain;
     follow.complete = !uncertain;
     for (const entry of checks) {

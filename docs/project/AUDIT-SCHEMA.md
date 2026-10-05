@@ -142,6 +142,27 @@ counts distinct affected URLs, including actually observed non-HTML resources an
 sitemap documents with invalid loc entries; `summary.pages` separately counts
 fetched HTML. The UI never creates fake page rows/detail buttons for non-HTML URLs.
 
+`pages[].metadata.jsonLd` records count, retained scripts/bytes and extraction
+coverage for initial-HTML `application/ld+json` data blocks (MIME case/parameters
+normalized). Content remains raw script text; HTML entities are not decoded into
+JSON quotes and JavaScript is never executed. Limits are 50 blocks, 128 KiB UTF-8
+per block, 512 KiB retained JSON per page, depth 64 and 10,000 inspected JSON values.
+Unavailable/oversized content is null with a reason, never a truncated string
+passed to the JSON parser. Source snippets keep the existing parser/location cap.
+
+`jsonld-syntax` uses native `JSON.parse()` and reports syntax/observed top-level
+shape only. Scalar JSON is valid syntax but asks for document-shape confirmation.
+Literal `@type` strings are observations, not expanded/validated Schema.org types;
+context definitions are excluded from those type observations. A syntax pass is
+not JSON-LD semantic validation or rich-result eligibility. `jsonld-semantics` in
+`notChecked` discloses that distinction. No remote context/import/ID/src is loaded,
+no eval/graph processor is run, and parser exceptions never expose raw messages.
+`jsonld-extraction` discloses omitted blocks/byte limits; structure limits remain
+not checked even if syntax is valid. Absence is count zero, not a mandatory failure.
+Block IDs include their 1-based script index, preserved when adding crawl page URLs
+so two blocks on one page cannot select each other's evidence. HTML evidence is
+always escaped in the checker; CSV remains manual and current-round only.
+
 `crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
 time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes
 crawl and discovery limits. Even an exhausted discovered queue does not establish

@@ -6,6 +6,15 @@ and data modules. Do not add audit history or persistence.
 
 ## Current Implementation
 
+- Initial HTML JSON-LD data blocks are read without execution or remote context
+  fetching. Native `JSON.parse()` checks syntax; malformed JSON has real script
+  location/snippet evidence. Literal type strings/top-level shape are observations,
+  not semantic Schema.org validation or rich-result guarantees. Missing JSON-LD
+  is not mandatory failure. Context/semantics/rich-result checks stay explicitly
+  unavailable. Script count, UTF-8 bytes, total retained bytes, depth and node
+  limits disclose incomplete work, never validate truncated prefixes. Multiple
+  blocks keep distinct IDs within one page, including during a crawl.
+
 - Bounded crawling compares parsed sitemap urlset entries with actual HTTP,
   redirect and target noindex evidence. Nested index files are distinguished from
   page URL entries. Findings identify sitemap files and loc entry indices with

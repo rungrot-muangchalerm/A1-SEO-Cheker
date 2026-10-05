@@ -1,5 +1,6 @@
 const cheerio = require('cheerio');
 const LinkHeader = require('http-link-header');
+const structuredData = require('./structured-data.service');
 
 const maxElements = 5000;
 const maxSourceLength = 4096;
@@ -35,6 +36,18 @@ module.exports = {
     const headingNodes = $('h1, h2, h3, h4, h5, h6');
     const linkNodes = $('a[href]');
     const imageNodes = $('img');
+    const jsonLdNodes = $('script[type]').filter((_index, element) =>
+      ($(element).attr('type') || '').split(';')[0].trim().toLowerCase() === 'application/ld+json');
+    let jsonBytes = 0;
+    const jsonScripts = jsonLdNodes.slice(0, structuredData.limits.maxScripts).toArray().map((element, index) => {
+      const content = $(element).text();
+      const bytes = Buffer.byteLength(content);
+      const contentComplete = bytes <= structuredData.limits.maxScriptBytes && jsonBytes + bytes <= structuredData.limits.maxTotalBytes;
+      if (contentComplete) jsonBytes += bytes;
+      return { index: index + 1, bytes, content: contentComplete ? content : null, contentComplete,
+        ...(!contentComplete ? { reason: bytes > structuredData.limits.maxScriptBytes ? 'jsonld-script-size' : 'jsonld-total-size' } : {}),
+        ...source(element, 'script[type="application/ld+json"]') };
+    });
     const limited = (nodes, callback) => nodes.slice(0, maxElements).toArray().map(callback);
     const meta = limited(metaNodes, (element) => ({
       name: ($(element).attr('name') || '').trim().toLowerCase(),
@@ -73,6 +86,8 @@ module.exports = {
       title: titles[0]?.value || '', titles,
       description: descriptions[0]?.content.trim() || '', descriptions,
       lang: $('html').attr('lang') || '', baseUrl, meta, canonical: canonical.slice(0, maxElements), linkHeaderError, counts,
+      jsonLd: { count: jsonLdNodes.length, scripts: jsonScripts, bytes: jsonBytes,
+        complete: jsonLdNodes.length === jsonScripts.length && jsonScripts.every((entry) => entry.contentComplete) },
       truncated: Object.keys(counts).filter((key) => counts[key] > maxElements),
       headings: limited(headingNodes, (element) => ({
         level: Number(element.tagName.slice(1)), value: text($(element).text()), ...source(element, element.tagName)
