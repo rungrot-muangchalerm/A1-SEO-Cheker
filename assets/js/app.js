@@ -209,6 +209,10 @@
       ['\u0e40\u0e27\u0e25\u0e32\u0e08\u0e32\u0e01 engine', lighthouse.fetchTime], ['Lighthouse', lighthouse.engine?.version],
       ['Browser', lighthouse.engine?.userAgent], ['Form factor', lighthouse.mode?.formFactor], ['Throttling', lighthouse.mode?.throttlingMethod]
     ].map(([label, value]) => '<dt>' + escapeHtml(label) + '</dt><dd class="mb-2 text-break">' + escapeHtml(value || unknown) + '</dd>').join('') : '');
+    byId('agentic-status').hidden = !lighthouse?.provider;
+    byId('agentic-status').textContent = lighthouse?.agentic?.status === 'completed' ?
+      'Agentic Browsing: ' + lighthouse.agentic.passed + '/' + lighthouse.agentic.total + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1c\u0e48\u0e32\u0e19' :
+      'Agentic Browsing: \u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (' + (lighthouse?.agentic?.reason || 'not-requested') + ')';
     byId('crawl-limit').hidden = !report.coverage.limitReached;
     byId('crawl-limit').textContent = report.coverage.limitReached ? limitMessage(report.crawl?.stopReason, report.crawl?.limits, report.coverage.fetched) : '';
     byId("not-checked-section").hidden = report.notChecked.length === 0;
@@ -418,6 +422,8 @@
     byId('report').setAttribute('aria-busy', 'false');
     ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
     byId('lighthouse-metadata').hidden = true;
+    byId('agentic-status').hidden = true;
+    byId('agentic-status').textContent = '';
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
       'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count', 'progress-counts', 'progress-url',

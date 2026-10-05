@@ -35,6 +35,14 @@ API รองรับการเรียกโดยไม่ใส่ key �
 - Google เป็นบริการภายนอก นโยบายการเก็บข้อมูลของ checker ไม่ใช่คำรับประกันนโยบายของ Google
 - เวลาตรวจ/รุ่น engine ที่ provider ไม่ส่งให้ถือว่าไม่มีข้อมูล ไม่ใช้เวลาหรือรุ่น browser ของ checker แทน
 
+## Agentic Browsing
+
+ใช้ผลจาก provider เท่านั้น ไม่ใช้รุ่น Chrome ที่ติดตั้งในเครื่อง checker ยืนยัน Chrome 150+ พร้อมรุ่น Lighthouse และหมวด `agentic-browsing` ที่ประกาศ `fraction` ก่อนนับ auditRefs จริง
+นับผ่านตามเกณฑ์ Lighthouse (`score >= 0.9`); error นับว่าไม่ผ่าน ส่วน manual/notApplicable/hidden ไม่เข้าตัวหาร และ informative แยกนับ ไม่มีคะแนน 100 หรือ fallback 1/2
+ถ้าหลักฐานหาย ซ้ำ เกินลิมิต หรือไม่รองรับ จะไม่แสดงสัดส่วนผ่าน
+PageSpeed API ปัจจุบันรับชื่อหมวดเพียงสี่หมวด จึงไม่ส่งชื่อ Agentic ที่ API ยังไม่รองรับ ถ้า provider ไม่คืนหมวดนี้จะแจ้ง `not-returned-by-provider` ไม่อ้างว่า engine เก่า
+ดู [Chrome scoring](https://developer.chrome.com/docs/lighthouse/agentic-browsing/scoring) และ [Lighthouse fraction implementation](https://github.com/GoogleChrome/lighthouse/blob/main/report/renderer/report-utils.js)
+
 ## การตรวจสอบที่ยังต้องทำ
 
 ทดสอบ contract, network limits, failure และ UI ด้วย fixture ได้โดยไม่ใช้ key จริง

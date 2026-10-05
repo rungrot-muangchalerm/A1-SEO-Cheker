@@ -29,6 +29,8 @@ module.exports = {
     const notChecked = unavailable.map((entry) => ({
       id: entry.ruleId, url: entry.url, reason: entry.reason || 'incomplete', message: entry.found
     }));
+    if (lighthouse?.provider && lighthouse.agentic?.status !== 'completed') notChecked.push({ id: 'agentic-browsing',
+      url: lighthouse.url, reason: lighthouse.agentic?.reason || 'provider-result-unavailable', message: 'Agentic Browsing: ' + lighthouse.url });
     for (const item of pages.filter((entry) => entry.metadata?.jsonLd?.count)) notChecked.push({ id: 'jsonld-semantics', url: item.finalUrl,
       reason: 'outside-scope', message: '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 context/\u0e04\u0e27\u0e32\u0e21\u0e2b\u0e21\u0e32\u0e22 JSON-LD \u0e2b\u0e23\u0e37\u0e2d\u0e04\u0e38\u0e13\u0e2a\u0e21\u0e1a\u0e31\u0e15\u0e34 rich results' });
     for (const item of pages.filter((entry) => entry.metadata?.openGraph?.complete === false)) notChecked.push({ id: 'open-graph', url: item.finalUrl,

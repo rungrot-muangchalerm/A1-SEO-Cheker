@@ -106,7 +106,7 @@
 - [x] feat: แยกข้อเท็จจริงว่าเนื้อหามาหลัง JavaScript ออกจากข้อสรุปว่าหน้าเข้า index ไม่ได้
 - [x] feat: เชื่อม PageSpeed Insights API ครบสี่หมวดคะแนน
 - [x] feat: ให้เลือกมือถือหรือเดสก์ท็อป และแนบ URL เวลาตรวจ รุ่น engine และโหมดที่ใช้ในรายงานรอบปัจจุบัน
-- [ ] ตรวจว่า engine รองรับ Agentic Browsing ก่อนแสดงผลจริง หมวดนี้ใช้จำนวนรายการที่ผ่าน ไม่ใช่คะแนนเต็ม 100 ดู [เอกสาร Agentic Browsing](https://developer.chrome.com/docs/lighthouse/agentic-browsing/scoring)
+- [x] feat: ตรวจ engine ก่อนแสดงสัดส่วนผ่านของ Agentic Browsing
 - [ ] เมื่อ API ไม่มีคะแนนหรือเรียกไม่สำเร็จ ให้แสดงสถานะตามจริง ไม่ใช้ 69/88/96/100 หรือ 1/2 จาก mockup แทน
 - [ ] ระบุว่าคะแนน Lighthouse เป็นผลของ URL ที่ตรวจ ไม่ใช่คะแนนรวมทั้งเว็บไซต์
 

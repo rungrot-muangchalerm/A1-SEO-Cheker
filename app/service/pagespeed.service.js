@@ -1,12 +1,13 @@
 const provider = require('../data/pagespeed.data');
 const website = require('../data/website.data');
+const agentic = require('./agentic.service');
 const labels = { performance: 'Performance', accessibility: 'Accessibility', 'best-practices': 'Best Practices', seo: 'SEO' };
 const text = (value, max = 256) => typeof value === 'string' && value.length <= max ? value : undefined;
 
 module.exports = {
   run: async (value, options = {}) => {
     const base = { provider: 'pagespeed-insights', url: value, strategy: ['mobile', 'desktop'].includes(options.strategy) ? options.strategy : 'mobile',
-      startedAt: new Date().toISOString(), categories: [] };
+      startedAt: new Date().toISOString(), categories: [], agentic: { status: 'not-checked', reason: 'provider-result-unavailable' } };
     const response = await provider.run(value, options);
     const completedAt = new Date().toISOString();
     if (response.status !== 'received') return { ...base, ...response, completedAt };
@@ -29,7 +30,7 @@ module.exports = {
     if (['mobile', 'desktop'].includes(formFactor) && formFactor !== base.strategy) return { ...base, completedAt,
       status: 'not-checked', reason: 'PAGESPEED_MODE_MISMATCH' };
     const result = { ...base, completedAt, status: categories.every((entry) => entry.status === 'completed') ? 'completed' : 'partial',
-      requestedUrl, finalUrl, categories, fetchTime: text(lhr.fetchTime) && Number.isFinite(Date.parse(lhr.fetchTime)) ? lhr.fetchTime : undefined,
+      requestedUrl, finalUrl, categories, agentic: agentic.analyze(lhr), fetchTime: text(lhr.fetchTime) && Number.isFinite(Date.parse(lhr.fetchTime)) ? lhr.fetchTime : undefined,
       engine: { name: 'Lighthouse', version: text(lhr.lighthouseVersion),
         userAgent: text(lhr.environment?.hostUserAgent || lhr.userAgent, 1024) },
       mode: { formFactor,
