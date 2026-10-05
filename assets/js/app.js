@@ -14,6 +14,7 @@
   };
 
   const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false, round: 0, controller: null };
+  const downloadUrls = new Set();
   const byId = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -266,6 +267,45 @@
     return '"' + text.replace(/"/g, '""') + '"';
   }
 
+  function clearRound(resetInput = false) {
+    ++state.round;
+    state.controller?.abort();
+    state.controller = null;
+    state.report = null;
+    state.origin = null;
+    state.selectedIssue = null;
+    state.busy = false;
+    state.page = 1;
+    byId('report').hidden = true;
+    byId('report').setAttribute('aria-busy', 'false');
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories'].forEach((id) => replaceContent(byId(id), ''));
+    ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
+      'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
+      'not-checked-count', 'detail-title', 'app-message', 'scan-status'].forEach((id) => { byId(id).textContent = ''; });
+    delete byId('report-result').dataset.result;
+    byId('scan-status').dataset.state = 'idle';
+    byId('scan-status').classList.remove('text-danger-emphasis');
+    byId('not-checked-section').hidden = true;
+    byId('not-checked-section').open = false;
+    ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
+    ['export-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
+    byId('scan-icon').classList.remove('d-none');
+    byId('scan-button').disabled = false;
+    byId('scan-button-label').textContent = '\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c';
+    byId('lighthouse-status').textContent = '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e23\u0e27\u0e08';
+    bootstrap.Collapse.getOrCreateInstance(byId('lighthouse-scores'), { toggle: false }).hide();
+    bootstrap.Tab.getOrCreateInstance(byId('issues-tab')).show();
+    drawerTrigger = null;
+    drawer.hide();
+    ['severity-filter', 'category-filter', 'page-filter'].forEach((id) => { byId(id).value = 'all'; });
+    ['issue-search', 'page-search'].forEach((id) => { byId(id).value = ''; });
+    if (resetInput) {
+      byId('scan-form').reset();
+      byId('website-url').value = '';
+      byId('website-url').setCustomValidity('');
+    }
+  }
+
   byId('export-button').addEventListener('click', () => {
     if (!state.report || state.busy) return;
     const issues = filteredIssues();
@@ -273,13 +313,14 @@
     const fields = ['ruleId', 'ruleVersion', 'outcome', 'severity', 'category', 'title', 'urls', 'found', 'impact', 'steps', 'evidence', 'references'];
     const csv = [fields.map(csvCell).join(','), ...issues.map((issue) => fields.map((field) => csvCell(issue[field])).join(','))].join('\r\n');
     const objectUrl = URL.createObjectURL(new Blob(['\ufeff', csv, '\r\n'], { type: 'text/csv;charset=utf-8' }));
+    downloadUrls.add(objectUrl);
     const link = document.createElement('a');
     link.href = objectUrl;
     link.download = 'seo-issues.csv';
     document.body.appendChild(link);
     try { link.click(); } finally {
       link.remove();
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setTimeout(() => { URL.revokeObjectURL(objectUrl); downloadUrls.delete(objectUrl); }, 1000);
     }
   });
 
@@ -296,24 +337,11 @@
       return;
     }
     input.setCustomValidity("");
-    const round = ++state.round;
-    state.controller?.abort();
+    clearRound();
+    const round = state.round;
     const controller = new AbortController();
     state.controller = controller;
-    state.report = null;
-    state.origin = null;
     state.busy = true;
-    byId("report").hidden = true;
-    replaceContent(byId("issue-rows"), "");
-    replaceContent(byId("page-rows"), "");
-    replaceContent(byId("detail-content"), "");
-    replaceContent(byId("not-checked-list"), "");
-    ["summary-pages", "summary-critical", "summary-warning", "summary-review", "report-host", "affected-summary",
-      "issue-count", "issue-result-status", "page-result-status", "pages-pager", "report-scope", "report-time", "report-result", "not-checked-count"].forEach((id) => { byId(id).textContent = ""; });
-    byId("export-button").disabled = true;
-    byId("app-message").textContent = "";
-    state.selectedIssue = null;
-    drawer.hide();
     byId("scan-button").disabled = false;
     byId("scan-button-label").textContent = "\u0e15\u0e23\u0e27\u0e08\u0e43\u0e2b\u0e21\u0e48";
     byId("scan-status").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08 " + url.href;
@@ -352,9 +380,9 @@
       byId("report").hidden = false;
     }).then(undefined, (error) => {
       if (round !== state.round) return;
-      state.report = null;
-      state.origin = null;
-      if (controller.signal.aborted) {
+      const cancelled = controller.signal.aborted;
+      clearRound();
+      if (cancelled) {
         byId("scan-status").textContent = "\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e41\u0e25\u0e49\u0e27";
         byId("scan-status").dataset.state = "cancelled";
         return;
@@ -379,10 +407,11 @@
     state.controller?.abort();
   });
   window.addEventListener('pagehide', () => {
-    ++state.round;
-    state.controller?.abort();
-    state.controller = null;
+    clearRound(true);
+    downloadUrls.forEach((url) => URL.revokeObjectURL(url));
+    downloadUrls.clear();
   });
+  window.addEventListener('pageshow', (event) => { if (event.persisted) clearRound(true); });
   byId("website-url").addEventListener("input", () => byId("website-url").setCustomValidity(""));
 
   ["severity-filter", "category-filter"].forEach((id) => byId(id).addEventListener("change", renderIssues));
@@ -429,10 +458,7 @@
     if (drawerTrigger?.isConnected && drawerTrigger.getClientRects().length) drawerTrigger.focus();
   });
 
-  // Each page load starts a fresh round, including browser-restored form values.
-  byId("scan-form").reset();
-  byId("website-url").value = "";
-  ["severity-filter", "category-filter", "page-filter"].forEach((id) => { byId(id).value = "all"; });
-  ["issue-search", "page-search"].forEach((id) => { byId(id).value = ""; });
+  // Normal loads and back/forward restoration both start a fresh page-local round.
+  clearRound(true);
   activateControls();
 })();

@@ -53,6 +53,11 @@ and data modules. Do not add audit history or persistence.
   Starting a new round aborts the previous fetch with AbortController. Manual cancel
   and leaving/reloading the page also abort in-flight requests; API disconnect handling
   stops backend work. Refresh starts with empty URL, filters, tables and details.
+  Reports exist only in page-local JS memory. pagehide and persisted pageshow clear
+  result DOM and references, so Back cannot restore a report. No audit data is written
+  to local/session storage, IndexedDB, cookies, service workers or Cache Storage.
+  Download object URLs are released after use and revoked when leaving the page.
+  Failures that occur during display also clear partial result DOM and disable export.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and
