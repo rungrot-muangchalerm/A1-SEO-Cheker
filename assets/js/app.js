@@ -83,6 +83,8 @@
     )).join(""));
     byId("issue-count").textContent = "(" + issues.length + ")";
     byId("issue-empty").classList.toggle("d-none", visible.length > 0);
+    byId("issue-empty-message").textContent = issues.length ? "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e15\u0e32\u0e21\u0e15\u0e31\u0e27\u0e01\u0e23\u0e2d\u0e07\u0e19\u0e35\u0e49" : "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e15\u0e32\u0e21\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49";
+    byId("reset-filters").classList.toggle("d-none", issues.length === 0);
     byId("issue-result-status").textContent = "\u0e41\u0e2a\u0e14\u0e07 " + visible.length + " \u0e08\u0e32\u0e01 " + issues.length + " \u0e1b\u0e31\u0e0d\u0e2b\u0e32";
     byId("export-button").disabled = true;
   }
@@ -124,6 +126,18 @@
     });
     byId("affected-summary").textContent = "\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e41\u0e01\u0e49\u0e2b\u0e23\u0e37\u0e2d\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e43\u0e19 " + summary.affected + " \u0e08\u0e32\u0e01 " + summary.pages + " \u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08";
     byId("report-host").textContent = state.report.requestedUrl;
+    const report = state.report;
+    byId("report-scope").textContent = "\u0e02\u0e2d\u0e1a\u0e40\u0e02\u0e15: " + (report.scope.type === "single-page" ? "URL \u0e40\u0e14\u0e35\u0e22\u0e27" : report.scope.origin) +
+      " \u00b7 \u0e1e\u0e1a " + report.coverage.discovered + " \u0e2b\u0e19\u0e49\u0e32 \u00b7 \u0e2d\u0e48\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 " + report.coverage.fetched + " \u0e2b\u0e19\u0e49\u0e32 \u00b7 \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c " + report.coverage.analyzed + " \u0e2b\u0e19\u0e49\u0e32";
+    byId("report-time").textContent = "\u0e40\u0e27\u0e25\u0e32\u0e15\u0e23\u0e27\u0e08: " + new Intl.DateTimeFormat("th-TH-u-ca-gregory", {
+      dateStyle: "medium", timeStyle: "medium"
+    }).format(new Date(report.completedAt));
+    byId("report-result").textContent = report.issues.length ? "\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2b\u0e23\u0e37\u0e2d\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 " + report.issues.length + " \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23" : "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e15\u0e32\u0e21\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49";
+    byId("report-result").dataset.result = report.issues.length ? "issues" : "none";
+    byId("not-checked-section").hidden = report.notChecked.length === 0;
+    byId("not-checked-count").textContent = "(" + report.notChecked.length + ")";
+    replaceContent(byId("not-checked-list"), report.notChecked.map((entry) => '<li class="mb-2 text-break">' +
+      escapeHtml(entry.message) + ' <span class="text-secondary">(' + escapeHtml(entry.reason) + ')</span></li>').join(""));
   }
 
   function openDrawer(title, content, trigger) {
@@ -218,8 +232,9 @@
     replaceContent(byId("issue-rows"), "");
     replaceContent(byId("page-rows"), "");
     replaceContent(byId("detail-content"), "");
+    replaceContent(byId("not-checked-list"), "");
     ["summary-pages", "summary-critical", "summary-warning", "summary-review", "report-host", "affected-summary",
-      "issue-count", "issue-result-status", "page-result-status", "pages-pager"].forEach((id) => { byId(id).textContent = ""; });
+      "issue-count", "issue-result-status", "page-result-status", "pages-pager", "report-scope", "report-time", "report-result", "not-checked-count"].forEach((id) => { byId(id).textContent = ""; });
     byId("export-button").disabled = true;
     byId("app-message").textContent = "";
     state.selectedIssue = null;
@@ -228,6 +243,8 @@
     byId("scan-button-label").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08...";
     byId("scan-status").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08 " + url.href;
     byId("scan-status").dataset.state = "loading";
+    byId("scan-status").classList.remove("text-danger-emphasis");
+    byId("scan-spinner").classList.remove("d-none");
     byId("report").setAttribute("aria-busy", "true");
     fetch("/api/audits", {
       credentials: "include", method: "POST", cache: "no-store",
@@ -236,7 +253,8 @@
       if (!response.ok || data.status === "failed") {
         throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
       }
-      if (data.schemaVersion !== "1.0" || !Array.isArray(data.pages) || !data.pages.length || !Array.isArray(data.issues)) {
+      if (data.schemaVersion !== "1.0" || !["partial", "completed"].includes(data.status) || !Array.isArray(data.pages) ||
+          !data.pages.length || !Array.isArray(data.issues) || !Array.isArray(data.notChecked)) {
         throw new Error("Invalid report");
       }
       return data;
@@ -250,18 +268,21 @@
       renderSummary();
       renderPages();
       bootstrap.Tab.getOrCreateInstance(byId("issues-tab")).show();
-      byId("scan-status").textContent = "\u0e2d\u0e48\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e23\u0e34\u0e07\u0e41\u0e25\u0e49\u0e27 " + data.pages.length + " \u0e2b\u0e19\u0e49\u0e32: " + data.pages[0].finalUrl;
-      byId("scan-status").dataset.state = "ready";
+      const partial = data.status === "partial" || data.notChecked.length > 0 || data.pages.some((page) => page.analysisStatus !== "complete");
+      byId("scan-status").textContent = (partial ? "\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19" : "\u0e15\u0e23\u0e27\u0e08\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e27") + ": " + data.requestedUrl;
+      byId("scan-status").dataset.state = partial ? "partial" : "completed";
       byId("report").hidden = false;
     }).then(undefined, (error) => {
       state.report = null;
       state.origin = null;
       byId("scan-status").textContent = error.publicMessage || "\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48";
       byId("scan-status").dataset.state = "failed";
+      byId("scan-status").classList.add("text-danger-emphasis");
     }).finally(() => {
       state.busy = false;
       byId("scan-button").disabled = false;
       byId("scan-button-label").textContent = "\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c";
+      byId("scan-spinner").classList.add("d-none");
       byId("report").setAttribute("aria-busy", "false");
     });
   });

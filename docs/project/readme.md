@@ -36,6 +36,9 @@ and data modules. Do not add audit history or persistence.
   page memory. Mock data and mock scores have been removed. Summary, issue/page
   tables, and both detail views use that one report; errors never substitute fixtures.
   HTML and headers are displayed as escaped evidence, not reconstructed examples.
+  Loading, partial/completed coverage, no findings, and failure states are distinct.
+  Scope, real coverage counts, completion time, and unavailable checks remain visible
+  even when no issues were found. Starting another round clears the prior details.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and

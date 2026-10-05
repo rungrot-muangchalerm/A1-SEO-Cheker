@@ -18,7 +18,7 @@ test('URL form posts each current request, including its path and query, with no
   assert.equal(requests.length, 0);
   for (const url of ['https://first.example/a?version=2', 'https://second.example/another']) {
     await scan(page, url);
-    assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'ready');
+    assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'partial');
     assert.ok((await page.locator('#scan-status').textContent()).includes(url));
     assert.equal(await page.locator('#report-host').textContent(), url);
   }

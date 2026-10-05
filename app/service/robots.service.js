@@ -32,8 +32,10 @@ module.exports = {
     const parser = robotsParser(url, response.text);
     const describe = (agent) => {
       const line = parser.getMatchingLineNumber(pageUrl, agent);
-      return { agent, allowed: parser.isAllowed(pageUrl, agent),
-        line: line > 0 ? line : null, source: line > 0 ? lines[line - 1] : null };
+      return {
+        agent, allowed: parser.isAllowed(pageUrl, agent),
+        line: line > 0 ? line : null, source: line > 0 ? lines[line - 1] : null
+      };
     };
     const googlebot = describe('Googlebot');
     const crawler = describe('SEOChecker');
