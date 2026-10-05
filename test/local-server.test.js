@@ -54,3 +54,21 @@ test('untrusted Host/Origin/cross-site forms cannot invoke the local checker or 
   assert.equal(localhost.status, 200);
   assert.ok(!JSON.stringify(server.logs()).includes('PRIVATE_MARKER'));
 });
+
+test('backend key remains server-side across real frontend/static/error responses and .env cannot be downloaded or tracked', async (t) => {
+  const { execFileSync } = require('node:child_process');
+  const secret = 'PRIVATE_SERVER_KEY_MUST_NOT_LEAK';
+  const server = await start(t, { PAGESPEED_API_KEY: secret });
+  for (const path of ['/', '/assets/js/app.js', '/.env', '/example.env', '/app/data/pagespeed.data.js', '/api/audits/old']) {
+    const result = await request(server.origin, { path });
+    assert.ok(!result.body.includes(secret));
+    if (path.startsWith('/.') || path.startsWith('/app/') || path === '/example.env') assert.equal(result.status, 404);
+  }
+  const rejected = await request(server.origin, { path: '/api/audits', method: 'POST', headers: { 'Content-Type': 'application/json' } },
+    JSON.stringify({ url: 'http://127.0.0.1/', pagespeed: true, key: 'CLIENT_KEY_OVERRIDE' }));
+  assert.equal(rejected.status, 400);
+  assert.ok(!rejected.body.includes(secret));
+  assert.ok(!JSON.stringify(server.logs()).includes(secret));
+  assert.equal(execFileSync('git', ['ls-files', '.env'], { encoding: 'utf8' }).trim(), '');
+  assert.equal(execFileSync('git', ['check-ignore', '.env'], { encoding: 'utf8' }).trim(), '.env');
+});
