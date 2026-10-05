@@ -29,7 +29,9 @@ async function frontend(t, viewport = { width: 1280, height: 900 }) {
   app.set('views', path.join(root, 'views'));
   app.set('layout', false);
   app.use(layouts);
+  app.use(require('../../app/middleware/local.middleware').only);
   app.use(express.json());
+  app.use(require('../../app/middleware/audit-admission.middleware').create());
   app.use('/assets', express.static(path.join(root, 'assets')));
   app.use(require('../../app/routes/router'));
   app.use(require('../../app/middleware/audit.middleware').error);
