@@ -72,9 +72,9 @@ module.exports = {
         await timers.setTimeout(wait, undefined, { signal });
       }
       signal.throwIfAborted();
-      lastRequest = Date.now();
       ++stats.requests;
     };
+    const onConnect = () => { lastRequest = Date.now(); };
     try {
       controller.signal.throwIfAborted();
       await new Promise((resolve, reject) => { proxy.once('error', reject); proxy.listen(0, '127.0.0.1', resolve); });
@@ -99,7 +99,7 @@ module.exports = {
           const selected = website.parseUrl(item.finalUrl);
           if (item.status < 200 || item.status >= 300) throw new website.WebsiteError('RENDER_HTTP_STATUS');
           if ((item.headers['content-type'] || 'text/html').split(';')[0].trim().toLowerCase() !== 'text/html') throw new website.WebsiteError('RENDER_DOCUMENT_TYPE');
-          const rules = await robots.load(selected.href, { signal: controller.signal, robotsCache, beforeConnect });
+          const rules = await robots.load(selected.href, { signal: controller.signal, robotsCache, beforeConnect, onConnect });
           if (rules.status === 'not-checked' || rules.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
           if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
           if (!browser) browser = await chromium.launch({ headless: true, chromiumSandbox: true, timeout: limits.launchTimeoutMs,
@@ -161,10 +161,10 @@ module.exports = {
               if (remainingBytes <= 0) throw new website.WebsiteError('RENDER_BYTE_LIMIT');
               const allowance = Math.min(limits.maxResourceBytes, remainingBytes);
               stats.budgetBytes += allowance;
-              const result = await website.fetchRenderResource(url.href, { signal: requestSignal, scopeOrigin: selected.origin,
+              const result = await website.fetchRenderResource(url.href, { signal: requestSignal, scopeOrigin: selected.origin, onConnect,
                 timeoutMs: Math.max(1, Math.min(5000, deadline - Date.now())), maxBytes: allowance,
                 beforeRequest: async (target, signal) => {
-                  const policy = await robots.load(target.href, { signal, robotsCache, beforeConnect });
+                  const policy = await robots.load(target.href, { signal, robotsCache, beforeConnect, onConnect });
                   if (policy.status === 'not-checked' || policy.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
                   if (policy.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
                 }, beforeConnect: (target, signal) => beforeConnect(target, signal, rules.crawlDelay) });

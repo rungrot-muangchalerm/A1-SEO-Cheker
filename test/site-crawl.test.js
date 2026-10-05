@@ -68,9 +68,31 @@ test('every socket including robots, sitemap and redirect hops is paced and none
   assert.equal(starts.length, 5);
   assert.equal(peak, 1);
   assert.equal(active, 0);
-  for (let i = 1; i < starts.length; i++) assert.ok(starts[i] - starts[i - 1] >= crawl.limits.minIntervalMs - 15);
+  for (let i = 1; i < starts.length; i++) assert.ok(starts[i] - starts[i - 1] >= crawl.limits.minIntervalMs - 15,
+    'Socket intervals: ' + starts.slice(1).map((time, index) => time - starts[index]).join(', '));
   assert.equal(result.data.pages[1].finalUrl, 'https://site.example/final');
   assert.equal(transport.calls.filter((entry) => entry.url.endsWith('/final')).length, 1);
+});
+
+test('slow DNS before a socket does not shorten spacing after that actual request start', async t => {
+  const dns = require('node:dns/promises');
+  const { setTimeout: wait } = require('node:timers/promises');
+  stubTransport(t, [{ status: 404 }, { html: markup('Root', '<a href="/child">Child</a>') },
+    { status: 404 }, { html: markup('Child') }]);
+  const lookup = dns.lookup;
+  let lookups = 0;
+  t.mock.method(dns, 'lookup', async (...args) => {
+    if (++lookups === 2) await wait(80);
+    return lookup(...args);
+  });
+  const request = require('node:https').request;
+  const starts = [];
+  t.mock.method(require('node:https'), 'request', (...args) => { starts.push(Date.now()); return request(...args); });
+  const result = await audit.create({ url: 'https://site.example/', crawl: true });
+  assert.equal(result.ok, true);
+  assert.equal(starts.length, 4);
+  for (let i = 1; i < starts.length; i++) assert.ok(starts[i] - starts[i - 1] >= crawl.limits.minIntervalMs - 15,
+    'Socket intervals with delayed DNS: ' + starts.slice(1).map((time, index) => time - starts[index]).join(', '));
 });
 
 test('robot rules apply before the requested root, redirect destinations and sitemap sockets; unavailable rules do not become allowed', async (t) => {

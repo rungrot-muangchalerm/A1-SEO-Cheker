@@ -74,7 +74,7 @@ module.exports = {
       if (remainingMs <= 0) { collection.limitReached = true; skip(collection, { url: url.href, kind: 'sitemap', reason: 'sitemap-deadline' }); continue; }
       try {
         const response = await website.fetchSitemap(url.href, { signal: options.signal, timeoutMs: Math.min(5000, remainingMs), scopeOrigin: origin,
-          beforeRequest: options.beforeRequest });
+          beforeRequest: options.beforeRequest, beforeConnect: options.beforeConnect, onConnect: options.onConnect });
         options.signal?.throwIfAborted();
         seen.add(response.finalUrl);
         const evidence = { url: url.href, finalUrl: response.finalUrl, httpStatus: response.status, bytes: response.bytes, redirects: response.redirects,

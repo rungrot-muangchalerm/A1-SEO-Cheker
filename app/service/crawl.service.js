@@ -26,6 +26,7 @@ module.exports = {
     const skipped = [];
     const stats = { requests: 0, attemptedPages: 0, htmlBytes: 0 };
     let lastRequest = null;
+    let requestCrawlDelay = 0;
     let stopReason = null;
     let discovery;
     const notify = async (phase, currentUrl = null) => {
@@ -37,14 +38,17 @@ module.exports = {
     const throttle = async (_url, signal, crawlDelay = 0) => {
       if (stats.requests >= limits.maxRequests) throw new website.WebsiteError('CRAWL_REQUEST_LIMIT');
       const interval = Math.max(limits.minIntervalMs, Number.isFinite(crawlDelay) && crawlDelay > 0 ? crawlDelay * 1000 : 0);
-      const wait = lastRequest === null ? 0 : Math.max(0, lastRequest + interval - Date.now());
-      if (Date.now() + wait >= deadline) throw new website.WebsiteError('CRAWL_DEADLINE');
-      if (wait) await timers.setTimeout(wait, undefined, { signal });
+      while (lastRequest !== null && Date.now() < lastRequest + interval) {
+        const wait = lastRequest + interval - Date.now();
+        if (Date.now() + wait >= deadline) throw new website.WebsiteError('CRAWL_DEADLINE');
+        await timers.setTimeout(wait, undefined, { signal });
+      }
+      if (Date.now() >= deadline) throw new website.WebsiteError('CRAWL_DEADLINE');
       signal.throwIfAborted();
-      lastRequest = Date.now();
       stats.requests++;
     };
-    const policyOptions = { signal: controller.signal, robotsCache, beforeRequest: throttle };
+    const onConnect = () => { lastRequest = Date.now(); };
+    const policyOptions = { signal: controller.signal, robotsCache, beforeConnect: throttle, onConnect };
     const beforeRequest = async (url, signal) => {
       if (seen.has(url.href)) throw new website.WebsiteError('ALREADY_FETCHED');
       const rules = await robots.load(url.href, policyOptions);
@@ -53,9 +57,10 @@ module.exports = {
         throw new website.WebsiteError(rules.reason === 'PRIVATE_TARGET' ? 'PRIVATE_TARGET' : 'ROBOTS_UNKNOWN');
       }
       if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
-      await throttle(url, signal, rules.crawlDelay);
+      requestCrawlDelay = rules.crawlDelay || 0;
     };
-    const networkOptions = { signal: controller.signal, beforeRequest, includeCanonical: true,
+    const networkOptions = { signal: controller.signal, beforeRequest, onConnect,
+      beforeConnect: (url, signal) => throttle(url, signal, requestCrawlDelay), includeCanonical: true,
       onDiscovery: async (collection) => { discovery = collection; await notify('discovering'); } };
     const analyze = async (page) => {
       page.metadata = html.parse(page);

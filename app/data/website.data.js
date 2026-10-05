@@ -212,6 +212,7 @@ async function fetchResource(value, options, kind) {
       const addresses = await resolvePublicTarget(url, controller.signal);
       await options.beforeConnect?.(url, controller.signal);
       controller.signal.throwIfAborted();
+      options.onConnect?.();
       const result = await requestPage(url, addresses, controller.signal, maxBytes, kind);
       lastObservation = { url: url.href, status: result.status, headers: result.headers, rawHeaders: result.rawHeaders || [] };
       if (!result.redirect) return { requestedUrl, finalUrl: url.href, redirects, ...result };
