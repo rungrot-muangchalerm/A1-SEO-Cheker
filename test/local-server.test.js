@@ -91,3 +91,35 @@ test('real entry parser failures never write private request bytes to stdout/std
   assert.ok(!JSON.stringify(server.logs()).includes(marker));
   assert.equal(server.logs().stderr, '');
 });
+
+test('restarting the actual entry restores no successful fixture report and resets only transient admission counters', async t => {
+  const path = require('node:path');
+  const preload = { NODE_OPTIONS: '--require="' + path.join(__dirname, 'helpers/entry-fixture.cjs').replace(/\\/g, '/') + '"' };
+  const first = await start(t, preload);
+  const headers = { 'Content-Type': 'application/json' };
+  const response = await request(first.origin, { path: '/api/audits', method: 'POST', headers }, '{"url":"https://fixture.example/"}');
+  assert.equal(response.status, 200);
+  const result = JSON.parse(response.body);
+  assert.equal(result.pages[0].metadata.title, 'PRIVATE_RESTART_FIXTURE');
+  for (let i = 0; i < 9; i++) {
+    assert.equal((await request(first.origin, { path: '/api/audits', method: 'POST', headers }, '{}')).status, 400);
+  }
+  assert.equal((await request(first.origin, { path: '/api/audits', method: 'POST', headers }, '{}')).status, 429);
+  await first.stop();
+  const second = await start(t, preload);
+  const home = await request(second.origin);
+  assert.equal(home.status, 200);
+  assert.ok(!home.body.includes('PRIVATE_RESTART_FIXTURE'));
+  assert.ok(!home.body.includes('https://fixture.example/'));
+  for (const path of ['/api/audits', '/api/audits/previous']) {
+    const unavailable = await request(second.origin, { path });
+    assert.equal(unavailable.status, 404);
+    assert.equal(unavailable.headers['cache-control'], 'no-store');
+    assert.ok(!unavailable.body.includes('PRIVATE_RESTART_FIXTURE'));
+  }
+  assert.equal((await request(second.origin, { path: '/api/audits', method: 'POST', headers }, '{}')).status, 400);
+  assert.ok(!JSON.stringify(first.logs()).includes('PRIVATE_RESTART_FIXTURE'));
+  assert.ok(!JSON.stringify(second.logs()).includes('PRIVATE_RESTART_FIXTURE'));
+  assert.equal(first.logs().stderr, '');
+  assert.equal(second.logs().stderr, '');
+});
