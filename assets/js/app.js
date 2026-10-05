@@ -13,7 +13,7 @@
     sitemap: "Sitemap", images: "\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e", render: "JavaScript"
   };
 
-  const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false };
+  const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false, round: 0 };
   const byId = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -258,7 +258,6 @@
 
   byId("scan-form").addEventListener("submit", (event) => {
     event.preventDefault();
-    if (state.busy) return;
     const input = byId("website-url");
     let url;
     try {
@@ -270,6 +269,7 @@
       return;
     }
     input.setCustomValidity("");
+    const round = ++state.round;
     state.report = null;
     state.origin = null;
     state.busy = true;
@@ -284,8 +284,8 @@
     byId("app-message").textContent = "";
     state.selectedIssue = null;
     drawer.hide();
-    byId("scan-button").disabled = true;
-    byId("scan-button-label").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08...";
+    byId("scan-button").disabled = false;
+    byId("scan-button-label").textContent = "\u0e15\u0e23\u0e27\u0e08\u0e43\u0e2b\u0e21\u0e48";
     byId("scan-status").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08 " + url.href;
     byId("scan-status").dataset.state = "loading";
     byId("scan-status").classList.remove("text-danger-emphasis");
@@ -304,6 +304,7 @@
       }
       return data;
     })).then((data) => {
+      if (round !== state.round) return;
       state.report = data;
       state.origin = data.scope.origin;
       state.page = 1;
@@ -318,12 +319,14 @@
       byId("scan-status").dataset.state = partial ? "partial" : "completed";
       byId("report").hidden = false;
     }).then(undefined, (error) => {
+      if (round !== state.round) return;
       state.report = null;
       state.origin = null;
       byId("scan-status").textContent = error.publicMessage || "\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48";
       byId("scan-status").dataset.state = "failed";
       byId("scan-status").classList.add("text-danger-emphasis");
     }).finally(() => {
+      if (round !== state.round) return;
       state.busy = false;
       byId("scan-button").disabled = false;
       byId("scan-button-label").textContent = "\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c";
