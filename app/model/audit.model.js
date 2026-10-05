@@ -2,13 +2,13 @@ const version = '1.0';
 
 module.exports = {
   version,
-  createReport: (page, startedAt, discovery, crawl) => {
+  createReport: (page, startedAt, discovery, crawl, siteChecks = []) => {
     const pages = (crawl?.pages || [page]).map((item) => {
       const checks = (item.checks || []).map((entry) => crawl ? { ...entry, id: entry.ruleId + ':' + entry.url } : entry);
       return { ...item, fetchStatus: 'success', analysisStatus: !checks.length ? 'not-checked' :
         checks.some((entry) => entry.outcome === 'not-checked' || entry.complete === false) ? 'partial' : 'complete', checks };
     });
-    const checks = pages.flatMap((item) => item.checks);
+    const checks = [...pages.flatMap((item) => item.checks), ...siteChecks];
     const issues = checks.filter((entry) => ['fail', 'review'].includes(entry.outcome));
     const unavailable = checks.filter((entry) => entry.outcome === 'not-checked' || entry.complete === false);
     const notChecked = unavailable.map((entry) => ({
@@ -69,6 +69,7 @@ module.exports = {
         }
       },
       pages,
+      ...(crawl ? { siteChecks } : {}),
       issues,
       notChecked,
       ...(discovery ? { discovery } : {}),

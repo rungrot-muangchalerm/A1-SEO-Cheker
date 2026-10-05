@@ -40,7 +40,7 @@
   function activateControls(root = document) {
     window.lucide?.createIcons({ root, attrs: { "stroke-width": 1.8 } });
     root.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
-      bootstrap.Tooltip.getOrCreateInstance(element, { trigger: "hover focus" });
+      bootstrap.Tooltip.getOrCreateInstance(element, { trigger: "hover focus", animation: false });
     });
   }
 

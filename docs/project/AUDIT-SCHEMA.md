@@ -66,6 +66,17 @@ Each multi-page check ID includes its rule ID and document URL so detail buttons
 cannot select another page's instance. Outcome/severity summaries aggregate actual
 checks; `affected` counts unique affected document URLs.
 
+`siteChecks` contains checks that compare multiple pages and participates in the
+same issue/severity/outcome summaries. Duplicate title/description groups use a
+rule ID plus SHA-256 of the whitespace-normalized, case-sensitive full value;
+all matching document URLs and individual parsed source locations are retained.
+Group findings are review, since intentional duplicates/noindex/canonical policy
+cannot be inferred from identical text alone. `details` records examined/eligible
+pages, excluded URLs/reasons, the comparison scope and a bounded value preview/hash.
+Empty declarations and non-2xx templates are excluded. Ambiguous or truncated
+metadata leaves incomplete coverage; fewer than two eligible pages is not checked.
+An absence claim applies only to eligible fetched pages, never undiscovered pages.
+
 `crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
 time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes
 crawl and discovery limits. Even an exhausted discovered queue does not establish

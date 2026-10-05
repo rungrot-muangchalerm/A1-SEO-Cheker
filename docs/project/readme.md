@@ -61,6 +61,14 @@ and data modules. Do not add audit history or persistence.
 - Each page includes parsed metadata, headings, links, and images with HTML
   evidence. Relative URLs honor the document base URL. HTML byte decoding respects
   BOM, response charset, and meta charset. Element/evidence limits are disclosed.
+- Crawl reports include `siteChecks` for duplicate title/description values across
+  fetched 2xx HTML pages. Each matching group has all related URLs, original parsed
+  source positions and a stable value-based ID. Text comparison collapses whitespace
+  but preserves case; empty/ambiguous declarations and error templates do not become
+  invented duplicates. Ambiguous/truncated evidence discloses incomplete comparison.
+  Findings require owner confirmation, not an automatic ranking/indexing verdict.
+  Group previews are capped at 512 characters; exact comparison uses the full parsed
+  value. Long previews/evidence disclose truncation. Only observed pages are compared.
 - Status is currently `partial`: HTTP status, Googlebot meta/header rules,
   missing title/description, and canonical declaration validity are checked,
   alongside image alt and robots.txt crawl rules (eight initial-page rules).
