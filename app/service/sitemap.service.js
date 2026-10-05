@@ -1,4 +1,5 @@
-const { XMLParser, XMLValidator } = require('fast-xml-parser');
+const { XMLParser } = require('fast-xml-parser');
+const { SaxesParser } = require('saxes');
 const website = require('../data/website.data');
 
 const namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';
@@ -19,18 +20,28 @@ function element(node, inherited = {}) {
 module.exports = {
   parse: (xml) => {
     if (typeof xml !== 'string' || Buffer.byteLength(xml) > 512 * 1024) throw new website.WebsiteError('SITEMAP_TOO_LARGE');
-    // Reject DTD markers before entity processing; sitemap data never needs a DTD.
-    if (/<!DOCTYPE\b/i.test(xml)) throw new website.WebsiteError('SITEMAP_DTD_UNSUPPORTED');
-    if (XMLValidator.validate(xml) !== true) throw new website.WebsiteError('SITEMAP_INVALID_XML');
+    // Validate namespaces/entities strictly and reject real DTDs before data parsing.
+    try {
+      const validator = new SaxesParser({ xmlns: true });
+      let depth = 0;
+      validator.on('doctype', () => { throw new website.WebsiteError('SITEMAP_DTD_UNSUPPORTED'); });
+      validator.on('opentag', () => { if (++depth > 20) throw new website.WebsiteError('SITEMAP_INVALID_XML'); });
+      validator.on('closetag', () => { depth--; });
+      validator.write(xml).close();
+    } catch (error) {
+      throw error instanceof website.WebsiteError ? error : new website.WebsiteError('SITEMAP_INVALID_XML');
+    }
     let tree;
     try {
       tree = new XMLParser({
-        preserveOrder: true, ignoreAttributes: false, ignoreDeclaration: true, ignorePiTags: true,
+        preserveOrder: true, ignoreAttributes: false, ignoreDeclaration: false, ignorePiTags: false,
         parseTagValue: false, parseAttributeValue: false, maxNestedTags: 20,
         processEntities: { enabled: true, maxEntityCount: 1, maxEntitySize: 8192, maxExpansionDepth: 2,
           maxExpandedLength: 512 * 1024, maxTotalExpansions: 50000 }
       }).parse(xml);
     } catch { throw new website.WebsiteError('SITEMAP_INVALID_XML'); }
+    const encoding = tree.find((node) => Object.hasOwn(node, '?xml'))?.[':@']?.['@_encoding'];
+    if (encoding && !['utf-8', 'utf8'].includes(encoding.toLowerCase())) throw new website.WebsiteError('SITEMAP_ENCODING');
     const roots = tree.map((node) => element(node)).filter(Boolean);
     const root = roots[0];
     if (roots.length !== 1 || !['urlset', 'sitemapindex'].includes(root.name) ||

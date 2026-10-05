@@ -51,3 +51,7 @@ source URL/entry index). URL fragments are removed; meaningful query values rema
 `coverage.discovered` counts candidates, while fetched/analyzed counts still include
 only actually examined pages. Discovery never substitutes HTTP results for an
 unfetched URL. Scope is `same-origin-discovery` and currently analyzes one page.
+Sitemap records retain requested/final file URLs, HTTP status, redirects, parsed
+entries, namespace verification and truncation. Index children also record their
+parent `sourceUrl` and entry index. File/entry/deadline limits mean incomplete
+discovery, not a complete site audit; skipped reasons and `notChecked` disclose it.

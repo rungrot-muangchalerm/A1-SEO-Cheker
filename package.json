@@ -57,7 +57,8 @@
     "livereload": "^0.10.3",
     "multer": "^2.4.0",
     "mysql2": "^3.16.1",
-    "robots-parser": "^3.0.1"
+    "robots-parser": "^3.0.1",
+    "saxes": "^6.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

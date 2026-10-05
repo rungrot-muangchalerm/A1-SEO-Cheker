@@ -12,12 +12,16 @@ and data modules. Do not add audit history or persistence.
   enables this explicitly; ordinary single-page requests do not fetch sitemaps.
   `discovery` records URLs and their sources, sitemap HTTP/XML evidence and skipped
   candidates. Found URLs are not added to fetched/analyzed page counts. Other pages
-  are not crawled yet, and sitemap indexes remain explicitly unavailable pending
-  traversal. Limits: 200 candidates, 5 sitemap files, 200 detailed skips, 1,000 XML
-  entries per file; sitemap transport is 5 seconds and 512 KiB per file.
-  Fast XML Parser validates and parses XML with namespace handling and bounded depth.
-  DTD markers are rejected before entity processing. Wrong XML, MIME, private redirects
+  are not crawled yet. Nested sitemap indexes are traversed with parent file evidence.
+  Limits: 200 candidates, 5 sitemap files including index children, 200 detailed
+  skips, 1,000 XML entries per file, depth 20, and a 10-second discovery deadline;
+  sitemap transport is at most 5 seconds and 512 KiB per file.
+  Saxes strictly validates XML/namespaces/entities before Fast XML Parser extracts
+  data. Real DTDs and non-UTF-8 declarations are rejected, not harmless comments.
+  Wrong XML, MIME, private redirects
   or unsupported encodings are disclosed rather than replaced with fake URLs.
+  Saxes 6's upstream repository is archived; it is used only as a bounded, non-network
+  XML syntax validator. Keep dependency audits and malformed-XML regression tests.
 - The response uses schema version `1.0` with `pages`, `issues`, `notChecked`,
   `coverage`, `summary`, timestamps, and a Lighthouse availability state. Each page
   contains actual HTTP status, headers, HTML, final URL, and redirect evidence.
