@@ -5,7 +5,7 @@ const robotsReference = 'https://developers.google.com/search/docs/crawling-inde
 function check(page, ruleId, title, outcome, severity, found, impact, steps, evidence, reference) {
   return {
     id: ruleId, ruleId, ruleVersion: '1.0', url: page.finalUrl, urls: [page.finalUrl],
-    category: 'index', title, outcome, severity, found, impact, steps, evidence,
+    category: 'index', title, outcome, severity, complete: outcome !== 'not-checked', found, impact, steps, evidence,
     references: [{ title: new URL(reference).hostname === 'www.w3.org' ? 'W3C WAI' : 'Google Search Central', url: reference }]
   };
 }
@@ -24,6 +24,7 @@ function metadataChecks(page) {
     data.titles.length ? data.titles : [{ kind: 'observation', selector: 'head > title', count: 0, complete: !titleLimited }],
     'https://developers.google.com/search/docs/appearance/title-link');
   title.category = 'onpage';
+  title.complete = !titleLimited;
   const descriptionLimited = data.truncated.includes('meta');
   const missingDescription = !data.description;
   const conflictingDescription = new Set(data.descriptions.map((entry) => entry.content.trim())).size > 1;
@@ -37,6 +38,7 @@ function metadataChecks(page) {
     data.descriptions.length ? data.descriptions : [{ kind: 'observation', selector: 'meta[name="description"]', count: 0, complete: !descriptionLimited }],
     'https://developers.google.com/search/docs/appearance/snippet');
   description.category = 'onpage';
+  description.complete = !descriptionLimited;
   const canonicalLimited = data.truncated.includes('canonical') || data.linkHeaderError;
   const invalid = data.canonical.filter((entry) => !entry.url || new URL(entry.url).username || new URL(entry.url).password);
   const targets = new Set(data.canonical.map((entry) => entry.url).filter(Boolean));
@@ -53,6 +55,8 @@ function metadataChecks(page) {
     data.canonical.length ? data.canonical : [{ kind: 'observation', selector: 'head link[rel~="canonical"]',
       header: 'Link', count: 0, complete: !canonicalLimited }],
     'https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls');
+  canonical.complete = !canonicalLimited;
+  if (canonicalLimited) canonical.reason = data.linkHeaderError ? 'invalid-header' : 'element-limit';
   return [title, description, canonical];
 }
 
@@ -131,7 +135,10 @@ module.exports = {
       'nofollow \u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e32\u0e21\u0e25\u0e34\u0e07\u0e01\u0e4c \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e2b\u0e49\u0e32\u0e21 index \u0e02\u0e2d\u0e07\u0e2b\u0e19\u0e49\u0e32\u0e19\u0e35\u0e49',
       ['\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32\u0e40\u0e1b\u0e47\u0e19\u0e02\u0e49\u0e2d\u0e08\u0e33\u0e01\u0e31\u0e14\u0e17\u0e35\u0e48\u0e15\u0e31\u0e49\u0e07\u0e43\u0e08\u0e43\u0e0a\u0e49', '\u0e16\u0e49\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e43\u0e2b\u0e49 Googlebot \u0e04\u0e49\u0e19\u0e1e\u0e1a\u0e25\u0e34\u0e07\u0e01\u0e4c \u0e43\u0e2b\u0e49\u0e15\u0e23\u0e27\u0e08 meta \u0e41\u0e25\u0e30 X-Robots-Tag'], evidence, robotsReference);
     const checks = [http, index, follow, ...metadataChecks(page), imageCheck(page), crawlCheck(page)];
+    index.complete = !uncertain;
+    follow.complete = !uncertain;
     for (const entry of checks) {
+      if (!entry.complete) entry.reason ||= entry.ruleId === 'robots-crawling' ? page.robots?.reason || 'not-requested' : 'element-limit';
       entry.evidence = entry.evidence.map((item) => ({
         sourceUrl: page.finalUrl, ...item,
         ...(item.kind === 'html' ? { sourceFormat: 'serialized-html' } : {}),

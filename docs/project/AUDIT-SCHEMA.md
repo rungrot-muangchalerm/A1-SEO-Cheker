@@ -22,3 +22,17 @@ positions in the fetched robots.txt. Filesystem paths are not inferred from URLs
 
 Passing one rule is not a ranking score, an indexing confirmation, or proof that
 the entire website passed. JavaScript-rendered content has not been examined yet.
+
+## Outcomes and Coverage
+
+- `pass`: this rule found no defect within the observed scope, not an SEO guarantee.
+- `fail`: a concrete defect was found, with separate severity (critical or warning).
+- `review`: the evidence requires context or owner intent, such as deliberate noindex.
+- `not-checked`: unavailable evidence or a limit prevents checking this rule.
+
+`complete: false` can accompany a fail/review when evidence proves a finding but
+not all elements were examined. `notChecked` then discloses the missing coverage.
+`summary.checks` counts outcomes; severity counters count only actual issues.
+`analysisStatus: complete` on a page refers to the implemented initial-page rules.
+Report status remains partial while renderer, Lighthouse or broader site analysis
+has not been performed. `notChecked` names those unavailable surfaces explicitly.

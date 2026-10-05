@@ -24,7 +24,7 @@ test('report distinguishes fetched evidence from analysis that was not performed
   assert.equal(report.pages[0].checks.length, 8);
   assert.ok(report.pages[0].checks.slice(0, 3).every((entry) => entry.outcome === 'pass'));
   assert.equal(report.pages[0].html, page.html);
-  assert.equal(report.notChecked[0].id, 'seo-analysis');
+  assert.equal(report.notChecked[0].id, 'robots-crawling');
   assert.equal(report.notChecked[0].url, page.finalUrl);
   assert.equal(report.issues.length, 2);
   assert.equal(report.lighthouse.status, 'not-checked');
