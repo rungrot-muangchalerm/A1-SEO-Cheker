@@ -103,7 +103,7 @@
 
 - [x] feat: ใช้ Playwright เปรียบเทียบ HTML เริ่มต้นกับเนื้อหาหลัง JavaScript ทำงานสำหรับหน้าที่จำเป็น
 - [x] feat: ใช้ข้อจำกัด URL เครือข่าย เวลา และทรัพยากรกับ browser renderer ด้วย
-- [ ] แยกข้อเท็จจริงว่าเนื้อหามาหลัง JavaScript ออกจากข้อสรุปว่าหน้าเข้า index ไม่ได้
+- [x] feat: แยกข้อเท็จจริงว่าเนื้อหามาหลัง JavaScript ออกจากข้อสรุปว่าหน้าเข้า index ไม่ได้
 - [ ] เชื่อม PageSpeed Insights API โดยระบุทั้ง Performance, Accessibility, Best Practices และ SEO เพราะค่าปริยายตรวจเฉพาะ Performance ดู [API reference](https://developers.google.com/speed/docs/insights/v5/reference/pagespeedapi/runpagespeed)
 - [ ] ให้เลือกมือถือหรือเดสก์ท็อป และแนบ URL เวลาตรวจ รุ่น engine และโหมดที่ใช้ในรายงานรอบปัจจุบัน
 - [ ] ตรวจว่า engine รองรับ Agentic Browsing ก่อนแสดงผลจริง หมวดนี้ใช้จำนวนรายการที่ผ่าน ไม่ใช่คะแนนเต็ม 100 ดู [เอกสาร Agentic Browsing](https://developer.chrome.com/docs/lighthouse/agentic-browsing/scoring)

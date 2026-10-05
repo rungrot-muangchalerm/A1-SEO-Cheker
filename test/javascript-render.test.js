@@ -41,6 +41,7 @@ test('real Chromium executes inline JS and compares initial title/description/ca
   assert.equal(page.render.stats.requests, 1);
   assert.equal(transport.calls.length, 3);
   assert.equal(result.data.issues.length, 0);
+  assert.deepEqual(page.render.indexing, { status: 'not-checked', reason: 'not-search-engine-observation' });
   assert.ok(!result.data.notChecked.some((entry) => entry.id === 'javascript-render'));
   assert.deepEqual(result.data.lighthouse.categories, []);
 });
@@ -75,6 +76,7 @@ test('renderer is explicit, only selects pages with executable content and caps 
   const second = stubTransport(t, [{ html: jsonOnly }, { status: 404 }]);
   const noExecution = (await audit.create({ url: base, render: true })).data;
   assert.equal(noExecution.pages[0].render.reason, 'no-executable-script');
+  assert.equal(noExecution.pages[0].render.indexing.status, 'not-checked');
   assert.equal(second.calls.length, 2);
   t.mock.restoreAll();
   stubTransport(t, [{ status: 404 }]);
@@ -83,6 +85,7 @@ test('renderer is explicit, only selects pages with executable content and caps 
   assert.equal(pages[0].render.after.title, 'Rendered title');
   assert.equal(pages[1].render.after.title, 'Rendered title');
   assert.equal(pages[2].render.reason, 'RENDER_PAGE_LIMIT');
+  assert.equal(pages[2].render.indexing.status, 'not-checked');
   assert.equal(pages[0].render.stats.attemptedPages, 2);
 });
 
@@ -92,6 +95,7 @@ test('unknown/denied robots and unavailable browser report missing evidence, nev
     const result = (await audit.create({ url: base, render: true })).data;
     assert.equal(result.pages[0].render.reason, reason);
     assert.equal(result.pages[0].render.after, undefined);
+    assert.equal(result.pages[0].render.indexing.status, 'not-checked');
     assert.ok(result.notChecked.some((entry) => entry.id === 'javascript-render' && entry.reason === reason));
     t.mock.restoreAll();
   }
@@ -112,6 +116,7 @@ test('blocked resources and script errors keep genuine observed DOM changes but 
   assert.equal(rendered.status, 'partial');
   assert.equal(rendered.after.title, 'Rendered title');
   assert.equal(rendered.complete, false);
+  assert.equal(rendered.indexing.status, 'not-checked');
   assert.equal(rendered.resources.scriptErrors, 1);
   assert.ok(rendered.resources.records.some((entry) => entry.reason === 'OUTSIDE_SCOPE'));
   assert.equal(transport.calls.length, 3);
@@ -146,6 +151,7 @@ test('actual API opt-in displays escaped before/after fields and DOM proof on de
     return drawer.classList.contains('show') && !drawer.classList.contains('showing');
   });
   const comparison = page.locator('[data-render-comparison]');
+  assert.ok((await comparison.locator('[data-google-index-status]').textContent()).includes('ยังตรวจไม่ได้'));
   assert.ok((await comparison.locator('[data-render-phase="before"]').textContent()).includes('Initial body'));
   assert.ok((await comparison.locator('[data-render-phase="after"]').textContent()).includes('Rendered browser title'));
   assert.equal(await comparison.locator('img, script, iframe').count(), 0);
@@ -164,4 +170,25 @@ test('actual API opt-in displays escaped before/after fields and DOM proof on de
   assert.equal(await page.locator('#detail-content').textContent(), '');
   assert.equal(await page.locator('#website-url').inputValue(), '');
   assert.deepEqual(errors, []);
+});
+
+test('added, removed and unchanged DOM text do not infer Google indexing, and removing initial noindex never overwrites its source check', async (t) => {
+  const sources = [
+    document('<script>document.querySelector("main").textContent="";</script>'),
+    document('<script>void 0;</script>'),
+    document('<script>document.querySelector("meta[name=robots]").remove();</script>').replace('</head>', '<meta name="robots" content="noindex"></head>')
+  ];
+  for (const source of sources) {
+    stubTransport(t, networkResponses(source));
+    const result = (await audit.create({ url: base, render: true })).data;
+    const page = result.pages[0];
+    assert.equal(page.render.indexing.status, 'not-checked');
+    assert.ok(!result.issues.some((entry) => entry.ruleId.startsWith('javascript')));
+    assert.equal(page.html, source);
+    if (source.includes('name="robots"')) {
+      assert.ok(!page.render.after.html.includes('name="robots"'));
+      assert.equal(page.checks.find((entry) => entry.ruleId === 'robots-indexing').outcome, 'review');
+    }
+    t.mock.restoreAll();
+  }
 });

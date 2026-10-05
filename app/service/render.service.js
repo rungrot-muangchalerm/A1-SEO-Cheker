@@ -217,7 +217,10 @@ module.exports = {
           }
         }
       }
-      for (const item of pages) if (item.render && item.render.mode) item.render.stats = { ...stats };
+      for (const item of pages) if (item.render) {
+        item.render.indexing = { status: 'not-checked', reason: 'not-search-engine-observation' };
+        if (item.render.mode) item.render.stats = { ...stats };
+      }
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener('abort', cancel);

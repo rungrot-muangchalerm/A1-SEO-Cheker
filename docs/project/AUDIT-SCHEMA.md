@@ -83,6 +83,13 @@ length and a 2,000-character preview; a shortened preview does not change matchi
 rendered DOM with `sourceFormat: rendered-dom`, never original repository code or
 an initial-HTML line reference. Engine versions, URL, timestamps and mode accompany
 the result. Change/absence is not Google's indexing or rendering verdict.
+Every attempted/selected render result has `indexing: { status: not-checked,
+reason: not-search-engine-observation }`, including no-script, partial and failure
+results. DOM differences do not create an indexing failure, ranking claim or
+automatic SEO issue. Initial HTML/header checks remain initial-source evidence:
+removing an initial noindex in JS does not turn that observation into a pass.
+Google's own rendering/indexing is a different observation; see
+[Google's JavaScript basics](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics).
 
 Same-origin GET scripts/styles/XHR/fetch are fulfilled through protected Node
 transport with public pinned DNS, default ports, robots and per-hop checks. CDP
