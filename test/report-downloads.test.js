@@ -1,5 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const { randomUUID } = require('node:crypto');
 const { stubTransport } = require('./helpers/transport');
 const { frontend, scan, good, bad, report } = require('./helpers/frontend');
 const { base, jsonResponse, key } = require('./helpers/pagespeed');
@@ -120,5 +124,33 @@ test('both downloads stay disabled before/during/after failed audits, and succes
   assert.equal(downloads, 0);
   await page.reload();
   assert.equal(await page.locator('#export-json-button').isDisabled(), true);
+  assert.deepEqual(errors, []);
+});
+
+test('new audit replaces export contents and F5 clears the report while an explicitly saved fixture JSON remains readable on disk', async (t) => {
+  const first = report(base + 'first', bad), second = report(base + 'second', good);
+  const { page, errors } = await frontend(t);
+  await page.route('**/api/audits', route => route.fulfill({ json: route.request().postDataJSON().url === first.requestedUrl ? first : second }));
+  await scan(page, first.requestedUrl);
+  const event = page.waitForEvent('download');
+  await page.locator('#export-json-button').click();
+  const downloaded = await event;
+  const destination = path.join(os.tmpdir(), 'seo-checker-saved-fixture-' + randomUUID() + '.json');
+  await downloaded.saveAs(destination);
+  t.after(() => fs.unlink(destination));
+  const saved = await fs.readFile(destination, 'utf8');
+  assert.equal(JSON.parse(saved).requestedUrl, first.requestedUrl);
+  await scan(page, second.requestedUrl);
+  const current = JSON.parse((await readDownload(page, '#export-json-button')).text);
+  assert.equal(current.requestedUrl, second.requestedUrl);
+  assert.equal(current.pages[0].html, good);
+  assert.equal(await fs.readFile(destination, 'utf8'), saved);
+  await page.reload();
+  assert.equal(await page.locator('#website-url').inputValue(), '');
+  assert.equal(await page.locator('#report').isVisible(), false);
+  assert.equal(await page.locator('#export-json-button').isDisabled(), true);
+  assert.equal(await fs.readFile(destination, 'utf8'), saved);
+  const storage = await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length, cookie: document.cookie }));
+  assert.deepEqual(storage, { local: 0, session: 0, cookie: '' });
   assert.deepEqual(errors, []);
 });
