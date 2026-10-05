@@ -74,3 +74,26 @@ test('CSV includes round times/schema/filters and filenames separate rounds even
   assert.ok(!csv.filename.includes('fixture.example'));
   assert.deepEqual(errors, []);
 });
+
+test('CSV/JSON create browser Blobs only on explicit clicks, make no export API request and revoke object URLs after use or pagehide', async (t) => {
+  const { page, errors } = await frontend(t);
+  let requests = 0;
+  await page.route('**/api/audits', route => { ++requests; return route.fulfill({ json: report(base, bad) }); });
+  await page.evaluate(() => {
+    const create = URL.createObjectURL.bind(URL), revoke = URL.revokeObjectURL.bind(URL);
+    globalThis.blobs = []; globalThis.revoked = [];
+    URL.createObjectURL = blob => { const url = create(blob); globalThis.blobs.push({ url, type: blob.type }); return url; };
+    URL.revokeObjectURL = url => { globalThis.revoked.push(url); revoke(url); };
+  });
+  await scan(page, base);
+  assert.equal(await page.evaluate(() => globalThis.blobs.length), 0);
+  await readDownload(page, '#export-button');
+  await readDownload(page, '#export-json-button');
+  assert.deepEqual(await page.evaluate(() => globalThis.blobs.map(entry => entry.type)), ['text/csv;charset=utf-8', 'application/json;charset=utf-8']);
+  await page.waitForFunction(() => globalThis.blobs.every(entry => globalThis.revoked.includes(entry.url)));
+  await readDownload(page, '#export-json-button');
+  await page.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
+  assert.equal(await page.evaluate(() => globalThis.blobs.every(entry => globalThis.revoked.includes(entry.url))), true);
+  assert.equal(requests, 1);
+  assert.deepEqual(errors, []);
+});
