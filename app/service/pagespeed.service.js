@@ -7,7 +7,8 @@ const text = (value, max = 256) => typeof value === 'string' && value.length <= 
 module.exports = {
   run: async (value, options = {}) => {
     const base = { provider: 'pagespeed-insights', url: value, strategy: ['mobile', 'desktop'].includes(options.strategy) ? options.strategy : 'mobile',
-      startedAt: new Date().toISOString(), categories: [], agentic: { status: 'not-checked', reason: 'provider-result-unavailable' } };
+      scope: { type: 'single-url', url: value }, startedAt: new Date().toISOString(), categories: [],
+      agentic: { status: 'not-checked', reason: 'provider-result-unavailable' } };
     const response = await provider.run(value, options);
     const completedAt = new Date().toISOString();
     if (response.status !== 'received') return { ...base, ...response, completedAt };
