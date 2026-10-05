@@ -5,7 +5,8 @@ const text = (value, max = 256) => typeof value === 'string' && value.length <= 
 
 module.exports = {
   run: async (value, options = {}) => {
-    const base = { provider: 'pagespeed-insights', url: value, strategy: 'mobile', startedAt: new Date().toISOString(), categories: [] };
+    const base = { provider: 'pagespeed-insights', url: value, strategy: ['mobile', 'desktop'].includes(options.strategy) ? options.strategy : 'mobile',
+      startedAt: new Date().toISOString(), categories: [] };
     const response = await provider.run(value, options);
     const completedAt = new Date().toISOString();
     if (response.status !== 'received') return { ...base, ...response, completedAt };
@@ -24,10 +25,14 @@ module.exports = {
       return { id, title: labels[id], status: valid ? 'completed' : 'not-checked', score: valid ? score : null,
         ...(valid ? { displayScore: Math.round(score * 100) } : { reason: 'PAGESPEED_SCORE_UNAVAILABLE' }) };
     });
+    const formFactor = text(lhr.configSettings?.formFactor || lhr.configSettings?.emulatedFormFactor);
+    if (['mobile', 'desktop'].includes(formFactor) && formFactor !== base.strategy) return { ...base, completedAt,
+      status: 'not-checked', reason: 'PAGESPEED_MODE_MISMATCH' };
     const result = { ...base, completedAt, status: categories.every((entry) => entry.status === 'completed') ? 'completed' : 'partial',
-      requestedUrl, finalUrl, categories, fetchTime: text(lhr.fetchTime), engine: { name: 'Lighthouse', version: text(lhr.lighthouseVersion),
+      requestedUrl, finalUrl, categories, fetchTime: text(lhr.fetchTime) && Number.isFinite(Date.parse(lhr.fetchTime)) ? lhr.fetchTime : undefined,
+      engine: { name: 'Lighthouse', version: text(lhr.lighthouseVersion),
         userAgent: text(lhr.environment?.hostUserAgent || lhr.userAgent, 1024) },
-      mode: { formFactor: text(lhr.configSettings?.formFactor || lhr.configSettings?.emulatedFormFactor),
+      mode: { formFactor,
         throttlingMethod: text(lhr.configSettings?.throttlingMethod) }, warningCount: Array.isArray(lhr.runWarnings) ? lhr.runWarnings.length : 0 };
     // Only allowlisted facts leave the provider boundary; never relay raw errors, screenshots or keys.
     const key = (process.env.PAGESPEED_API_KEY || '').trim();

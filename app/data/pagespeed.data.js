@@ -14,13 +14,15 @@ module.exports = {
     try {
       controller.signal.throwIfAborted();
       const target = website.parseUrl(value);
+      const strategy = options.strategy === undefined ? 'mobile' : options.strategy;
+      if (!['mobile', 'desktop'].includes(strategy)) return { status: 'not-checked', reason: 'PAGESPEED_INVALID_STRATEGY' };
       const key = (process.env.PAGESPEED_API_KEY || '').trim();
       if (!key) return { status: 'not-checked', reason: 'not-configured' };
       await website.resolvePublicTarget(target, controller.signal);
       const endpoint = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed');
       endpoint.searchParams.set('url', target.href);
       endpoint.searchParams.set('key', key);
-      endpoint.searchParams.set('strategy', 'mobile');
+      endpoint.searchParams.set('strategy', strategy);
       categories.forEach((category) => endpoint.searchParams.append('category', category));
       const addresses = await website.resolvePublicTarget(endpoint, controller.signal);
       controller.signal.throwIfAborted();

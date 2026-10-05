@@ -40,6 +40,14 @@
         <input type="checkbox" class="form-check-input" id="pagespeed-enabled" name="pagespeed">
         <label class="form-check-label small" for="pagespeed-enabled">PageSpeed Insights &middot; &#3626;&#3656;&#3591; URL &#3652;&#3611;&#3605;&#3619;&#3623;&#3592;&#3607;&#3637;&#3656; Google</label>
       </div>
+      <div id="pagespeed-options" class="mt-2" hidden>
+        <div class="btn-group btn-group-sm" role="group" aria-label="PageSpeed device">
+          <input type="radio" class="btn-check" id="strategy-mobile" name="strategy" value="mobile" autocomplete="off" checked>
+          <label class="btn btn-outline-success d-inline-flex align-items-center gap-2" for="strategy-mobile"><i data-lucide="smartphone" width="16" height="16" aria-hidden="true"></i>&#3617;&#3639;&#3629;&#3606;&#3639;&#3629;</label>
+          <input type="radio" class="btn-check" id="strategy-desktop" name="strategy" value="desktop" autocomplete="off">
+          <label class="btn btn-outline-success d-inline-flex align-items-center gap-2" for="strategy-desktop"><i data-lucide="monitor" width="16" height="16" aria-hidden="true"></i>&#3648;&#3604;&#3626;&#3585;&#3660;&#3607;&#3655;&#3629;&#3611;</label>
+        </div>
+      </div>
     </div>
   </form>
     <p class="small text-primary-emphasis text-break mb-4" id="scan-status" role="status" aria-live="polite"></p>
@@ -244,6 +252,7 @@
       </h2>
       <div class="collapse pt-3" id="lighthouse-scores">
         <p class="small mb-0" id="lighthouse-status">&#3618;&#3633;&#3591;&#3652;&#3617;&#3656;&#3652;&#3604;&#3657;&#3605;&#3619;&#3623;&#3592;</p>
+        <dl class="small text-break mt-3 mb-0" id="lighthouse-metadata" hidden></dl>
         <div id="lighthouse-categories"></div>
       </div>
     </section>

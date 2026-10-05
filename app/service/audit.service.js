@@ -25,7 +25,7 @@ module.exports = {
         const siteChecks = [...crossPageService.analyze(crawl.pages), ...internalLinksService.analyze(crawl),
           ...canonicalService.analyze(crawl), ...sitemapChecksService.analyze(crawl)];
         if (body.render === true) await renderService.run(crawl.pages, { signal: options.signal });
-        const lighthouse = body.pagespeed === true ? await pagespeedService.run(crawl.page.requestedUrl, { signal: options.signal }) : undefined;
+        const lighthouse = body.pagespeed === true ? await pagespeedService.run(crawl.page.requestedUrl, { signal: options.signal, strategy: body.strategy }) : undefined;
         options.signal?.throwIfAborted();
         return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks, lighthouse) };
       }
@@ -38,7 +38,7 @@ module.exports = {
       const discovery = body.discover === true ? await discoveryService.discover(page, options) : undefined;
       options.signal?.throwIfAborted();
       if (body.render === true) await renderService.run([page], { signal: options.signal });
-      const lighthouse = body.pagespeed === true ? await pagespeedService.run(page.requestedUrl, { signal: options.signal }) : undefined;
+      const lighthouse = body.pagespeed === true ? await pagespeedService.run(page.requestedUrl, { signal: options.signal, strategy: body.strategy }) : undefined;
       options.signal?.throwIfAborted();
       return { ok: true, data: auditModel.createReport(page, startedAt, discovery, undefined, [], lighthouse) };
     } catch (error) {

@@ -196,11 +196,19 @@
       const score = valid ? Math.round(category.score * 100) : null;
       const color = score === null ? 'secondary' : score >= 90 ? 'success' : score >= 50 ? 'warning' : 'danger';
       return '<div class="col-6 col-md-3 text-center" data-score-category="' + escapeHtml(category.id) + '"><div class="row justify-content-center">' +
-        '<div class="col-6"><div class="ratio ratio-1x1 rounded-circle border border-3 border-' + color + ' bg-' + color + '-subtle">' +
+        '<div class="col-6 col-lg-4"><div class="ratio ratio-1x1 rounded-circle border border-3 border-' + color + ' bg-' + color + '-subtle">' +
         '<span class="d-flex align-items-center justify-content-center font-monospace fs-4 text-' + color + '-emphasis" data-score-value>' +
         (score === null ? '--' : score) + '</span></div></div></div><p class="small text-break mt-2 mb-0">' + escapeHtml(category.title) + '</p>' +
         (score === null ? '<p class="small text-secondary mb-0">\u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49</p>' : '') + '</div>';
     }).join('') + '</div>');
+    byId('lighthouse-metadata').hidden = !lighthouse?.provider;
+    const unknown = '\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25';
+    replaceContent(byId('lighthouse-metadata'), lighthouse?.provider ? [
+      ['URL', lighthouse.requestedUrl || lighthouse.url], ['URL \u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22', lighthouse.finalUrl],
+      ['\u0e42\u0e2b\u0e21\u0e14\u0e17\u0e35\u0e48\u0e02\u0e2d\u0e15\u0e23\u0e27\u0e08', lighthouse.strategy],
+      ['\u0e40\u0e27\u0e25\u0e32\u0e08\u0e32\u0e01 engine', lighthouse.fetchTime], ['Lighthouse', lighthouse.engine?.version],
+      ['Browser', lighthouse.engine?.userAgent], ['Form factor', lighthouse.mode?.formFactor], ['Throttling', lighthouse.mode?.throttlingMethod]
+    ].map(([label, value]) => '<dt>' + escapeHtml(label) + '</dt><dd class="mb-2 text-break">' + escapeHtml(value || unknown) + '</dd>').join('') : '');
     byId('crawl-limit').hidden = !report.coverage.limitReached;
     byId('crawl-limit').textContent = report.coverage.limitReached ? limitMessage(report.crawl?.stopReason, report.crawl?.limits, report.coverage.fetched) : '';
     byId("not-checked-section").hidden = report.notChecked.length === 0;
@@ -408,7 +416,8 @@
     state.page = 1;
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
-    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
+    byId('lighthouse-metadata').hidden = true;
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
       'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count', 'progress-counts', 'progress-url',
@@ -446,6 +455,7 @@
       byId('website-url').value = '';
       byId('website-url').setCustomValidity('');
     }
+    byId('pagespeed-options').hidden = !byId('pagespeed-enabled').checked;
   }
 
   function readAuditStream(response, onProgress) {
@@ -473,6 +483,10 @@
     return consume().then(undefined, (error) => reader.cancel().then(() => { throw error; }, () => { throw error; }))
       .finally(() => reader.releaseLock());
   }
+
+  byId('pagespeed-enabled').addEventListener('change', () => {
+    byId('pagespeed-options').hidden = !byId('pagespeed-enabled').checked;
+  });
 
   byId('export-button').addEventListener('click', () => {
     if (!state.report || state.busy) return;
@@ -524,7 +538,7 @@
       headers: { "Content-Type": "application/json", Accept: byId('crawl-pages').checked ? 'application/x-ndjson' : 'application/json' },
       body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}),
         ...(byId('crawl-pages').checked ? { crawl: true } : {}), ...(byId('render-pages').checked ? { render: true } : {}),
-        ...(byId('pagespeed-enabled').checked ? { pagespeed: true } : {}) })
+        ...(byId('pagespeed-enabled').checked ? { pagespeed: true, strategy: byId('strategy-desktop').checked ? 'desktop' : 'mobile' } : {}) })
     }).then((response) => {
       const body = (response.headers.get('content-type') || '').split(';')[0] === 'application/x-ndjson' ?
         readAuditStream(response, (progress) => {
