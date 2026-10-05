@@ -10,6 +10,21 @@ module.exports = {
     });
     const checks = [...pages.flatMap((item) => item.checks), ...siteChecks];
     const issues = checks.filter((entry) => ['fail', 'review'].includes(entry.outcome));
+    const grouped = new Map();
+    for (const issue of issues) {
+      if (!grouped.has(issue.ruleId)) grouped.set(issue.ruleId, {
+        id: 'issue-group:' + issue.ruleId, ruleId: issue.ruleId, title: issue.groupTitle || issue.title,
+        category: issue.category, count: 0, issueIds: [], urls: new Set(),
+        severityCounts: { critical: 0, warning: 0, review: 0 }, complete: true
+      });
+      const group = grouped.get(issue.ruleId);
+      ++group.count;
+      ++group.severityCounts[issue.severity];
+      group.issueIds.push(issue.id);
+      issue.urls.forEach((url) => group.urls.add(url));
+      if (issue.complete === false) group.complete = false;
+    }
+    const issueGroups = [...grouped.values()].map((group) => ({ ...group, urls: [...group.urls].sort() }));
     const unavailable = checks.filter((entry) => entry.outcome === 'not-checked' || entry.complete === false);
     const notChecked = unavailable.map((entry) => ({
       id: entry.ruleId, url: entry.url, reason: entry.reason || 'incomplete', message: entry.found
@@ -75,6 +90,7 @@ module.exports = {
       pages,
       ...(crawl ? { siteChecks } : {}),
       issues,
+      issueGroups,
       notChecked,
       ...(discovery ? { discovery } : {}),
       ...(crawl ? { crawl: { limits: crawl.limits, stats: crawl.stats, stopReason: crawl.stopReason }, responses: crawl.responses } : {}),

@@ -114,6 +114,18 @@
             &#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604; CSV
           </button>
         </div>
+        <div class="btn-group btn-group-sm mb-3" role="group" aria-label="&#3617;&#3640;&#3617;&#3617;&#3629;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;">
+          <input type="radio" class="btn-check" name="issue-view" id="issue-view-list" value="list" autocomplete="off" checked>
+          <label class="btn btn-outline-success d-inline-flex align-items-center gap-2" for="issue-view-list">
+            <i data-lucide="list" width="16" height="16" aria-hidden="true"></i>
+            &#3619;&#3634;&#3618;&#3585;&#3634;&#3619;
+          </label>
+          <input type="radio" class="btn-check" name="issue-view" id="issue-view-groups" value="groups" autocomplete="off">
+          <label class="btn btn-outline-success d-inline-flex align-items-center gap-2" for="issue-view-groups">
+            <i data-lucide="layers" width="16" height="16" aria-hidden="true"></i>
+            &#3619;&#3623;&#3617;&#3605;&#3634;&#3617;&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;
+          </label>
+        </div>
         <div class="row g-2 mb-3">
           <div class="col-6 col-md-3">
             <label for="severity-filter" class="form-label small mb-1">&#3588;&#3623;&#3634;&#3617;&#3626;&#3635;&#3588;&#3633;&#3597;</label>
@@ -147,7 +159,7 @@
               <tr>
                 <th scope="col" class="small text-nowrap">&#3619;&#3632;&#3604;&#3633;&#3610;</th>
                 <th scope="col" class="small">&#3611;&#3633;&#3597;&#3627;&#3634;</th>
-                <th scope="col" class="small text-nowrap d-none d-sm-table-cell">&#3627;&#3609;&#3657;&#3634;&#3607;&#3637;&#3656;&#3614;&#3610;</th>
+                <th scope="col" class="small text-nowrap d-none d-sm-table-cell">URL &#3607;&#3637;&#3656;&#3614;&#3610;</th>
                 <th scope="col"><span class="visually-hidden">&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;</span></th>
               </tr>
             </thead>
@@ -233,7 +245,7 @@
 
 <aside class="offcanvas offcanvas-end bg-info-subtle" tabindex="-1" id="issue-drawer" aria-labelledby="detail-title">
   <div class="offcanvas-header border-bottom border-info-subtle">
-    <h2 class="offcanvas-title h5 text-primary-emphasis" id="detail-title">&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;</h2>
+    <h2 class="offcanvas-title h5 text-primary-emphasis text-break" id="detail-title">&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;</h2>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="&#3611;&#3636;&#3604;&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;"></button>
   </div>
   <div class="offcanvas-body text-primary-emphasis" id="detail-content"></div>

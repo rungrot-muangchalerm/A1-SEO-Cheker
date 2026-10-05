@@ -43,6 +43,27 @@ not all elements were examined. `notChecked` then discloses the missing coverage
 Report status remains partial while renderer, Lighthouse or broader site analysis
 has not been performed. `notChecked` names those unavailable surfaces explicitly.
 
+## Issue Groups
+
+`issueGroups` groups only current fail/review issues by `ruleId`, without replacing
+the individual `issues` or duplicating evidence. Each group has a stable prefixed
+`id`, rule/title/category, `issueIds`, `count`, unique sorted `urls`, `severityCounts`
+and member-proof `complete`. JSON-LD block numbers stay on individual checks;
+their group uses a shared title. Pass/not-checked rules have no issue group.
+
+The sum of group counts equals `issues.length`. Group severity sums equal the
+report severity counters; the union of group URLs equals `summary.affected`.
+These URLs can include affected non-HTML resources; they are not additional
+fetched pages. Group completeness describes retained member evidence, not whole
+website coverage. No group data survives the current request/page-local report.
+
+The UI offers individual and grouped views. Filters select individual members
+first, then recompute visible group counts, severity breakdowns and unique URLs.
+The summary continues to describe the entire round; the table footer names the
+filtered subset. Group details link to every matching issue and related URL;
+only fetched HTML URLs get page-detail buttons. CSV always exports the same
+filtered individual issues and full evidence, not synthetic group rows.
+
 ## URL Discovery
 
 Opt-in discovery adds `discovery.urls`, sitemap evidence and bounded skipped records.

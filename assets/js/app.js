@@ -98,12 +98,23 @@
   function renderIssues() {
     const issues = state.report?.issues || [];
     const visible = filteredIssues();
-    replaceContent(byId("issue-rows"), visible.map((issue) => (
+    const grouped = byId('issue-view-groups').checked;
+    const groups = visibleIssueGroups(visible);
+    replaceContent(byId("issue-rows"), grouped ? groups.map((group) => (
+      '<tr data-issue-group="' + escapeHtml(group.ruleId) + '"><td class="align-top"><div class="d-flex flex-column align-items-start gap-1">' +
+      ['critical', 'warning', 'review'].filter((level) => group.severityCounts[level]).map((level) =>
+        '<span data-group-severity="' + level + '">' + badge(level) + ' <span class="small">' + group.severityCounts[level] + '</span></span>').join('') +
+      '</div></td><td><p class="fw-medium small text-break mb-1">' + escapeHtml(group.title) + '</p><p class="small mb-1">' +
+      escapeHtml(categories[group.category]) + ' &middot; <span data-group-count>' + group.count + '</span> \u0e1b\u0e31\u0e0d\u0e2b\u0e32</p>' +
+      '<p class="small mb-0 text-break">' + escapeHtml(group.urls[0]) + (group.urls.length > 1 ? ' \u0e41\u0e25\u0e30\u0e2d\u0e35\u0e01 ' +
+        (group.urls.length - 1) + ' URL' : '') + '</p></td><td class="small text-nowrap d-none d-sm-table-cell">' + group.urls.length + ' URL</td>' +
+      '<td class="text-end">' + detailButton('data-issue-id', group.id, '\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14: ' + group.title) + '</td></tr>'
+    )).join('') : visible.map((issue) => (
       '<tr><td class="align-top">' + badge(issue.severity) + '</td><td>' +
-      '<p class="fw-medium small mb-1">' + escapeHtml(issue.title) + "</p>" +
+      '<p class="fw-medium small text-break mb-1">' + escapeHtml(issue.title) + "</p>" +
       '<p class="small mb-0 text-break">' + escapeHtml(categories[issue.category]) + " &middot; " +
-      escapeHtml(issue.urls[0]) + (issue.urls.length > 1 ? " \u0e41\u0e25\u0e30\u0e2d\u0e35\u0e01 " + (issue.urls.length - 1) + " \u0e2b\u0e19\u0e49\u0e32" : "") +
-      '</p></td><td class="small text-nowrap d-none d-sm-table-cell">' + issue.urls.length + " \u0e2b\u0e19\u0e49\u0e32</td>" +
+      escapeHtml(issue.urls[0]) + (issue.urls.length > 1 ? " \u0e41\u0e25\u0e30\u0e2d\u0e35\u0e01 " + (issue.urls.length - 1) + " URL" : "") +
+      '</p></td><td class="small text-nowrap d-none d-sm-table-cell">' + issue.urls.length + " URL</td>" +
       '<td class="text-end">' + detailButton("data-issue-id", issue.id, "\u0e14\u0e39\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49: " + issue.title) + "</td></tr>"
     )).join(""));
     byId("issue-count").textContent = "(" + issues.length + ")";
@@ -111,7 +122,20 @@
     byId("issue-empty-message").textContent = issues.length ? "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e15\u0e32\u0e21\u0e15\u0e31\u0e27\u0e01\u0e23\u0e2d\u0e07\u0e19\u0e35\u0e49" : "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e15\u0e32\u0e21\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49";
     byId("reset-filters").classList.toggle("d-none", issues.length === 0);
     byId("issue-result-status").textContent = "\u0e41\u0e2a\u0e14\u0e07 " + visible.length + " \u0e08\u0e32\u0e01 " + issues.length + " \u0e1b\u0e31\u0e0d\u0e2b\u0e32";
+    if (grouped) byId('issue-result-status').textContent += ' \u00b7 ' + groups.length + ' \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17 \u00b7 ' +
+      new Set(visible.flatMap((issue) => issue.urls)).size + ' URL';
     byId("export-button").disabled = visible.length === 0;
+  }
+
+  function visibleIssueGroups(issues) {
+    const byIssueId = new Map(issues.map((issue) => [issue.id, issue]));
+    return (state.report?.issueGroups || []).map((group) => {
+      const members = group.issueIds.map((id) => byIssueId.get(id)).filter(Boolean);
+      return { ...group, count: members.length, issueIds: members.map((issue) => issue.id),
+        urls: [...new Set(members.flatMap((issue) => issue.urls))].sort(),
+        severityCounts: Object.fromEntries(['critical', 'warning', 'review'].map((level) => [level, members.filter((issue) => issue.severity === level).length])),
+        complete: members.every((issue) => issue.complete !== false) };
+    }).filter((group) => group.count);
   }
 
   function renderPages() {
@@ -191,7 +215,26 @@
 
   function openIssue(id, trigger) {
     const issue = state.report?.issues.find((item) => item.id === id);
-    if (!issue) return;
+    if (!issue) {
+      const group = visibleIssueGroups(filteredIssues()).find((item) => item.id === id);
+      if (!group) return;
+      state.selectedIssue = null;
+      const members = state.report.issues.filter((item) => group.issueIds.includes(item.id));
+      openDrawer(group.title,
+        '<p class="small text-break mb-2">' + escapeHtml(group.ruleId) + '</p><p class="small mb-3">' +
+        group.count + ' \u0e1b\u0e31\u0e0d\u0e2b\u0e32 &middot; ' + group.urls.length + ' URL</p>' +
+        (group.complete ? '' : '<p class="small mb-3">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e1a\u0e32\u0e07\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a</p>') +
+        '<section class="mb-4" data-group-members><h3 class="h6">\u0e1b\u0e31\u0e0d\u0e2b\u0e32</h3><ul class="list-unstyled small mb-0">' +
+        members.map((item) => '<li class="mb-3">' + badge(item.severity) +
+          '<button type="button" class="btn btn-link text-primary-emphasis text-decoration-none text-start text-break p-0 small d-block mt-1" data-issue-id="' +
+          escapeHtml(item.id) + '">' + escapeHtml(item.title) + '</button><p class="text-break mb-0 mt-1">' + escapeHtml(item.url) + '</p></li>').join('') +
+        '</ul></section><section data-group-urls><h3 class="h6">URL \u0e17\u0e35\u0e48\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e02\u0e49\u0e2d\u0e07</h3><ul class="list-unstyled small mb-0">' +
+        group.urls.map((url) => '<li class="mb-2 text-break">' + (state.report.pages.some((page) => page.finalUrl === url) ?
+          '<button type="button" class="btn btn-link text-primary-emphasis text-decoration-none text-start text-break p-0 small" data-page-url="' +
+          escapeHtml(url) + '">' + escapeHtml(url) + '</button>' : '<span data-unfetched-url="' + escapeHtml(url) + '">' + escapeHtml(url) + '</span>') +
+          '</li>').join('') + '</ul></section>', trigger);
+      return;
+    }
     state.selectedIssue = issue;
     openDrawer(issue.title,
       '<div class="d-flex align-items-center flex-wrap gap-2 mb-4">' + badge(issue.severity) +
@@ -362,6 +405,8 @@
     drawer.hide();
     ['severity-filter', 'category-filter', 'page-filter'].forEach((id) => { byId(id).value = 'all'; });
     ['issue-search', 'page-search'].forEach((id) => { byId(id).value = ''; });
+    byId('issue-view-list').checked = true;
+    byId('issue-view-groups').checked = false;
     if (resetInput) {
       byId('scan-form').reset();
       byId('website-url').value = '';
@@ -524,6 +569,7 @@
   byId("website-url").addEventListener("input", () => byId("website-url").setCustomValidity(""));
 
   ["severity-filter", "category-filter"].forEach((id) => byId(id).addEventListener("change", renderIssues));
+  ['issue-view-list', 'issue-view-groups'].forEach((id) => byId(id).addEventListener('change', renderIssues));
   byId("issue-search").addEventListener("input", renderIssues);
   byId("reset-filters").addEventListener("click", resetIssueFilters);
   ["page-filter", "page-search"].forEach((id) => byId(id).addEventListener(id === "page-search" ? "input" : "change", () => {

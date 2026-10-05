@@ -42,7 +42,8 @@ module.exports = {
       }
       const complete = script.contentComplete && (syntax === 'invalid' || observation.complete);
       return { id: 'jsonld-syntax:' + script.index, ruleId: 'jsonld-syntax', ruleVersion: '1.0', url: page.finalUrl, urls: [page.finalUrl],
-        category: 'onpage', title: 'JSON \u0e02\u0e2d\u0e07\u0e1a\u0e25\u0e47\u0e2d\u0e01 JSON-LD #' + script.index, outcome,
+        category: 'onpage', title: 'JSON \u0e02\u0e2d\u0e07\u0e1a\u0e25\u0e47\u0e2d\u0e01 JSON-LD #' + script.index,
+        groupTitle: 'JSON \u0e02\u0e2d\u0e07\u0e1a\u0e25\u0e47\u0e2d\u0e01 JSON-LD', outcome,
         severity: outcome === 'fail' ? 'warning' : outcome === 'review' ? 'review' : null, complete,
         ...(!complete ? { reason: reason || 'jsonld-structure-limit' } : {}),
         found: syntax === 'invalid' ? '\u0e2d\u0e48\u0e32\u0e19\u0e1a\u0e25\u0e47\u0e2d\u0e01\u0e19\u0e35\u0e49\u0e40\u0e1b\u0e47\u0e19 JSON \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49' : !complete ? '\u0e15\u0e23\u0e27\u0e08\u0e1a\u0e25\u0e47\u0e2d\u0e01\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a: ' + reason :

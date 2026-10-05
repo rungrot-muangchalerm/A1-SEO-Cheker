@@ -142,6 +142,11 @@ and data modules. Do not add audit history or persistence.
   Issue/page filters operate on API data. Copy buttons copy actual evidence or
   numbered advice; they do not invent replacement markup. CSV contains only filtered
   issues and their evidence/advice, created in a Blob on an explicit button click.
+  Individual and grouped issue views use that same issue list. Groups use rule
+  identity, count individual findings separately from unique affected URLs, and
+  show mixed severities without hiding lower-priority members. Filters recompute
+  group membership/counts before display/export. Group details lead to individual
+  evidence and every related URL; unread/non-HTML resources have no fake page view.
   CSV quotes all fields and prefixes risky spreadsheet cells with an apostrophe;
   the in-memory report stays unchanged. Spreadsheet programs differ, especially
   after re-saving CSV; see [OWASP's CSV injection guidance](https://owasp.org/www-community/attacks/CSV_Injection).
