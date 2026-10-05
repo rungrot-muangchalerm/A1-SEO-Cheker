@@ -7,6 +7,7 @@ const expressLayouts = require('express-ejs-layouts');
 
 const app = express();
 const port = process.env.PORT || 3000;
+app.use(require('./app/middleware/local.middleware.js').only);
 
 // View engine
 app.set('view engine', 'ejs');
@@ -29,6 +30,6 @@ require('./tools/live_server.js')(app);
 app.use(require('./app/routes/router.js'));
 app.use(require('./app/middleware/audit.middleware.js').error);
 
-app.listen(port, () => {
+app.listen(port, '127.0.0.1', () => {
   console.log(`App listening at http://localhost:${port}`);
 });
