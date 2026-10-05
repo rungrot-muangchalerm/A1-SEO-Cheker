@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { frontend, scan, report } = require('./helpers/frontend');
 
 test('URL form posts each current request, including its path and query, with no startup history fetch', async (t) => {
@@ -62,5 +64,31 @@ test('unsupported URL protocols are rejected before contacting the audit API', a
   assert.equal(requests, 0);
   assert.equal(await page.locator('#website-url').evaluate((input) => input.validity.valid), false);
   assert.equal(await page.locator('#report').isVisible(), false);
+  assert.deepEqual(errors, []);
+});
+
+test('network, malformed JSON and malformed reports cannot restore mock issues or scores', async (t) => {
+  const { page, errors } = await frontend(t);
+  let mode = 'success';
+  await page.route('**/api/audits', (route) => {
+    if (mode === 'network') return route.abort('connectionfailed');
+    if (mode === 'json') return route.fulfill({ contentType: 'text/html', body: '<html>Gateway error</html>' });
+    if (mode === 'schema') return route.fulfill({ json: { schemaVersion: '1.0', status: 'partial', pages: [] } });
+    return route.fulfill({ json: report(route.request().postDataJSON().url) });
+  });
+  await scan(page, 'https://first.example/');
+  for (mode of ['network', 'json', 'schema']) {
+    await scan(page, 'https://failed.example/' + mode);
+    assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'failed');
+    assert.equal(await page.locator('#report').isVisible(), false);
+    assert.equal(await page.locator('#issue-rows tr').count(), 0);
+    assert.equal(await page.locator('#page-rows tr').count(), 0);
+    assert.equal(await page.locator('#lighthouse-categories').textContent(), '');
+    assert.equal(await page.locator('#lighthouse-scores svg').count(), 0);
+    assert.equal(await page.locator('#export-button').isDisabled(), true);
+  }
+  const app = fs.readFileSync(path.join(__dirname, '../assets/js/app.js'), 'utf8');
+  assert.equal(app.includes('Example Studio'), false);
+  assert.equal(app.includes('/old-pricing'), false);
   assert.deepEqual(errors, []);
 });

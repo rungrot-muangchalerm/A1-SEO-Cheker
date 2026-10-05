@@ -32,8 +32,9 @@ and data modules. Do not add audit history or persistence.
   5 redirects, UTF-8. Parsing is capped at 2,000 lines, 2,048 characters per line,
   and a conservative wildcard work budget; exceeding a cap means not checked.
 - There is no audit ID, saved report, database write, cookie, or resume endpoint.
-- The URL form now sends POST requests and holds the current API report only in
-  page memory. The old mockup report remains hidden while its tables are migrated.
+- The URL form sends POST requests and holds the current API report only in
+  page memory. Mock data and mock scores have been removed. The report remains
+  hidden until its table migration is complete; errors never substitute fixtures.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and
