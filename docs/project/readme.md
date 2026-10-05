@@ -18,6 +18,14 @@ and data modules. Do not add audit history or persistence.
   shares robots responses; no cache survives the request. Child failures/skips
   retain reasons without inventing HTTP status or page content. Scope, real counts,
   skipped URLs and stop reason describe bounded coverage, not the entire domain.
+- Crawl UI requests `Accept: application/x-ndjson` on the same POST connection.
+  Progress frames contain real discovered/fetched/analyzed counts and bounded skipped
+  URL reasons. One report frame finishes the stream; there are no job IDs, polling,
+  reconnect or resume routes. JSON clients keep ordinary HTTP responses. Failures
+  before streaming preserve their HTTP status; after headers, an error frame ends
+  the stream. Backpressure pauses writes and disconnect aborts waiting/work.
+  Browser decoding supports split UTF-8/JSON chunks, a 64 Mi-character frame cap,
+  and rejects missing/duplicate terminal reports instead of displaying partial data.
 - Optional `discover: true` also finds same-origin URL candidates from the initial
   page's links, robots.txt sitemap declarations and `/sitemap.xml`. The checkbox
   enables this explicitly; ordinary single-page requests do not fetch sitemaps.

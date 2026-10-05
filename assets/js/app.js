@@ -289,10 +289,10 @@
     state.page = 1;
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
-    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'discovery-list', 'skipped-list'].forEach((id) => replaceContent(byId(id), ''));
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
-      'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count'].forEach((id) => { byId(id).textContent = ''; });
+      'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count', 'progress-counts', 'progress-url'].forEach((id) => { byId(id).textContent = ''; });
     delete byId('report-result').dataset.result;
     byId('scan-status').dataset.state = 'idle';
     byId('scan-status').classList.remove('text-danger-emphasis');
@@ -302,6 +302,9 @@
     byId('discovery-section').open = false;
     byId('skipped-section').hidden = true;
     byId('skipped-section').open = false;
+    byId('crawl-progress').hidden = true;
+    byId('progress-skips').hidden = true;
+    byId('progress-skips').open = false;
     ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
     ['export-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
     byId('scan-icon').classList.remove('d-none');
@@ -319,6 +322,32 @@
       byId('website-url').value = '';
       byId('website-url').setCustomValidity('');
     }
+  }
+
+  function readAuditStream(response, onProgress) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8', { fatal: true });
+    let buffer = '';
+    let result;
+    const consume = () => reader.read().then(({ done, value }) => {
+      buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+      if (buffer.length > 64 * 1024 * 1024) throw new Error('Report frame too large');
+      let newline;
+      while ((newline = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, newline);
+        buffer = buffer.slice(newline + 1);
+        if (!line.trim()) continue;
+        const frame = JSON.parse(line);
+        if (result || !['progress', 'report', 'error'].includes(frame.type) || !frame.data) throw new Error('Invalid stream frame');
+        if (frame.type === 'progress') onProgress(frame.data);
+        else result = frame.data;
+      }
+      if (!done) return consume();
+      if (buffer.trim() || !result) throw new Error('Incomplete report stream');
+      return result;
+    });
+    return consume().then(undefined, (error) => reader.cancel().then(() => { throw error; }, () => { throw error; }))
+      .finally(() => reader.releaseLock());
   }
 
   byId('export-button').addEventListener('click', () => {
@@ -368,10 +397,24 @@
     byId("report").setAttribute("aria-busy", "true");
     fetch("/api/audits", {
       credentials: "include", method: "POST", cache: "no-store", signal: controller.signal,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Accept: byId('crawl-pages').checked ? 'application/x-ndjson' : 'application/json' },
       body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}),
         ...(byId('crawl-pages').checked ? { crawl: true } : {}) })
-    }).then((response) => response.json().then((data) => {
+    }).then((response) => {
+      const body = (response.headers.get('content-type') || '').split(';')[0] === 'application/x-ndjson' ?
+        readAuditStream(response, (progress) => {
+          if (round !== state.round) return;
+          if (!['discovered', 'fetched', 'analyzed', 'skipped'].every((key) => Number.isSafeInteger(progress[key]) && progress[key] >= 0) ||
+              !Array.isArray(progress.skippedEntries) || progress.skippedEntries.length > 200) throw new Error('Invalid progress');
+          byId('crawl-progress').hidden = false;
+          byId('progress-counts').textContent = '\u0e1e\u0e1a ' + progress.discovered + ' URL \u00b7 \u0e2d\u0e48\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 ' + progress.fetched +
+            ' \u00b7 \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c ' + progress.analyzed + ' \u00b7 \u0e02\u0e49\u0e32\u0e21 ' + progress.skipped;
+          byId('progress-url').textContent = progress.currentUrl || progress.origin;
+          byId('progress-skips').hidden = progress.skippedEntries.length === 0;
+          replaceContent(byId('progress-skipped-list'), progress.skippedEntries.map((entry) => '<li class="mb-1 text-break">' +
+            escapeHtml(entry.url) + ' &middot; ' + escapeHtml(entry.reason) + '</li>').join(''));
+        }) : response.json();
+      return body.then((data) => {
       if (!response.ok || data.status === "failed") {
         throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
       }
@@ -380,9 +423,11 @@
         throw new Error("Invalid report");
       }
       return data;
-    })).then((data) => {
+      });
+    }).then((data) => {
       if (round !== state.round) return;
       state.report = data;
+      byId('crawl-progress').hidden = true;
       state.origin = data.scope.origin;
       state.page = 1;
       resetIssueFilters();

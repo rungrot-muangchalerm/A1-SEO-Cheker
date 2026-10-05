@@ -88,6 +88,8 @@ module.exports = {
       } catch (error) {
         if (options.signal?.aborted) throw error;
         sitemaps.push({ url: url.href, status: 'not-checked', reason: error instanceof website.WebsiteError ? error.code : 'SITEMAP_FAILED' });
+      } finally {
+        await options.onDiscovery?.({ ...collection, sitemaps });
       }
     }
     return { ...collection, sitemaps };

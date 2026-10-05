@@ -14,7 +14,7 @@ module.exports = {
     const startedAt = new Date().toISOString();
     try {
       if (body.crawl === true) {
-        const crawl = await crawlService.run(body.url, { signal: options.signal });
+        const crawl = await crawlService.run(body.url, { signal: options.signal, onProgress: options.onProgress });
         options.signal?.throwIfAborted();
         return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl) };
       }

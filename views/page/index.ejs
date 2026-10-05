@@ -35,6 +35,14 @@
     </div>
   </form>
     <p class="small text-primary-emphasis text-break mb-4" id="scan-status" role="status" aria-live="polite"></p>
+  <section class="small border-bottom border-info-subtle pb-3 mb-4" id="crawl-progress" hidden aria-label="&#3588;&#3623;&#3634;&#3617;&#3588;&#3639;&#3610;&#3627;&#3609;&#3657;&#3634;&#3585;&#3634;&#3619;&#3605;&#3619;&#3623;&#3592;">
+    <p class="mb-1" id="progress-counts" role="status" aria-live="polite"></p>
+    <p class="text-break mb-0" id="progress-url"></p>
+    <details class="mt-2" id="progress-skips" hidden>
+      <summary>URL &#3607;&#3637;&#3656;&#3586;&#3657;&#3634;&#3617;</summary>
+      <ul class="ps-3 mt-2 mb-0" id="progress-skipped-list"></ul>
+    </details>
+  </section>
 
   <div id="report" aria-busy="false" hidden>
     <section class="mb-4" aria-labelledby="overview-heading">

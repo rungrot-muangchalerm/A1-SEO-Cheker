@@ -27,6 +27,11 @@ module.exports = {
     let lastRequest = null;
     let stopReason = null;
     let discovery;
+    const notify = async (phase, currentUrl = null) => {
+      await options.onProgress?.({ phase, currentUrl, origin: discovery?.origin || new URL(pages[0]?.finalUrl || requested.href).origin,
+        discovered: discovery?.urls.length || (pages.length ? 1 : 0), fetched: pages.length, analyzed: pages.length,
+        skipped: skipped.length, skippedEntries: [...skipped], limitReached: !!(stopReason || discovery?.limitReached), stopReason });
+    };
     const throttle = async (_url, signal, crawlDelay = 0) => {
       if (stats.requests >= limits.maxRequests) throw new website.WebsiteError('CRAWL_REQUEST_LIMIT');
       const interval = Math.max(limits.minIntervalMs, Number.isFinite(crawlDelay) && crawlDelay > 0 ? crawlDelay * 1000 : 0);
@@ -48,7 +53,8 @@ module.exports = {
       if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
       await throttle(url, signal, rules.crawlDelay);
     };
-    const networkOptions = { signal: controller.signal, beforeRequest };
+    const networkOptions = { signal: controller.signal, beforeRequest,
+      onDiscovery: async (collection) => { discovery = collection; await notify('discovering'); } };
     const analyze = async (page) => {
       page.metadata = html.parse(page);
       page.robots = await robots.load(page.finalUrl, policyOptions);
@@ -64,6 +70,7 @@ module.exports = {
       stats.attemptedPages++;
       const root = await website.fetchPage(requested.href, networkOptions);
       await analyze(root);
+      await notify('discovering');
       try { discovery = await discoveryService.discover(root, networkOptions); }
       catch (error) {
         if (options.signal?.aborted || !stopCodes.has(error.code)) throw error;
@@ -79,8 +86,9 @@ module.exports = {
         if (!stopReason && stats.attemptedPages >= limits.maxPages) stopReason = 'CRAWL_PAGE_LIMIT';
         if (!stopReason && stats.htmlBytes >= limits.maxHtmlBytes) stopReason = 'CRAWL_BYTE_LIMIT';
         if (!stopReason && controller.signal.aborted) stopReason = controller.signal.reason.code;
-        if (stopReason) { skipped.push({ url: entry.url, reason: stopReason }); continue; }
+        if (stopReason) { skipped.push({ url: entry.url, reason: stopReason }); await notify('page-skipped', entry.url); continue; }
         stats.attemptedPages++;
+        await notify('crawling', entry.url);
         const remainingBytes = limits.maxHtmlBytes - stats.htmlBytes;
         try {
           const page = await website.fetchPage(entry.url, { ...networkOptions, scopeOrigin: discovery.origin,
@@ -94,7 +102,9 @@ module.exports = {
           if (stopCodes.has(reason)) stopReason = reason;
           skipped.push({ url: entry.url, reason });
         } finally { seen.add(entry.url); }
+        await notify('crawling', entry.url);
       }
+      await notify('completed');
       return { page: root, pages, discovery, skipped, limits, stats, stopReason, limitReached: !!stopReason };
     } finally {
       clearTimeout(timer);

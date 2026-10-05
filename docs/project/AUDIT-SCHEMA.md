@@ -71,3 +71,14 @@ time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` inc
 crawl and discovery limits. Even an exhausted discovered queue does not establish
 complete domain coverage or Google's index state. Robots responses are shared only
 inside that request, then released; blocked/unknown rules prevent automated fetching.
+
+## Live Response
+
+Clients explicitly accepting `application/x-ndjson` can receive newline-delimited
+`{ type, data }` frames on the POST connection. `progress` data contains phase,
+current URL/origin, discovered/fetched/analyzed/skipped counts, bounded skipped
+entries, limitReached and stopReason. Counts are observations of that request,
+not a progress percentage or proof of total site size. `report` data is the ordinary
+schema and appears once at the end; a post-header failure uses `error` data with
+status `failed`. EOF without a terminal frame is incomplete. No stream state is
+retained for reconnection, and progress is not an exportable report.
