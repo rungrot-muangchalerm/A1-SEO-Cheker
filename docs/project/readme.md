@@ -39,6 +39,12 @@ and data modules. Do not add audit history or persistence.
   Loading, partial/completed coverage, no findings, and failure states are distinct.
   Scope, real coverage counts, completion time, and unavailable checks remain visible
   even when no issues were found. Starting another round clears the prior details.
+  Issue/page filters operate on API data. Copy buttons copy actual evidence or
+  numbered advice; they do not invent replacement markup. CSV contains only filtered
+  issues and their evidence/advice, created in a Blob on an explicit button click.
+  CSV quotes all fields and prefixes risky spreadsheet cells with an apostrophe;
+  the in-memory report stays unchanged. Spreadsheet programs differ, especially
+  after re-saving CSV; see [OWASP's CSV injection guidance](https://owasp.org/www-community/attacks/CSV_Injection).
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and

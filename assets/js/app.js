@@ -86,7 +86,7 @@
     byId("issue-empty-message").textContent = issues.length ? "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e15\u0e32\u0e21\u0e15\u0e31\u0e27\u0e01\u0e23\u0e2d\u0e07\u0e19\u0e35\u0e49" : "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e15\u0e32\u0e21\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49";
     byId("reset-filters").classList.toggle("d-none", issues.length === 0);
     byId("issue-result-status").textContent = "\u0e41\u0e2a\u0e14\u0e07 " + visible.length + " \u0e08\u0e32\u0e01 " + issues.length + " \u0e1b\u0e31\u0e0d\u0e2b\u0e32";
-    byId("export-button").disabled = true;
+    byId("export-button").disabled = visible.length === 0;
   }
 
   function renderPages() {
@@ -160,10 +160,13 @@
       '<span class="small">' + escapeHtml(issue.ruleId) + '</span></div>' +
       '<section class="mb-4"><h3 class="h6">\u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48\u0e1e\u0e1a</h3><p class="small text-break mb-0">' + escapeHtml(issue.found) + '</p></section>' +
       '<section class="mb-4"><h3 class="h6">\u0e1c\u0e25\u0e01\u0e23\u0e30\u0e17\u0e1a</h3><p class="small mb-0">' + escapeHtml(issue.impact) + '</p></section>' +
-      '<section class="mb-4"><h3 class="h6">\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49</h3><ol class="small ps-3 mb-0">' +
+      '<section class="mb-4"><div class="d-flex align-items-center justify-content-between mb-2"><h3 class="h6 mb-0">\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49</h3>' +
+      '<button type="button" class="btn btn-sm btn-outline-success" data-copy-kind="steps" aria-label="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49" title="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49" data-bs-toggle="tooltip">' + icon('copy', 16) + '</button></div><ol class="small ps-3 mb-0">' +
       issue.steps.map((step) => '<li class="mb-2">' + escapeHtml(step) + '</li>').join('') + '</ol></section>' +
-      '<section class="mb-4"><h3 class="h6">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19</h3><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto mb-0"><code>' +
+      '<section class="mb-4"><div class="d-flex align-items-center justify-content-between mb-2"><h3 class="h6 mb-0">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19</h3>' +
+      '<button type="button" class="btn btn-sm btn-outline-success" data-copy-kind="evidence" aria-label="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19" title="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19" data-bs-toggle="tooltip">' + icon('copy', 16) + '</button></div><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto mb-0"><code>' +
       escapeHtml(JSON.stringify(issue.evidence, null, 2)) + '</code></pre></section>' +
+      '<p class="small mb-3" id="copy-status" role="status" aria-live="polite"></p>' +
       '<section class="mb-4"><h3 class="h6">\u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e1e\u0e1a</h3><ul class="list-unstyled small mb-0">' +
       issue.urls.map((url) => '<li class="mb-2"><button type="button" class="btn btn-link text-primary-emphasis text-decoration-none text-start text-break p-0 small" data-page-url="' +
         escapeHtml(url) + '">' + escapeHtml(url) + '</button></li>').join('') + '</ul></section>' +
@@ -210,6 +213,48 @@
     byId("issue-search").value = "";
     renderIssues();
   }
+
+  function copyText(text) {
+    if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+    const input = document.createElement('textarea');
+    const focus = document.activeElement;
+    input.value = text;
+    input.className = 'visually-hidden';
+    byId('detail-content').appendChild(input);
+    let copied = false;
+    try {
+      input.select();
+      copied = document.execCommand('copy');
+    } finally {
+      input.remove();
+      focus?.focus();
+    }
+    return copied ? Promise.resolve() : Promise.reject(new Error('Clipboard unavailable'));
+  }
+
+  function csvCell(value) {
+    let text = typeof value === 'object' ? JSON.stringify(value) : String(value ?? '');
+    // Spreadsheet-facing export: neutralize formula prefixes without mutating the report.
+    if (/^(?:[\u0000-\u0020]*[=+@\-\uff1d\uff0b\uff0d\uff20]|[\t\r\n])/.test(text)) text = "'" + text;
+    return '"' + text.replace(/"/g, '""') + '"';
+  }
+
+  byId('export-button').addEventListener('click', () => {
+    if (!state.report || state.busy) return;
+    const issues = filteredIssues();
+    if (!issues.length) return;
+    const fields = ['ruleId', 'ruleVersion', 'outcome', 'severity', 'category', 'title', 'urls', 'found', 'impact', 'steps', 'evidence', 'references'];
+    const csv = [fields.map(csvCell).join(','), ...issues.map((issue) => fields.map((field) => csvCell(issue[field])).join(','))].join('\r\n');
+    const objectUrl = URL.createObjectURL(new Blob(['\ufeff', csv, '\r\n'], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = 'seo-issues.csv';
+    document.body.appendChild(link);
+    try { link.click(); } finally {
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    }
+  });
 
   byId("scan-form").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -299,6 +344,22 @@
   byId("pages-next").addEventListener("click", () => { state.page += 1; renderPages(); });
 
   document.addEventListener("click", (event) => {
+    const copyButton = event.target.closest('[data-copy-kind]');
+    if (copyButton) {
+      const issue = state.selectedIssue;
+      if (!issue || !state.report || copyButton.disabled) return;
+      const text = copyButton.dataset.copyKind === 'evidence' ? JSON.stringify(issue.evidence, null, 2) :
+        issue.steps.map((step, index) => (index + 1) + '. ' + step).join('\n');
+      bootstrap.Tooltip.getInstance(copyButton)?.hide();
+      copyButton.disabled = true;
+      byId('copy-status').textContent = '';
+      Promise.resolve().then(() => copyText(text)).then(() => {
+        if (state.selectedIssue === issue && copyButton.isConnected) byId('copy-status').textContent = '\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e41\u0e25\u0e49\u0e27';
+      }, () => {
+        if (state.selectedIssue === issue && copyButton.isConnected) byId('copy-status').textContent = '\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08';
+      }).finally(() => { if (copyButton.isConnected) copyButton.disabled = false; });
+      return;
+    }
     const issueButton = event.target.closest("[data-issue-id]");
     if (issueButton) { openIssue(issueButton.dataset.issueId, issueButton); return; }
     const pageButton = event.target.closest("[data-page-url]");
