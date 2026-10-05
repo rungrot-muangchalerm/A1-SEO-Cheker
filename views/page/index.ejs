@@ -38,6 +38,7 @@
   <section class="small border-bottom border-info-subtle pb-3 mb-4" id="crawl-progress" hidden aria-label="&#3588;&#3623;&#3634;&#3617;&#3588;&#3639;&#3610;&#3627;&#3609;&#3657;&#3634;&#3585;&#3634;&#3619;&#3605;&#3619;&#3623;&#3592;">
     <p class="mb-1" id="progress-counts" role="status" aria-live="polite"></p>
     <p class="text-break mb-0" id="progress-url"></p>
+    <p class="text-warning-emphasis mb-0 mt-2" id="progress-limit" hidden></p>
     <details class="mt-2" id="progress-skips" hidden>
       <summary>URL &#3607;&#3637;&#3656;&#3586;&#3657;&#3634;&#3617;</summary>
       <ul class="ps-3 mt-2 mb-0" id="progress-skipped-list"></ul>
@@ -80,6 +81,7 @@
         <p class="small text-break mb-1 mt-2" id="report-scope"></p>
         <p class="small mb-0" id="report-time"></p>
         <p class="small mb-0 mt-2" id="report-result" role="status"></p>
+        <p class="alert alert-warning small text-break mt-3 mb-0 rounded-1" id="crawl-limit" role="status" hidden></p>
         <details class="small mt-3" id="not-checked-section" hidden>
           <summary>&#3618;&#3633;&#3591;&#3652;&#3604;&#3657;&#3605;&#3619;&#3623;&#3592; <span id="not-checked-count"></span></summary>
           <ul class="mt-2 mb-0 ps-3" id="not-checked-list"></ul>

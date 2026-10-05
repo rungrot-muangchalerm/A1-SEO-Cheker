@@ -30,7 +30,8 @@ module.exports = {
     const notify = async (phase, currentUrl = null) => {
       await options.onProgress?.({ phase, currentUrl, origin: discovery?.origin || new URL(pages[0]?.finalUrl || requested.href).origin,
         discovered: discovery?.urls.length || (pages.length ? 1 : 0), fetched: pages.length, analyzed: pages.length,
-        skipped: skipped.length, skippedEntries: [...skipped], limitReached: !!(stopReason || discovery?.limitReached), stopReason });
+        skipped: skipped.length, skippedEntries: [...skipped], limitReached: !!(stopReason || discovery?.limitReached), stopReason,
+        limits, attemptedPages: stats.attemptedPages });
     };
     const throttle = async (_url, signal, crawlDelay = 0) => {
       if (stats.requests >= limits.maxRequests) throw new website.WebsiteError('CRAWL_REQUEST_LIMIT');

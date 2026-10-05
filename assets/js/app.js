@@ -12,6 +12,18 @@
     index: "\u0e01\u0e32\u0e23\u0e40\u0e02\u0e49\u0e32 index", onpage: "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1a\u0e19\u0e2b\u0e19\u0e49\u0e32", links: "\u0e25\u0e34\u0e07\u0e01\u0e4c\u0e20\u0e32\u0e22\u0e43\u0e19",
     sitemap: "Sitemap", images: "\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e", render: "JavaScript"
   };
+  const skipReasons = {
+    ROBOTS_BLOCKED: 'robots.txt \u0e44\u0e21\u0e48\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 SEOChecker',
+    ROBOTS_UNKNOWN: '\u0e22\u0e31\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e0e robots.txt \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49',
+    OUTSIDE_SCOPE: '\u0e2d\u0e2d\u0e01\u0e19\u0e2d\u0e01\u0e02\u0e2d\u0e1a\u0e40\u0e02\u0e15\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c',
+    ALREADY_FETCHED: '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07\u0e16\u0e39\u0e01\u0e2d\u0e48\u0e32\u0e19\u0e41\u0e25\u0e49\u0e27',
+    UNSUPPORTED_TYPE: '\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 HTML \u0e17\u0e35\u0e48\u0e23\u0e2d\u0e07\u0e23\u0e31\u0e1a',
+    TIMEOUT: '\u0e40\u0e27\u0e47\u0e1a\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07\u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32\u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14',
+    CRAWL_PAGE_LIMIT: '\u0e04\u0e23\u0e1a\u0e08\u0e33\u0e19\u0e27\u0e19 URL \u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14',
+    CRAWL_REQUEST_LIMIT: '\u0e04\u0e23\u0e1a\u0e08\u0e33\u0e19\u0e27\u0e19\u0e04\u0e33\u0e02\u0e2d\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14',
+    CRAWL_DEADLINE: '\u0e16\u0e36\u0e07\u0e40\u0e27\u0e25\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14',
+    CRAWL_BYTE_LIMIT: '\u0e16\u0e36\u0e07\u0e02\u0e19\u0e32\u0e14 HTML \u0e23\u0e27\u0e21\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14'
+  };
 
   const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false, round: 0, controller: null };
   const downloadUrls = new Set();
@@ -49,6 +61,18 @@
 
   function pageIssues(url) {
     return (state.report?.issues || []).filter((issue) => issue.urls.includes(url));
+  }
+
+  function skipReason(code) {
+    return Object.hasOwn(skipReasons, code) ? skipReasons[code] + ' (' + code + ')' : code;
+  }
+
+  function limitMessage(code, limits, fetched) {
+    if (!code || !limits) return '\u0e01\u0e32\u0e23\u0e04\u0e49\u0e19\u0e2b\u0e32 URL \u0e16\u0e36\u0e07\u0e02\u0e49\u0e2d\u0e08\u0e33\u0e01\u0e31\u0e14 \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a\u0e17\u0e31\u0e49\u0e07\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c';
+    const bound = code === 'CRAWL_PAGE_LIMIT' ? limits.maxPages + ' URL' : code === 'CRAWL_REQUEST_LIMIT' ? limits.maxRequests + ' requests' :
+      code === 'CRAWL_DEADLINE' ? limits.timeoutMs / 1000 + ' s' : code === 'CRAWL_BYTE_LIMIT' ? limits.maxHtmlBytes / 1024 / 1024 + ' MiB' : '';
+    return '\u0e2b\u0e22\u0e38\u0e14\u0e15\u0e23\u0e27\u0e08: ' + skipReason(code) + ' ' + bound +
+      ' \u00b7 \u0e2d\u0e48\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 ' + fetched + ' \u0e2b\u0e19\u0e49\u0e32 \u00b7 \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a\u0e17\u0e31\u0e49\u0e07\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c';
   }
 
   function pageLevel(url) {
@@ -136,6 +160,8 @@
     }).format(new Date(report.completedAt));
     byId("report-result").textContent = report.issues.length ? "\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2b\u0e23\u0e37\u0e2d\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 " + report.issues.length + " \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23" : "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e15\u0e32\u0e21\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49";
     byId("report-result").dataset.result = report.issues.length ? "issues" : "none";
+    byId('crawl-limit').hidden = !report.coverage.limitReached;
+    byId('crawl-limit').textContent = report.coverage.limitReached ? limitMessage(report.crawl?.stopReason, report.crawl?.limits, report.coverage.fetched) : '';
     byId("not-checked-section").hidden = report.notChecked.length === 0;
     byId("not-checked-count").textContent = "(" + report.notChecked.length + ")";
     replaceContent(byId("not-checked-list"), report.notChecked.map((entry) => '<li class="mb-2 text-break">' +
@@ -149,7 +175,7 @@
     byId('skipped-section').hidden = report.coverage.skipped.length === 0;
     byId('skipped-count').textContent = '(' + report.coverage.skipped.length + ')';
     replaceContent(byId('skipped-list'), report.coverage.skipped.map((entry) => '<li class="mb-2 text-break">' +
-      escapeHtml(entry.url) + ' &middot; ' + escapeHtml(entry.reason) + '</li>').join(''));
+      escapeHtml(entry.url) + ' &middot; ' + escapeHtml(skipReason(entry.reason)) + '</li>').join(''));
   }
 
   function openDrawer(title, content, trigger) {
@@ -292,7 +318,8 @@
     ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
-      'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count', 'progress-counts', 'progress-url'].forEach((id) => { byId(id).textContent = ''; });
+      'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count', 'progress-counts', 'progress-url',
+      'crawl-limit', 'progress-limit'].forEach((id) => { byId(id).textContent = ''; });
     delete byId('report-result').dataset.result;
     byId('scan-status').dataset.state = 'idle';
     byId('scan-status').classList.remove('text-danger-emphasis');
@@ -305,6 +332,8 @@
     byId('crawl-progress').hidden = true;
     byId('progress-skips').hidden = true;
     byId('progress-skips').open = false;
+    byId('crawl-limit').hidden = true;
+    byId('progress-limit').hidden = true;
     ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
     ['export-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
     byId('scan-icon').classList.remove('d-none');
@@ -411,8 +440,10 @@
             ' \u00b7 \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c ' + progress.analyzed + ' \u00b7 \u0e02\u0e49\u0e32\u0e21 ' + progress.skipped;
           byId('progress-url').textContent = progress.currentUrl || progress.origin;
           byId('progress-skips').hidden = progress.skippedEntries.length === 0;
+          byId('progress-limit').hidden = !progress.limitReached;
+          byId('progress-limit').textContent = progress.limitReached ? limitMessage(progress.stopReason, progress.limits, progress.fetched) : '';
           replaceContent(byId('progress-skipped-list'), progress.skippedEntries.map((entry) => '<li class="mb-1 text-break">' +
-            escapeHtml(entry.url) + ' &middot; ' + escapeHtml(entry.reason) + '</li>').join(''));
+            escapeHtml(entry.url) + ' &middot; ' + escapeHtml(skipReason(entry.reason)) + '</li>').join(''));
         }) : response.json();
       return body.then((data) => {
       if (!response.ok || data.status === "failed") {

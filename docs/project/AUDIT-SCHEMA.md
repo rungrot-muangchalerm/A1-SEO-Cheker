@@ -82,3 +82,6 @@ not a progress percentage or proof of total site size. `report` data is the ordi
 schema and appears once at the end; a post-header failure uses `error` data with
 status `failed`. EOF without a terminal frame is incomplete. No stream state is
 retained for reconnection, and progress is not an exportable report.
+Progress includes the actual crawl limits and attempted-page count. The UI's limit
+notice distinguishes a page-attempt budget from successfully fetched page count;
+the notice and progress are cleared when cancelled, replaced, reloaded or left.

@@ -18,6 +18,11 @@ and data modules. Do not add audit history or persistence.
   shares robots responses; no cache survives the request. Child failures/skips
   retain reasons without inventing HTTP status or page content. Scope, real counts,
   skipped URLs and stop reason describe bounded coverage, not the entire domain.
+  A Thai limit notice shows the actual bound and successfully read count. Limit
+  skips remain separate from blocked, failed or duplicate destinations. Cancellation
+  during DNS, robots, pacing, sitemap or child requests releases sockets/listeners
+  and returns no partial report. Refresh/replacement also clear live progress;
+  stale progress/final frames cannot overwrite a newer round, even if abort is ignored.
 - Crawl UI requests `Accept: application/x-ndjson` on the same POST connection.
   Progress frames contain real discovered/fetched/analyzed counts and bounded skipped
   URL reasons. One report frame finishes the stream; there are no job IDs, polling,
