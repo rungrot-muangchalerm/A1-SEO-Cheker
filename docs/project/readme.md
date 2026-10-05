@@ -169,7 +169,11 @@ and data modules. Do not add audit history or persistence.
   decompressed bytes. Redirect hops share the same deadline.
 - Audit responses, errors, and unknown-report routes use `Cache-Control: no-store`.
   An audit-scoped error middleware handles malformed JSON without logging input.
-  The original entry point only adds the middleware's error hook after its router.
+  The framework entry listens only on `127.0.0.1`. Its local middleware checks
+  Host/Origin and JSON content type for audit POSTs, including Express URL variants.
+  Admission allows two active audits and ten starts per ten seconds, with no queue
+  or URL/report history. Only transient numeric counters remain between requests;
+  a slot is released after service cleanup, not merely when the client disconnects.
 - Disconnecting the client aborts DNS waiting and in-flight upstream requests;
   completed or cancelled requests remove their abort and response listeners.
 
@@ -179,8 +183,12 @@ and data modules. Do not add audit history or persistence.
 npm ci
 npx playwright install chromium
 npm start
-node --test
+npm test
 ```
+
+Open `http://localhost:3000` or the configured `PORT`; no VPS, domain or HTTPS is
+needed for this personal checker. Follow the [root README](../../README.md) for
+safe `.env` setup. This does not permit private/local URLs as audit targets.
 
 Node.js 20.18.1 or newer is required by the HTML parser.
 The optional JavaScript checkbox runs a real Playwright/Chromium before/after

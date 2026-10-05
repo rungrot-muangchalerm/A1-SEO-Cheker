@@ -181,8 +181,32 @@ test('cancelling before launch opens no socket; cancelling a pending asset close
   const transport = stubTransport(t, scenario(markup('<script src="/slow.js"></script>'), [{ neverRespond: true }]));
   const launch = chromium.launch.bind(chromium);
   let browser;
-  t.mock.method(chromium, 'launch', async (options) => { browser = await launch(options); return browser; });
   const controller = new AbortController();
+  let lateProtocolCommands = 0, simultaneousContextCloses = 0;
+  t.mock.method(chromium, 'launch', async (options) => {
+    browser = await launch(options);
+    const newContext = browser.newContext.bind(browser);
+    t.mock.method(browser, 'newContext', async options => {
+      const context = await newContext(options);
+      const close = context.close.bind(context);
+      t.mock.method(context, 'close', (...args) => {
+        if (controller.signal.aborted) simultaneousContextCloses++;
+        return close(...args);
+      });
+      const newSession = context.newCDPSession.bind(context);
+      t.mock.method(context, 'newCDPSession', async page => {
+        const session = await newSession(page);
+        const send = session.send.bind(session);
+        t.mock.method(session, 'send', (method, params) => {
+          if (controller.signal.aborted && ['Fetch.failRequest', 'Fetch.fulfillRequest'].includes(method)) lateProtocolCommands++;
+          return send(method, params);
+        });
+        return session;
+      });
+      return context;
+    });
+    return browser;
+  });
   t.after(() => controller.abort());
   const operation = audit.create({ url: base, render: true }, { signal: controller.signal });
   const deadline = Date.now() + 10000;
@@ -193,6 +217,8 @@ test('cancelling before launch opens no socket; cancelling a pending asset close
   assert.equal(transport.connections.at(-1).destroyed, true);
   assert.equal(browser.isConnected(), false);
   assert.equal(getEventListeners(controller.signal, 'abort').length, 0);
+  assert.equal(lateProtocolCommands, 0);
+  assert.equal(simultaneousContextCloses, 0);
 });
 
 test('render resources preserve actual raw bounded bytes/MIME, decompression limits and a redirect hop without forwarding browser headers', async (t) => {

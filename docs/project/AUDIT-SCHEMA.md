@@ -101,7 +101,8 @@ and popup navigation, and disabled downloads/cache further restrict execution.
 Cookies/auth/browser request headers are never forwarded; Set-Cookie is not replayed.
 No report, source, HAR, trace, screenshot or storage state is written/exported.
 Browser-owned temporary runtime profiles are disposed on close, not audit storage.
-Public deployment still requires OS/container isolation for untrusted browser code.
+Chromium's sandbox stays enabled for untrusted browser code even when the checker
+runs locally. Personal use does not require public deployment.
 
 Limits apply across the render round: 20 seconds, 2 pages, 30 Node socket requests,
 100 intercepted requests/retained resource records, serial network access paced

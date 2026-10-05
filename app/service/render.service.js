@@ -137,8 +137,11 @@ module.exports = {
               void closeBrowser();
               return;
             }
-            const fulfill = (status, headers, body) => cdp.send('Fetch.fulfillRequest', { requestId: event.requestId,
-              responseCode: status, responseHeaders: Object.entries(headers).map(([name, value]) => ({ name, value })), body: Buffer.from(body).toString('base64') });
+            const fulfill = (status, headers, body) => {
+              requestSignal.throwIfAborted();
+              return cdp.send('Fetch.fulfillRequest', { requestId: event.requestId,
+                responseCode: status, responseHeaders: Object.entries(headers).map(([name, value]) => ({ name, value })), body: Buffer.from(body).toString('base64') });
+            };
             const operation = pending.then(async () => {
               requestSignal.throwIfAborted();
               const url = website.parseUrl(request.url);
@@ -173,7 +176,9 @@ module.exports = {
             pending = operation.then(() => {}, async (error) => {
               record({ url: request.url, reason: error instanceof website.WebsiteError ? error.code : 'RENDER_RESOURCE_FAILED',
                 ...(error.observation ? { status: error.observation.status } : {}) });
-              await cdp.send('Fetch.failRequest', { requestId: event.requestId, errorReason: 'BlockedByClient' }).catch(() => {});
+              if (!requestSignal.aborted && browser.isConnected()) {
+                await cdp.send('Fetch.failRequest', { requestId: event.requestId, errorReason: 'BlockedByClient' }).catch(() => {});
+              }
             });
           });
           await cdp.send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] });
@@ -206,7 +211,8 @@ module.exports = {
             completedAt: new Date().toISOString(), resources: { records, omitted, scriptErrors, consoleErrors } };
         } finally {
           requestController.abort(new website.WebsiteError('RENDER_OBSERVATION_ENDED'));
-          if (context) await context.close().catch(() => {});
+          if (controller.signal.aborted) await closeBrowser();
+          else if (context) await context.close().catch(() => {});
           await pending;
           if (item.render) {
             item.render.resources = { records: [...records], omitted, scriptErrors, consoleErrors };
