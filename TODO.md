@@ -42,7 +42,7 @@
 
 ## รอบที่ 2: วิเคราะห์ SEO ของหน้าเดียว
 
-- [ ] ใช้ HTML parser อ่าน title, description, headings, canonical, links และ images
+- [x] feat: ใช้ HTML parser อ่าน title, description, headings, canonical, links และ images
 - [ ] ตรวจ HTTP status, robots meta รวมถึงคำสั่งเฉพาะ Googlebot และ `X-Robots-Tag`
 - [ ] ตรวจ title/description ที่ไม่มีข้อมูล และ canonical ที่เป็น URL ไม่ถูกต้องหรือประกาศหลายค่าขัดกัน
 - [ ] ตรวจรูปที่ขาด `alt` โดยไม่ถือว่า `alt=""` ของรูปตกแต่งเป็นข้อผิดพลาดอัตโนมัติ

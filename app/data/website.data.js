@@ -5,6 +5,7 @@ const net = require('node:net');
 const { MIMEType } = require('node:util');
 const ipaddr = require('ipaddr.js');
 const zlib = require('node:zlib');
+const sniffEncoding = require('html-encoding-sniffer');
 
 const limits = Object.freeze({ timeoutMs: 15000, maxBytes: 2 * 1024 * 1024, maxRedirects: 5 });
 const redirectStatuses = new Set([301, 302, 303, 307, 308]);
@@ -147,8 +148,15 @@ function requestPage(url, addresses, signal, maxBytes) {
       decoder?.on('error', () => stop('DECOMPRESSION_FAILED'));
       body.on('end', () => {
         try {
-          const html = new TextDecoder(mediaType.params.get('charset') || 'utf-8').decode(Buffer.concat(chunks));
-          resolve({ status, headers, html, bytes: size, receivedBytes });
+          const charset = mediaType.params.get('charset');
+          if (charset) new TextDecoder(charset);
+          const buffer = Buffer.concat(chunks);
+          const encoding = sniffEncoding(buffer, {
+            transportLayerEncodingLabel: charset,
+            defaultEncoding: mediaType.essence === 'application/xhtml+xml' ? 'UTF-8' : undefined
+          });
+          const html = new TextDecoder(encoding).decode(buffer);
+          resolve({ status, headers, html, encoding, bytes: size, receivedBytes });
         } catch { reject(failure('UNSUPPORTED_CHARSET')); }
       });
       if (decoder) response.pipe(decoder);

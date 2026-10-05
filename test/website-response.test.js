@@ -49,3 +49,18 @@ test('follows every supported redirect status and respects relative URLs', async
     assert.equal(page.html, '<title>Final</title>');
   }
 });
+
+test('sniffs declared HTML encoding and lets a BOM override an incorrect HTTP charset', async (t) => {
+  const legacy = Buffer.concat([Buffer.from('<meta charset="windows-1252"><title>caf', 'ascii'), Buffer.from([0xe9]), Buffer.from('</title>', 'ascii')]);
+  const utf8 = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('<title>\u0e44\u0e17\u0e22</title>', 'utf8')]);
+  stubTransport(t, [
+    { headers: { 'content-type': 'text/html' }, html: legacy },
+    { headers: { 'content-type': 'text/html; charset=windows-1252' }, html: utf8 }
+  ]);
+  const first = await website.fetchPage('https://encoding.example/legacy');
+  assert.equal(first.encoding, 'windows-1252');
+  assert.ok(first.html.includes('caf\u00e9'));
+  const second = await website.fetchPage('https://encoding.example/bom');
+  assert.equal(second.encoding, 'UTF-8');
+  assert.equal(second.html, '<title>\u0e44\u0e17\u0e22</title>');
+});

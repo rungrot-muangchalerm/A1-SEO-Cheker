@@ -10,6 +10,9 @@ and data modules. Do not add audit history or persistence.
 - The response uses schema version `1.0` with `pages`, `issues`, `notChecked`,
   `coverage`, `summary`, timestamps, and a Lighthouse availability state. Each page
   contains actual HTTP status, headers, HTML, final URL, and redirect evidence.
+- Each page includes parsed metadata, headings, links, and images with HTML
+  evidence. Relative URLs honor the document base URL. HTML byte decoding respects
+  BOM, response charset, and meta charset. Element/evidence limits are disclosed.
 - Status is currently `partial`: fetching is complete but SEO analysis has not yet
   been implemented. Empty issues must not be read as a passing audit.
 - There is no audit ID, saved report, database write, cookie, or resume endpoint.
@@ -31,6 +34,8 @@ npm ci
 npm start
 node --test
 ```
+
+Node.js 20.18.1 or newer is required by the HTML parser.
 
 The upstream framework's dev dependencies currently produce three high-severity
 `npm audit` entries in the nodemon dependency chain. They have been left unchanged
