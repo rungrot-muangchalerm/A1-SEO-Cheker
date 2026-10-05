@@ -1,7 +1,7 @@
 const website = require('../data/website.data');
 const sitemapService = require('./sitemap.service');
 
-const limits = Object.freeze({ maxUrls: 200, maxSitemaps: 5, maxSkipped: 200, timeoutMs: 10000 });
+const limits = Object.freeze({ maxUrls: 200, maxSitemaps: 5, maxSitemapCandidates: 200, maxSkipped: 200, timeoutMs: 10000 });
 
 module.exports = {
   limits,
@@ -30,7 +30,20 @@ module.exports = {
       add(link.url, { kind: 'html-link', sourceUrl: page.finalUrl, selector: link.selector, location: link.location,
         source: link.source, sourceTruncated: link.sourceTruncated });
     }
-    const queue = [...(page.robots?.sitemaps || []), new URL('/sitemap.xml', origin).href].map((value) => ({ value }));
+    const queue = [];
+    const queued = new Set();
+    const enqueue = (value, evidence = {}) => {
+      let url;
+      try { url = website.parseUrl(value); } catch { skip({ value, kind: 'sitemap', reason: 'invalid-url', ...evidence }); return; }
+      if (url.origin !== origin) { skip({ url: url.href, kind: 'sitemap', reason: 'outside-origin', ...evidence }); return; }
+      if (queued.has(url.href)) return;
+      if (queue.length >= limits.maxSitemapCandidates) {
+        limitReached = true; skip({ url: url.href, kind: 'sitemap', reason: 'sitemap-queue-limit', ...evidence }); return;
+      }
+      queued.add(url.href);
+      queue.push({ value: url.href, ...evidence });
+    };
+    for (const value of [...(page.robots?.sitemaps || []), new URL('/sitemap.xml', origin).href]) enqueue(value);
     const started = Date.now();
     const seen = new Set();
     const sitemaps = [];
@@ -61,7 +74,7 @@ module.exports = {
         for (const entry of parsed.entries) {
           if (!entry.url) { skip({ ...entry, sourceUrl: response.finalUrl, reason: 'invalid-sitemap-url' }); continue; }
           if (parsed.type === 'urlset') add(entry.url, { ...entry, sourceUrl: response.finalUrl });
-          else queue.push({ value: entry.url, sourceUrl: response.finalUrl, entryIndex: entry.entryIndex });
+          else enqueue(entry.url, { sourceUrl: response.finalUrl, entryIndex: entry.entryIndex });
         }
       } catch (error) {
         if (options.signal?.aborted) throw error;

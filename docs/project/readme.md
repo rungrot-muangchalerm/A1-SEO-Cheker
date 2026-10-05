@@ -21,6 +21,10 @@ and data modules. Do not add audit history or persistence.
   DNS and on every redirect. Subdomains and cross-scheme URLs are outside scope;
   cross-origin redirects are disclosed as unavailable, never fetched implicitly.
   The explicitly requested initial URL can redirect to establish the final origin.
+  URL identity uses the native URL parser, removes fragments, and normalizes hosts,
+  default ports and dot segments. Query values/order, path case and trailing slashes
+  stay intact. Sitemap references are deduplicated before entering a 200-item queue;
+  ancestor cycles and redirect aliases do not cause repeated traversal.
   Saxes strictly validates XML/namespaces/entities before Fast XML Parser extracts
   data. Real DTDs and non-UTF-8 declarations are rejected, not harmless comments.
   Wrong XML, MIME, private redirects
