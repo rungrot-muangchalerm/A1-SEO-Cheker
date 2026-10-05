@@ -18,6 +18,7 @@ app.use(expressLayouts);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(require('./app/middleware/audit-admission.middleware.js').create());
 
 // Static: /assets and fallback to assets
 app.use('/assets', express.static(path.join(__dirname, 'assets')));

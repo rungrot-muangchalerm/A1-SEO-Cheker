@@ -62,6 +62,8 @@ module.exports = {
       }
     } finally {
       res.removeListener('close', disconnected);
+      req.releaseAuditSlot?.();
+      delete req.releaseAuditSlot;
     }
   }
 };

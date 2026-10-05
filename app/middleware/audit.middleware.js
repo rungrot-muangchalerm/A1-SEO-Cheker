@@ -6,7 +6,7 @@ module.exports = {
     next();
   },
   error: (error, req, res, next) => {
-    if (req.path !== '/api/audits' && !req.path.startsWith('/api/audits/')) return next(error);
+    if (!/^\/api\/audits(?:\/|$)/i.test(req.path)) return next(error);
     if (res.destroyed) return;
     if (res.headersSent) return res.destroy();
     res.set('Cache-Control', 'no-store');
