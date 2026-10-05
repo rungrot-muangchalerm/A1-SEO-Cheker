@@ -97,3 +97,28 @@ test('CSV/JSON create browser Blobs only on explicit clicks, make no export API 
   assert.equal(requests, 1);
   assert.deepEqual(errors, []);
 });
+
+test('both downloads stay disabled before/during/after failed audits, and successful rounds never download automatically', async (t) => {
+  stubTransport(t, [{ html: bad, delay: 500 }, { status: 404 }, { networkError: true }]);
+  const { page, errors } = await frontend(t);
+  let downloads = 0;
+  page.on('download', () => ++downloads);
+  for (const id of ['export-button', 'export-json-button']) assert.equal(await page.locator('#' + id).isDisabled(), true);
+  await page.locator('#website-url').fill(base);
+  await page.locator('#scan-button').click();
+  await page.waitForFunction(() => document.getElementById('report').getAttribute('aria-busy') === 'true');
+  for (const id of ['export-button', 'export-json-button']) {
+    assert.equal(await page.locator('#' + id).isDisabled(), true);
+    await page.locator('#' + id).evaluate(element => element.click());
+  }
+  await page.waitForFunction(() => document.getElementById('report').getAttribute('aria-busy') === 'false');
+  assert.equal(await page.locator('#export-json-button').isDisabled(), false);
+  assert.equal(downloads, 0);
+  await scan(page, base);
+  assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'failed');
+  for (const id of ['export-button', 'export-json-button']) assert.equal(await page.locator('#' + id).isDisabled(), true);
+  assert.equal(downloads, 0);
+  await page.reload();
+  assert.equal(await page.locator('#export-json-button').isDisabled(), true);
+  assert.deepEqual(errors, []);
+});
