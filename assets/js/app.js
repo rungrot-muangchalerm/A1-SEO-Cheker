@@ -139,6 +139,12 @@
     byId("not-checked-count").textContent = "(" + report.notChecked.length + ")";
     replaceContent(byId("not-checked-list"), report.notChecked.map((entry) => '<li class="mb-2 text-break">' +
       escapeHtml(entry.message) + ' <span class="text-secondary">(' + escapeHtml(entry.reason) + ')</span></li>').join(""));
+    byId('discovery-section').hidden = !report.discovery;
+    byId('discovery-count').textContent = report.discovery ? '(' + report.discovery.urls.length + ')' : '';
+    replaceContent(byId('discovery-list'), (report.discovery?.urls || []).map((entry) => '<li class="mb-2 text-break" data-discovered-url="' +
+      escapeHtml(entry.url) + '">' + escapeHtml(entry.url) + '<ul class="small ps-3">' + entry.sources.map((source) =>
+        '<li class="text-break">' + escapeHtml(source.kind) + ' &middot; ' + escapeHtml(source.sourceUrl) +
+        (source.selector ? ' &middot; ' + escapeHtml(source.selector) : '') + '</li>').join('') + '</ul></li>').join(''));
   }
 
   function openDrawer(title, content, trigger) {
@@ -278,15 +284,17 @@
     state.page = 1;
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
-    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories'].forEach((id) => replaceContent(byId(id), ''));
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'discovery-list'].forEach((id) => replaceContent(byId(id), ''));
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
-      'not-checked-count', 'detail-title', 'app-message', 'scan-status'].forEach((id) => { byId(id).textContent = ''; });
+      'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count'].forEach((id) => { byId(id).textContent = ''; });
     delete byId('report-result').dataset.result;
     byId('scan-status').dataset.state = 'idle';
     byId('scan-status').classList.remove('text-danger-emphasis');
     byId('not-checked-section').hidden = true;
     byId('not-checked-section').open = false;
+    byId('discovery-section').hidden = true;
+    byId('discovery-section').open = false;
     ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
     ['export-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
     byId('scan-icon').classList.remove('d-none');
@@ -353,7 +361,8 @@
     byId("report").setAttribute("aria-busy", "true");
     fetch("/api/audits", {
       credentials: "include", method: "POST", cache: "no-store", signal: controller.signal,
-      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: url.href })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}) })
     }).then((response) => response.json().then((data) => {
       if (!response.ok || data.status === "failed") {
         throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });

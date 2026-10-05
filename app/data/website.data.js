@@ -88,7 +88,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
       },
       headers: {
         'User-Agent': 'SEOChecker/0.1',
-        Accept: kind === 'robots' ? 'text/plain, text/html;q=0.5' : 'text/html, application/xhtml+xml',
+        Accept: kind === 'robots' ? 'text/plain, text/html;q=0.5' : kind === 'sitemap' ? 'application/xml, text/xml, application/*+xml;q=0.9' : 'text/html, application/xhtml+xml',
         'Accept-Encoding': 'identity'
       }
     }, (response) => {
@@ -99,7 +99,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         if (!headers.location) return reject(failure('INVALID_REDIRECT'));
         return resolve({ status, headers, redirect: headers.location });
       }
-      if (kind === 'robots' && (status < 200 || status >= 300)) {
+      if (kind !== 'html' && (status < 200 || status >= 300)) {
         response.destroy();
         return resolve({ status, headers, rawHeaders: response.rawHeaders || [], text: '', encoding: 'UTF-8', bytes: 0, receivedBytes: 0 });
       }
@@ -108,7 +108,10 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         response.destroy();
         return reject(failure('UNSUPPORTED_TYPE'));
       }
-      if (kind !== 'robots' && !['text/html', 'application/xhtml+xml'].includes(mediaType.essence)) {
+      const supportedType = kind === 'robots' || (kind === 'sitemap' ?
+        ['application/xml', 'text/xml'].includes(mediaType.essence) || mediaType.essence.endsWith('+xml') :
+        ['text/html', 'application/xhtml+xml'].includes(mediaType.essence));
+      if (!supportedType) {
         response.destroy();
         return reject(failure('UNSUPPORTED_TYPE'));
       }
@@ -154,15 +157,16 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         try {
           const charset = mediaType.params.get('charset');
           if (charset) new TextDecoder(charset);
+          if (kind === 'sitemap' && charset && !['utf-8', 'utf8'].includes(charset.toLowerCase())) throw failure('UNSUPPORTED_CHARSET');
           const buffer = Buffer.concat(chunks);
-          const encoding = kind === 'robots' ? 'UTF-8' : sniffEncoding(buffer, {
+          const encoding = kind !== 'html' ? 'UTF-8' : sniffEncoding(buffer, {
             transportLayerEncodingLabel: charset,
             defaultEncoding: mediaType.essence === 'application/xhtml+xml' ? 'UTF-8' : undefined
           });
-          const content = new TextDecoder(encoding).decode(buffer);
+          const content = new TextDecoder(encoding, { fatal: kind === 'sitemap' }).decode(buffer);
           resolve({
             status, headers, rawHeaders: response.rawHeaders || [],
-            ...(kind === 'robots' ? { text: content } : { html: content }), encoding, bytes: size, receivedBytes
+            ...(kind !== 'html' ? { text: content } : { html: content }), encoding, bytes: size, receivedBytes
           });
         } catch { reject(failure('UNSUPPORTED_CHARSET')); }
       });
@@ -210,5 +214,8 @@ module.exports = {
   fetchPage: (value, options = {}) => fetchResource(value, options, 'html'),
   fetchRobots: (value, options = {}) => fetchResource(value, {
     timeoutMs: 5000, maxBytes: 500 * 1024, maxRedirects: 5, ...options
-  }, 'robots')
+  }, 'robots'),
+  fetchSitemap: (value, options = {}) => fetchResource(value, {
+    timeoutMs: 5000, maxBytes: 512 * 1024, maxRedirects: 5, ...options
+  }, 'sitemap')
 };

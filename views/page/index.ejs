@@ -23,6 +23,12 @@
         <i data-lucide="circle-x" width="18" height="18" aria-hidden="true"></i>
       </button>
     </div>
+    <div class="col-12">
+      <div class="form-check">
+        <input type="checkbox" class="form-check-input" id="discover-pages" name="discover">
+        <label class="form-check-label small" for="discover-pages">&#3588;&#3657;&#3609;&#3627;&#3634; URL &#3651;&#3609;&#3648;&#3623;&#3655;&#3610;&#3652;&#3595;&#3605;&#3660;</label>
+      </div>
+    </div>
   </form>
     <p class="small text-primary-emphasis text-break mb-4" id="scan-status" role="status" aria-live="polite"></p>
 
@@ -65,6 +71,10 @@
         <details class="small mt-3" id="not-checked-section" hidden>
           <summary>&#3618;&#3633;&#3591;&#3652;&#3604;&#3657;&#3605;&#3619;&#3623;&#3592; <span id="not-checked-count"></span></summary>
           <ul class="mt-2 mb-0 ps-3" id="not-checked-list"></ul>
+        </details>
+        <details class="small mt-3" id="discovery-section" hidden>
+          <summary>URL &#3607;&#3637;&#3656;&#3614;&#3610; <span id="discovery-count"></span></summary>
+          <ul class="mt-2 mb-0 ps-3" id="discovery-list"></ul>
         </details>
     </section>
 

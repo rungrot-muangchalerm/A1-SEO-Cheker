@@ -3,6 +3,7 @@ const auditModel = require('../model/audit.model');
 const htmlService = require('./html.service');
 const seoService = require('./seo.service');
 const robotsService = require('./robots.service');
+const discoveryService = require('./discovery.service');
 
 module.exports = {
   create: async (body, options = {}) => {
@@ -17,7 +18,9 @@ module.exports = {
       page.robots = await robotsService.load(page.finalUrl, options);
       options.signal?.throwIfAborted();
       page.checks = seoService.analyze(page);
-      return { ok: true, data: auditModel.createReport(page, startedAt) };
+      const discovery = body.discover === true ? await discoveryService.discover(page, options) : undefined;
+      options.signal?.throwIfAborted();
+      return { ok: true, data: auditModel.createReport(page, startedAt, discovery) };
     } catch (error) {
       return { ok: false, code: error instanceof websiteData.WebsiteError ? error.code : 'INTERNAL_ERROR' };
     }

@@ -49,6 +49,7 @@
     "ejs": "^4.0.1",
     "express": "^5.2.1",
     "express-ejs-layouts": "^2.5.1",
+    "fast-xml-parser": "^5.11.2",
     "html-encoding-sniffer": "^4.0.0",
     "http-link-header": "^1.1.4",
     "ipaddr.js": "^2.5.0",

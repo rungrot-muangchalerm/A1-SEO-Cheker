@@ -7,6 +7,17 @@ and data modules. Do not add audit history or persistence.
 ## Current Implementation
 
 - `POST /api/audits` accepts JSON `{ "url": "https://example.com/" }`.
+- Optional `discover: true` also finds same-origin URL candidates from the initial
+  page's links, robots.txt sitemap declarations and `/sitemap.xml`. The checkbox
+  enables this explicitly; ordinary single-page requests do not fetch sitemaps.
+  `discovery` records URLs and their sources, sitemap HTTP/XML evidence and skipped
+  candidates. Found URLs are not added to fetched/analyzed page counts. Other pages
+  are not crawled yet, and sitemap indexes remain explicitly unavailable pending
+  traversal. Limits: 200 candidates, 5 sitemap files, 200 detailed skips, 1,000 XML
+  entries per file; sitemap transport is 5 seconds and 512 KiB per file.
+  Fast XML Parser validates and parses XML with namespace handling and bounded depth.
+  DTD markers are rejected before entity processing. Wrong XML, MIME, private redirects
+  or unsupported encodings are disclosed rather than replaced with fake URLs.
 - The response uses schema version `1.0` with `pages`, `issues`, `notChecked`,
   `coverage`, `summary`, timestamps, and a Lighthouse availability state. Each page
   contains actual HTTP status, headers, HTML, final URL, and redirect evidence.

@@ -42,3 +42,12 @@ not all elements were examined. `notChecked` then discloses the missing coverage
 `analysisStatus: complete` on a page refers to the implemented initial-page rules.
 Report status remains partial while renderer, Lighthouse or broader site analysis
 has not been performed. `notChecked` names those unavailable surfaces explicitly.
+
+## URL Discovery
+
+Opt-in discovery adds `discovery.urls`, sitemap evidence and bounded skipped records.
+Each candidate has `url` and `sources` (link selector/HTML position or sitemap
+source URL/entry index). URL fragments are removed; meaningful query values remain.
+`coverage.discovered` counts candidates, while fetched/analyzed counts still include
+only actually examined pages. Discovery never substitutes HTTP results for an
+unfetched URL. Scope is `same-origin-discovery` and currently analyzes one page.
