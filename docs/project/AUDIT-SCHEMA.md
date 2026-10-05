@@ -103,7 +103,7 @@ DOM elements and 3 MiB asset allocation. Failed resource attempts conservatively
 consume their reserved byte allowance. DOM observation waits 1 second after DOM
 content load, then waits for the already queued resource work; it does not wait
 for all possible future timers or interact with the page. `resources` contains
-bounded observed statuses, refusals, omission counts and script-error counts,
+bounded observed statuses, refusals, omission counts and script/console-error counts,
 never asset response bodies or raw runtime errors. `stats` describes the entire
 render round, not each page individually.
 
@@ -111,6 +111,12 @@ Completed/partial refer to this bounded observation only. Blocked external asset
 images/fonts/media, HTTP failures, JS exceptions and incomplete metadata make the
 comparison partial; any observed changes remain factual. Missing snapshots stay
 not checked. `notChecked` discloses those pages. Lighthouse remains separate.
+Per-page resource work is cancelled when the DOM observation ends. Context close
+and all queued work finish before resource records are copied and completeness
+is finalized, so a late refusal/error cannot leave a falsely completed snapshot.
+Console errors (including CSP refusals) are counted without retaining/logging their
+messages. A real infinite-script deadline and pending-asset cancellation are
+covered by browser-backed tests; both close the browser and transport work.
 
 ## URL Discovery
 

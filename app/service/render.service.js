@@ -87,7 +87,10 @@ module.exports = {
         const records = [];
         let omitted = 0;
         let scriptErrors = 0;
+        let consoleErrors = 0;
         let context;
+        const requestController = new AbortController();
+        const requestSignal = AbortSignal.any([controller.signal, requestController.signal]);
         let pending = Promise.resolve();
         const record = (value) => { if (records.length < limits.maxRecords) records.push(value); else ++omitted; };
         const info = { startedAt, url: item.finalUrl, mode: 'bounded-same-origin-render', limits };
@@ -117,6 +120,7 @@ module.exports = {
           const page = await context.newPage();
           context.on('page', (popup) => { if (popup !== page) { record({ reason: 'POPUP_BLOCKED' }); void popup.close().catch(() => {}); } });
           page.on('pageerror', () => ++scriptErrors);
+          page.on('console', (message) => { if (message.type() === 'error') ++consoleErrors; });
           page.on('requestfailed', (request) => record({ url: request.url(), reason: 'RENDER_BROWSER_REQUEST_FAILED' }));
           page.on('dialog', (dialog) => { void dialog.dismiss().catch(() => {}); });
           let mainUsed = false;
@@ -136,7 +140,7 @@ module.exports = {
             const fulfill = (status, headers, body) => cdp.send('Fetch.fulfillRequest', { requestId: event.requestId,
               responseCode: status, responseHeaders: Object.entries(headers).map(([name, value]) => ({ name, value })), body: Buffer.from(body).toString('base64') });
             const operation = pending.then(async () => {
-              controller.signal.throwIfAborted();
+              requestSignal.throwIfAborted();
               const url = website.parseUrl(request.url);
               if (url.origin !== selected.origin) throw new website.WebsiteError('OUTSIDE_SCOPE');
               if (request.method !== 'GET') throw new website.WebsiteError('RENDER_METHOD_BLOCKED');
@@ -154,7 +158,7 @@ module.exports = {
               if (remainingBytes <= 0) throw new website.WebsiteError('RENDER_BYTE_LIMIT');
               const allowance = Math.min(limits.maxResourceBytes, remainingBytes);
               stats.budgetBytes += allowance;
-              const result = await website.fetchRenderResource(url.href, { signal: controller.signal, scopeOrigin: selected.origin,
+              const result = await website.fetchRenderResource(url.href, { signal: requestSignal, scopeOrigin: selected.origin,
                 timeoutMs: Math.max(1, Math.min(5000, deadline - Date.now())), maxBytes: allowance,
                 beforeRequest: async (target, signal) => {
                   const policy = await robots.load(target.href, { signal, robotsCache, beforeConnect });
@@ -189,20 +193,28 @@ module.exports = {
           const after = snapshot(dom.html, dom.url);
           const changes = ['title', 'description', 'canonical', 'h1'].filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
           if (before.text.sha256 !== after.text.sha256) changes.push('body-text');
-          const complete = !records.some((entry) => entry.reason || entry.status >= 400) && !omitted && !scriptErrors && before.metadataComplete && after.metadataComplete;
+          const complete = !records.some((entry) => entry.reason || entry.status >= 400) && !omitted && !scriptErrors && !consoleErrors && before.metadataComplete && after.metadataComplete;
           item.render = { ...info, status: complete ? 'completed' : 'partial', complete, completedAt: new Date().toISOString(),
             engine: { name: 'Chromium', version: browser.version(), playwright: require('playwright/package.json').version },
             before, after: { ...after, html: dom.html, documentUrl: dom.url, sourceFormat: 'rendered-dom' }, changes,
-            resources: { records, omitted, scriptErrors }, limitations: ['same-origin-assets-only', 'GET-only', 'no-images-fonts-media',
+            resources: { records, omitted, scriptErrors, consoleErrors }, limitations: ['same-origin-assets-only', 'GET-only', 'no-images-fonts-media',
               'no-subframes-popups-workers-service-workers-websockets-webrtc', 'no-interactions', 'bounded-observation-window'] };
         } catch (error) {
           if (options.signal?.aborted) throw new website.WebsiteError('CANCELLED');
           item.render = { ...info, status: 'not-checked', reason: controller.signal.aborted ? controller.signal.reason.code :
             error instanceof website.WebsiteError ? error.code : !browser ? 'BROWSER_UNAVAILABLE' : 'RENDER_FAILED',
-            completedAt: new Date().toISOString(), resources: { records, omitted, scriptErrors } };
+            completedAt: new Date().toISOString(), resources: { records, omitted, scriptErrors, consoleErrors } };
         } finally {
+          requestController.abort(new website.WebsiteError('RENDER_OBSERVATION_ENDED'));
           if (context) await context.close().catch(() => {});
           await pending;
+          if (item.render) {
+            item.render.resources = { records: [...records], omitted, scriptErrors, consoleErrors };
+            if (item.render.after && (records.some((entry) => entry.reason || entry.status >= 400) || omitted || scriptErrors || consoleErrors)) {
+              item.render.status = 'partial';
+              item.render.complete = false;
+            }
+          }
         }
       }
       for (const item of pages) if (item.render && item.render.mode) item.render.stats = { ...stats };

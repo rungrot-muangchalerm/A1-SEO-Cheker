@@ -102,7 +102,7 @@
 ## รอบที่ 6: ตรวจ JavaScript และดึงคะแนน Lighthouse จริง
 
 - [x] feat: ใช้ Playwright เปรียบเทียบ HTML เริ่มต้นกับเนื้อหาหลัง JavaScript ทำงานสำหรับหน้าที่จำเป็น
-- [ ] ใช้ข้อจำกัด URL เครือข่าย เวลา และทรัพยากรกับ browser renderer ด้วย
+- [x] feat: ใช้ข้อจำกัด URL เครือข่าย เวลา และทรัพยากรกับ browser renderer ด้วย
 - [ ] แยกข้อเท็จจริงว่าเนื้อหามาหลัง JavaScript ออกจากข้อสรุปว่าหน้าเข้า index ไม่ได้
 - [ ] เชื่อม PageSpeed Insights API โดยระบุทั้ง Performance, Accessibility, Best Practices และ SEO เพราะค่าปริยายตรวจเฉพาะ Performance ดู [API reference](https://developers.google.com/speed/docs/insights/v5/reference/pagespeedapi/runpagespeed)
 - [ ] ให้เลือกมือถือหรือเดสก์ท็อป และแนบ URL เวลาตรวจ รุ่น engine และโหมดที่ใช้ในรายงานรอบปัจจุบัน
