@@ -32,7 +32,8 @@ and data modules. Do not add audit history or persistence.
   5 redirects, UTF-8. Parsing is capped at 2,000 lines, 2,048 characters per line,
   and a conservative wildcard work budget; exceeding a cap means not checked.
 - There is no audit ID, saved report, database write, cookie, or resume endpoint.
-- The frontend still uses mockup data until TODO round 3.
+- The URL form now sends POST requests and holds the current API report only in
+  page memory. The old mockup report remains hidden while its tables are migrated.
 - Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
   destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and
@@ -55,6 +56,9 @@ Node.js 20.18.1 or newer is required by the HTML parser.
 Focused test discovery is available with `node --test test/*.test.js`. The suite
 includes good/bad HTML fixtures served through real HTTP, changing bytes on the
 same URL, and changing only response headers through the framework API routes.
+Frontend tests use Playwright with installed Google Chrome (`channel: chrome`).
+Exact Bootstrap/Lucide npm versions provide offline CDN test fixtures; production
+HTML continues to use the user's CDN URLs.
 
 The upstream framework's dev dependencies currently produce three high-severity
 `npm audit` entries in the nodemon dependency chain. They have been left unchanged

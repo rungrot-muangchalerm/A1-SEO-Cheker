@@ -59,6 +59,9 @@
     "robots-parser": "^3.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "bootstrap": "^5.3.8",
+    "lucide": "^1.51.0",
     "nodemon": "^3.1.14"
   }
 }

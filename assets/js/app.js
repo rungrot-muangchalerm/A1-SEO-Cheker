@@ -164,7 +164,7 @@
     noindex: path === "/services/seo",
     canonical: path === "/services/web-design" ? "/services" : path
   }));
-  const state = { origin: null, page: 1, selectedIssue: null };
+  const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false };
   const byId = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -385,8 +385,9 @@
     renderIssues();
   }
 
-  byId("scan-form").addEventListener("submit", async (event) => {
+  byId("scan-form").addEventListener("submit", (event) => {
     event.preventDefault();
+    if (state.busy) return;
     const input = byId("website-url");
     let url;
     try {
@@ -398,30 +399,48 @@
       return;
     }
     input.setCustomValidity("");
+    state.report = null;
+    state.origin = null;
+    state.busy = true;
     byId("report").hidden = true;
     byId("export-button").disabled = true;
     byId("app-message").textContent = "";
     state.selectedIssue = null;
     drawer.hide();
     byId("scan-button").disabled = true;
-    byId("scan-button-label").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e15\u0e23\u0e35\u0e22\u0e21...";
-    byId("scan-status").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e15\u0e23\u0e35\u0e22\u0e21\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07";
+    byId("scan-button-label").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08...";
+    byId("scan-status").textContent = "\u0e01\u0e33\u0e25\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08 " + url.href;
+    byId("scan-status").dataset.state = "loading";
     byId("report").setAttribute("aria-busy", "true");
-    // This preview only reuses local fixtures; it never fetches the submitted website.
-    await new Promise((resolve) => setTimeout(resolve, 450));
-    state.origin = url.origin;
-    state.page = 1;
-    resetIssueFilters();
-    byId("page-filter").value = "all";
-    byId("page-search").value = "";
-    renderSummary();
-    renderPages();
-    bootstrap.Tab.getOrCreateInstance(byId("issues-tab")).show();
-    byId("scan-status").textContent = "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e02\u0e2d\u0e07 " + url.hostname + " \u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e41\u0e25\u0e49\u0e27 \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e14\u0e36\u0e07\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e32\u0e01\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c\u0e08\u0e23\u0e34\u0e07";
-    byId("scan-button").disabled = false;
-    byId("scan-button-label").textContent = "\u0e15\u0e23\u0e27\u0e08\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07";
-    byId("report").setAttribute("aria-busy", "false");
-    byId("report").hidden = false;
+    fetch("/api/audits", {
+      credentials: "include", method: "POST", cache: "no-store",
+      headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: url.href })
+    }).then((response) => response.json().then((data) => {
+      if (!response.ok || data.status === "failed") {
+        throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
+      }
+      if (data.schemaVersion !== "1.0" || !Array.isArray(data.pages) || !data.pages.length || !Array.isArray(data.issues)) {
+        throw new Error("Invalid report");
+      }
+      return data;
+    })).then((data) => {
+      state.report = data;
+      state.origin = data.scope.origin;
+      state.page = 1;
+      byId("report-host").textContent = data.pages[0].finalUrl;
+      byId("scan-status").textContent = "\u0e2d\u0e48\u0e32\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e08\u0e23\u0e34\u0e07\u0e41\u0e25\u0e49\u0e27 " + data.pages.length + " \u0e2b\u0e19\u0e49\u0e32: " + data.pages[0].finalUrl;
+      byId("scan-status").dataset.state = "ready";
+    }).then(undefined, (error) => {
+      state.report = null;
+      state.origin = null;
+      byId("scan-status").textContent = error.publicMessage || "\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48";
+      byId("scan-status").dataset.state = "failed";
+    }).finally(() => {
+      state.busy = false;
+      byId("scan-button").disabled = false;
+      byId("scan-button-label").textContent = "\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c";
+      byId("report").setAttribute("aria-busy", "false");
+    });
   });
   byId("website-url").addEventListener("input", () => byId("website-url").setCustomValidity(""));
 
