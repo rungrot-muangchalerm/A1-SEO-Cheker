@@ -50,6 +50,7 @@
     "express": "^5.2.1",
     "express-ejs-layouts": "^2.5.1",
     "html-encoding-sniffer": "^4.0.0",
+    "http-link-header": "^1.1.4",
     "ipaddr.js": "^2.5.0",
     "jsonwebtoken": "^9.0.3",
     "livereload": "^0.10.3",

@@ -13,8 +13,10 @@ and data modules. Do not add audit history or persistence.
 - Each page includes parsed metadata, headings, links, and images with HTML
   evidence. Relative URLs honor the document base URL. HTML byte decoding respects
   BOM, response charset, and meta charset. Element/evidence limits are disclosed.
-- Status is currently `partial`: HTTP status and Googlebot meta/header rules are
-  checked, but other SEO rules are still pending. Each check separates facts from
+- Status is currently `partial`: HTTP status, Googlebot meta/header rules,
+  missing title/description, and canonical declaration validity are checked,
+  but other SEO rules are still pending. Canonical reads HTML and HTTP Link headers.
+  Each check separates facts from
   required owner confirmation; noindex is not assumed to be unintentional.
   Empty issues must not be read as a complete passing audit.
 - There is no audit ID, saved report, database write, cookie, or resume endpoint.

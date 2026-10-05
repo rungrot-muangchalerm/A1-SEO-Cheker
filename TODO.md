@@ -44,7 +44,7 @@
 
 - [x] feat: ใช้ HTML parser อ่าน title, description, headings, canonical, links และ images
 - [x] feat: ตรวจ HTTP status, robots meta รวมถึงคำสั่งเฉพาะ Googlebot และ `X-Robots-Tag`
-- [ ] ตรวจ title/description ที่ไม่มีข้อมูล และ canonical ที่เป็น URL ไม่ถูกต้องหรือประกาศหลายค่าขัดกัน
+- [x] feat: ตรวจ title/description ที่ไม่มีข้อมูล และ canonical ที่เป็น URL ไม่ถูกต้องหรือประกาศหลายค่าขัดกัน
 - [ ] ตรวจรูปที่ขาด `alt` โดยไม่ถือว่า `alt=""` ของรูปตกแต่งเป็นข้อผิดพลาดอัตโนมัติ
 - [ ] ดึงและอ่านกฎ `robots.txt` ที่เกี่ยวข้องกับ URL โดยแยกการห้าม crawl ออกจากการห้าม index
 - [ ] ให้แต่ละผลมี rule ID, URL, สิ่งที่พบ, ผลกระทบ, วิธีแก้ และแหล่งอ้างอิง

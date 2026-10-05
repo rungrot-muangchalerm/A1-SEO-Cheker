@@ -70,9 +70,9 @@ test('service publishes real checks and issue counters without requiring every p
   const result = await audit.create({ url: 'https://site.example/page' });
   assert.equal(result.ok, true);
   assert.equal(result.data.summary.critical, 1);
-  assert.equal(result.data.summary.review, 1);
+  assert.equal(result.data.summary.review, 2);
   assert.equal(result.data.summary.affected, 1);
-  assert.equal(result.data.issues.length, 2);
+  assert.equal(result.data.issues.length, 5);
   assert.equal(result.data.coverage.analyzed, 1);
   assert.equal(result.data.status, 'partial');
 });
