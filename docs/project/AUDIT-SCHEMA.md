@@ -27,7 +27,7 @@ At most 50 evidence entries are previewed; copying or CSV includes the full evid
 returned by the API, including any disclosed parser truncation.
 
 Passing one rule is not a ranking score, an indexing confirmation, or proof that
-the entire website passed. JavaScript-rendered content has not been examined yet.
+the entire website passed. JavaScript is examined only with explicit render opt-in.
 
 ## Outcomes and Coverage
 
@@ -63,6 +63,54 @@ The summary continues to describe the entire round; the table footer names the
 filtered subset. Group details link to every matching issue and related URL;
 only fetched HTML URLs get page-detail buttons. CSV always exports the same
 filtered individual issues and full evidence, not synthetic group rows.
+
+## JavaScript Comparison
+
+`render: true` adds `pages[].render` for pages selected from actually fetched HTML
+with executable scripts/load/error handlers (JSON-LD/data-only scripts do not
+trigger execution). At most two eligible pages are rendered; static/non-2xx/XHTML,
+unknown/denied robots, browser failures and later pages have explicit unavailable
+reasons, not invented DOM. This does not change the original `html`, `metadata`,
+initial-HTML checks, discovered URLs or page counts.
+
+The initial document is replayed from the fetched decoded HTML at its original
+final URL. Chromium runs in a fresh non-persistent context, preserving the page's
+CSP. Before/after snapshots compare title, description, HTML canonical, h1 and
+normalized DOM body text (not a visibility/accessibility/content-quality measure).
+Body text excludes script/style/noscript/template and has full-value SHA-256,
+length and a 2,000-character preview; a shortened preview does not change matching.
+`changes` identifies fields with observed differences. `after.html` is serialized
+rendered DOM with `sourceFormat: rendered-dom`, never original repository code or
+an initial-HTML line reference. Engine versions, URL, timestamps and mode accompany
+the result. Change/absence is not Google's indexing or rendering verdict.
+
+Same-origin GET scripts/styles/XHR/fetch are fulfilled through protected Node
+transport with public pinned DNS, default ports, robots and per-hop checks. CDP
+Fetch pauses every redirect hop; resources keep their actual final browser URL,
+so relative module imports work after redirects. No browser request is continued
+to the network. An offline context, deny-only proxy, disabled browser DNS/QUIC,
+blocked WebRTC/WebTransport/workers/service workers/websockets, blocked subframe
+and popup navigation, and disabled downloads/cache further restrict execution.
+Cookies/auth/browser request headers are never forwarded; Set-Cookie is not replayed.
+No report, source, HAR, trace, screenshot or storage state is written/exported.
+Browser-owned temporary runtime profiles are disposed on close, not audit storage.
+Public deployment still requires OS/container isolation for untrusted browser code.
+
+Limits apply across the render round: 20 seconds, 2 pages, 30 Node socket requests,
+100 intercepted requests/retained resource records, serial network access paced
+at least 250 ms (or robots crawl-delay), 512 KiB per resource/DOM snapshot, 10,000
+DOM elements and 3 MiB asset allocation. Failed resource attempts conservatively
+consume their reserved byte allowance. DOM observation waits 1 second after DOM
+content load, then waits for the already queued resource work; it does not wait
+for all possible future timers or interact with the page. `resources` contains
+bounded observed statuses, refusals, omission counts and script-error counts,
+never asset response bodies or raw runtime errors. `stats` describes the entire
+render round, not each page individually.
+
+Completed/partial refer to this bounded observation only. Blocked external assets,
+images/fonts/media, HTTP failures, JS exceptions and incomplete metadata make the
+comparison partial; any observed changes remain factual. Missing snapshots stay
+not checked. `notChecked` discloses those pages. Lighthouse remains separate.
 
 ## URL Discovery
 

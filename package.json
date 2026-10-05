@@ -57,6 +57,7 @@
     "livereload": "^0.10.3",
     "multer": "^2.4.0",
     "mysql2": "^3.16.1",
+    "playwright": "^1.63.0",
     "robots-parser": "^3.0.1",
     "saxes": "^6.0.0"
   },

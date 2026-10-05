@@ -8,7 +8,8 @@ module.exports = {
     try {
       let operation = options.robotsCache?.get(url);
       if (!operation) {
-        operation = website.fetchRobots(url, { signal: options.signal, scopeOrigin: new URL(pageUrl).origin, beforeRequest: options.beforeRequest });
+        operation = website.fetchRobots(url, { signal: options.signal, scopeOrigin: new URL(pageUrl).origin,
+          beforeRequest: options.beforeRequest, beforeConnect: options.beforeConnect });
         options.robotsCache?.set(url, operation);
       }
       response = await operation;

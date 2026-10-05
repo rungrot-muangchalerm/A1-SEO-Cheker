@@ -177,11 +177,24 @@ and data modules. Do not add audit history or persistence.
 
 ```sh
 npm ci
+npx playwright install chromium
 npm start
 node --test
 ```
 
 Node.js 20.18.1 or newer is required by the HTML parser.
+The optional JavaScript checkbox runs a real Playwright/Chromium before/after
+comparison for at most two fetched pages with executable content. Initial HTML
+and checks remain untouched; rendered DOM and metadata have separate proof.
+Protected same-origin GET resources support ordinary scripts, redirected module
+imports and JSON fetch. External assets, images/fonts/media and interaction-only
+content are not covered; blocked resources or runtime errors disclose partial
+coverage rather than implying indexing failure. See the schema's renderer limits.
+Install Chromium for production as above (`--with-deps` on supported Linux hosts),
+or set backend-only `RENDER_BROWSER_CHANNEL=chrome` to use installed Google Chrome.
+Chromium sandbox stays enabled; use a non-root, OS/container-isolated service
+account for public untrusted-site rendering. Missing browser/sandbox prerequisites
+produce `BROWSER_UNAVAILABLE` without substituting a fake rendered report.
 Focused test discovery is available with `node --test test/*.test.js`. The suite
 includes good/bad HTML fixtures served through real HTTP, changing bytes on the
 same URL, and changing only response headers through the framework API routes.

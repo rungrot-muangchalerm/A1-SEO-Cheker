@@ -9,6 +9,8 @@ const sniffEncoding = require('html-encoding-sniffer');
 
 const limits = Object.freeze({ timeoutMs: 15000, maxBytes: 2 * 1024 * 1024, maxRedirects: 5 });
 const redirectStatuses = new Set([301, 302, 303, 307, 308]);
+const renderTypes = new Set(['application/javascript', 'text/javascript', 'application/ecmascript', 'text/ecmascript',
+  'text/css', 'application/json', 'text/json', 'text/plain', 'application/octet-stream']);
 
 class WebsiteError extends Error {
   constructor(code) {
@@ -88,7 +90,8 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
       },
       headers: {
         'User-Agent': 'SEOChecker/0.1',
-        Accept: kind === 'robots' ? 'text/plain, text/html;q=0.5' : kind === 'sitemap' ? 'application/xml, text/xml, application/*+xml;q=0.9' : 'text/html, application/xhtml+xml',
+        Accept: kind === 'robots' ? 'text/plain, text/html;q=0.5' : kind === 'sitemap' ? 'application/xml, text/xml, application/*+xml;q=0.9' :
+          kind === 'render' ? 'application/javascript, text/javascript, text/css, application/json, text/plain;q=0.5' : 'text/html, application/xhtml+xml',
         'Accept-Encoding': 'identity'
       }
     }, (response) => {
@@ -102,7 +105,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         if (!headers.location) return reject(observedFailure('INVALID_REDIRECT'));
         return resolve({ status, headers, redirect: headers.location });
       }
-      if (kind !== 'html' && (status < 200 || status >= 300)) {
+      if (['robots', 'sitemap'].includes(kind) && (status < 200 || status >= 300)) {
         response.destroy();
         return resolve({ status, headers, rawHeaders: response.rawHeaders || [], text: '', encoding: 'UTF-8', bytes: 0, receivedBytes: 0 });
       }
@@ -111,7 +114,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         response.destroy();
         return reject(observedFailure('UNSUPPORTED_TYPE'));
       }
-      const supportedType = kind === 'robots' || (kind === 'sitemap' ?
+      const supportedType = kind === 'robots' || (kind === 'render' ? renderTypes.has(mediaType.essence) || mediaType.essence.endsWith('+json') : kind === 'sitemap' ?
         ['application/xml', 'text/xml'].includes(mediaType.essence) || mediaType.essence.endsWith('+xml') :
         ['text/html', 'application/xhtml+xml'].includes(mediaType.essence));
       if (!supportedType) {
@@ -162,6 +165,10 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
           if (charset) new TextDecoder(charset);
           if (kind === 'sitemap' && charset && !['utf-8', 'utf8'].includes(charset.toLowerCase())) throw failure('UNSUPPORTED_CHARSET');
           const buffer = Buffer.concat(chunks);
+          if (kind === 'render') {
+            resolve({ status, headers, rawHeaders: response.rawHeaders || [], body: buffer, bytes: size, receivedBytes });
+            return;
+          }
           const encoding = kind !== 'html' ? 'UTF-8' : sniffEncoding(buffer, {
             transportLayerEncodingLabel: charset,
             defaultEncoding: mediaType.essence === 'application/xhtml+xml' ? 'UTF-8' : undefined
@@ -203,9 +210,12 @@ async function fetchResource(value, options, kind) {
       await options.beforeRequest?.(url, controller.signal);
       controller.signal.throwIfAborted();
       const addresses = await resolvePublicTarget(url, controller.signal);
+      await options.beforeConnect?.(url, controller.signal);
+      controller.signal.throwIfAborted();
       const result = await requestPage(url, addresses, controller.signal, maxBytes, kind);
       lastObservation = { url: url.href, status: result.status, headers: result.headers, rawHeaders: result.rawHeaders || [] };
       if (!result.redirect) return { requestedUrl, finalUrl: url.href, redirects, ...result };
+      if (kind === 'render') return { requestedUrl, finalUrl: url.href, redirects, ...result, body: Buffer.alloc(0), bytes: 0, receivedBytes: 0 };
       if (redirects.length >= maxRedirects) throw failure('TOO_MANY_REDIRECTS');
       let next;
       try { next = new URL(result.redirect, url); } catch { throw failure('INVALID_REDIRECT'); }
@@ -228,6 +238,7 @@ async function fetchResource(value, options, kind) {
 module.exports = {
   limits, WebsiteError, parseUrl, isPublicIp, resolvePublicTarget, requestPage,
   fetchPage: (value, options = {}) => fetchResource(value, options, 'html'),
+  fetchRenderResource: (value, options = {}) => fetchResource(value, options, 'render'),
   fetchRobots: (value, options = {}) => fetchResource(value, {
     timeoutMs: 5000, maxBytes: 500 * 1024, maxRedirects: 5, ...options
   }, 'robots'),

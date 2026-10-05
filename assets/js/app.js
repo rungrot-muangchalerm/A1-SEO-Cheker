@@ -298,6 +298,7 @@
     const related = pageIssues(url);
     const canonical = page.metadata?.canonical || [];
     const openGraph = page.metadata?.openGraph;
+    const rendered = page.render;
     const indexing = page.checks.find((entry) => entry.ruleId === 'robots-indexing');
     openDrawer('\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e2b\u0e19\u0e49\u0e32',
       '<p class="small text-break mb-3">' + escapeHtml(url) + '</p><div class="mb-4">' + badge(pageLevel(url)) + '</div>' +
@@ -316,6 +317,21 @@
         (entry.sourceTruncated ? '<span class="d-block">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e16\u0e39\u0e01\u0e15\u0e31\u0e14\u0e17\u0e2d\u0e19</span>' : '') + '</details></dd>').join('') + '</dl>' :
         '<p class="small mb-0">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e1a Open Graph \u0e43\u0e19 HTML \u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e14\u0e49</p>') +
       (openGraph?.complete === false ? '<p class="small mt-2 mb-0">\u0e2d\u0e48\u0e32\u0e19 metadata \u0e44\u0e14\u0e49\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19</p>' : '') + '</section>' +
+      (rendered ? '<section class="mb-4" data-render-comparison><h3 class="h6">JavaScript</h3><p class="small text-break">' +
+        escapeHtml(rendered.status) + (rendered.reason ? ' &middot; ' + escapeHtml(rendered.reason) : '') + '</p>' +
+        (rendered.after ? '<p class="small text-break">' + escapeHtml(rendered.engine.name + ' ' + rendered.engine.version) +
+          ' &middot; ' + escapeHtml(rendered.completedAt) + '</p><p class="small text-break">DOM URL: ' + escapeHtml(rendered.after.documentUrl) +
+          '</p><p class="small">\u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19: ' + escapeHtml(rendered.changes.join(', ') || '\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e17\u0e35\u0e48\u0e2a\u0e31\u0e07\u0e40\u0e01\u0e15') +
+          '</p>' + ['before', 'after'].map((phase) => '<h4 class="h6 mt-3">' + (phase === 'before' ? 'HTML \u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19' : 'DOM \u0e2b\u0e25\u0e31\u0e07 JavaScript') +
+            '</h4><dl class="small" data-render-phase="' + phase + '">' + ['title', 'description', 'canonical', 'h1'].map((key) =>
+              '<dt>' + escapeHtml(key) + '</dt><dd class="text-break mb-2">' + escapeHtml(Array.isArray(rendered[phase][key]) ? rendered[phase][key].join('\n') : rendered[phase][key]) + '</dd>').join('') +
+            '<dt>\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e43\u0e19 body</dt><dd class="text-break mb-2">' + escapeHtml(rendered[phase].text.preview) +
+            (rendered[phase].text.truncated ? ' (\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') + '</dd></dl>').join('') +
+          '<details class="small mt-3"><summary>DOM \u0e2b\u0e25\u0e31\u0e07 JavaScript</summary><pre class="bg-dark text-light p-3 rounded-1 overflow-auto mt-2"><code>' +
+          escapeHtml(rendered.after.html) + '</code></pre></details>' : '') +
+        (rendered.resources?.records.length ? '<details class="small mt-3"><summary>\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e32\u0e01\u0e23\u0e02\u0e2d\u0e07 renderer</summary><ul class="ps-3 mt-2">' +
+          rendered.resources.records.map((entry) => '<li class="text-break mb-2">' + escapeHtml(entry.url || '') + ' &middot; ' +
+            escapeHtml(entry.reason || 'HTTP ' + entry.status) + '</li>').join('') + '</ul></details>' : '') + '</section>' : '') +
       '<section class="mb-4"><h3 class="h6">\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08</h3><ul class="list-unstyled mb-0">' +
       page.checks.map((entry) => '<li class="mb-3">' + badge(entry.severity || entry.outcome) +
         '<p class="small text-break mt-1 mb-0">' + escapeHtml(entry.title) + ': ' + escapeHtml(entry.found) + '</p></li>').join('') +
@@ -489,7 +505,7 @@
       credentials: "include", method: "POST", cache: "no-store", signal: controller.signal,
       headers: { "Content-Type": "application/json", Accept: byId('crawl-pages').checked ? 'application/x-ndjson' : 'application/json' },
       body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}),
-        ...(byId('crawl-pages').checked ? { crawl: true } : {}) })
+        ...(byId('crawl-pages').checked ? { crawl: true } : {}), ...(byId('render-pages').checked ? { render: true } : {}) })
     }).then((response) => {
       const body = (response.headers.get('content-type') || '').split(';')[0] === 'application/x-ndjson' ?
         readAuditStream(response, (progress) => {

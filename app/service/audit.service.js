@@ -9,6 +9,7 @@ const crossPageService = require('./cross-page.service');
 const internalLinksService = require('./internal-links.service');
 const canonicalService = require('./canonical.service');
 const sitemapChecksService = require('./sitemap-checks.service');
+const renderService = require('./render.service');
 
 module.exports = {
   create: async (body, options = {}) => {
@@ -22,6 +23,8 @@ module.exports = {
         options.signal?.throwIfAborted();
         const siteChecks = [...crossPageService.analyze(crawl.pages), ...internalLinksService.analyze(crawl),
           ...canonicalService.analyze(crawl), ...sitemapChecksService.analyze(crawl)];
+        if (body.render === true) await renderService.run(crawl.pages, { signal: options.signal });
+        options.signal?.throwIfAborted();
         return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks) };
       }
       const page = await websiteData.fetchPage(body.url, options);
@@ -31,6 +34,8 @@ module.exports = {
       options.signal?.throwIfAborted();
       page.checks = seoService.analyze(page);
       const discovery = body.discover === true ? await discoveryService.discover(page, options) : undefined;
+      options.signal?.throwIfAborted();
+      if (body.render === true) await renderService.run([page], { signal: options.signal });
       options.signal?.throwIfAborted();
       return { ok: true, data: auditModel.createReport(page, startedAt, discovery) };
     } catch (error) {
