@@ -160,8 +160,10 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
             defaultEncoding: mediaType.essence === 'application/xhtml+xml' ? 'UTF-8' : undefined
           });
           const content = new TextDecoder(encoding).decode(buffer);
-          resolve({ status, headers, rawHeaders: response.rawHeaders || [],
-            ...(kind === 'robots' ? { text: content } : { html: content }), encoding, bytes: size, receivedBytes });
+          resolve({
+            status, headers, rawHeaders: response.rawHeaders || [],
+            ...(kind === 'robots' ? { text: content } : { html: content }), encoding, bytes: size, receivedBytes
+          });
         } catch { reject(failure('UNSUPPORTED_CHARSET')); }
       });
       if (decoder) response.pipe(decoder);
@@ -184,7 +186,7 @@ async function fetchResource(value, options, kind) {
     const requestedUrl = url.href;
     const redirects = [];
     const seen = new Set();
-    for (;;) {
+    for (; ;) {
       controller.signal.throwIfAborted();
       if (seen.has(url.href)) throw failure('REDIRECT_LOOP');
       seen.add(url.href);
