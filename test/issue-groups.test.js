@@ -109,7 +109,7 @@ test('grouped UI filters members before counting; details and CSV retain individ
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
   const csv = Buffer.concat(chunks).toString('utf8');
-  assert.equal((csv.match(/"jsonld-syntax"/g) || []).length, 2);
+  assert.equal((csv.match(/^"jsonld-syntax",/gm) || []).length, 2);
   assert.ok(csv.includes('{broken}') && csv.includes('{another broken}'));
   assert.ok(!csv.includes('issue-group:') && !csv.includes('"review"'));
   await page.locator('#severity-filter').selectOption('review');
