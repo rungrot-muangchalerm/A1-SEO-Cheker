@@ -72,3 +72,22 @@ test('backend key remains server-side across real frontend/static/error response
   assert.equal(execFileSync('git', ['ls-files', '.env'], { encoding: 'utf8' }).trim(), '');
   assert.equal(execFileSync('git', ['check-ignore', '.env'], { encoding: 'utf8' }).trim(), '.env');
 });
+
+test('real entry parser failures never write private request bytes to stdout/stderr or cacheable responses', async t => {
+  const server = await start(t);
+  const marker = 'PRIVATE_URL_HTML_REPORT';
+  for (const [path, body, expected] of [
+    ['/api/audits', '{"url":"https://fixture.example/' + marker + '"', 400],
+    ['/API/AUDITS/', '{"url":"' + marker.repeat(7000) + '"}', 413],
+    ['/api/audits/', '{"url":"http://127.0.0.1/?' + marker + '"}', 400]
+  ]) {
+    const response = await request(server.origin, { path, method: 'POST', headers: { 'Content-Type': 'application/json' } }, body);
+    assert.equal(response.status, expected);
+    assert.equal(response.headers['cache-control'], 'no-store');
+    assert.equal(response.headers['set-cookie'], undefined);
+    assert.ok(!response.body.includes(marker));
+    assert.ok(!response.body.includes('SyntaxError'));
+  }
+  assert.ok(!JSON.stringify(server.logs()).includes(marker));
+  assert.equal(server.logs().stderr, '');
+});
