@@ -205,6 +205,12 @@ Lighthouse ในเครื่องขอหมวด `agentic-browsing` จ�
 
 `npm audit` ยังพบ warnings เดิม 6 รายการ (moderate 2, high 3, critical 1) ไม่ได้เปลี่ยน dependencies ในงานนี้ Agentic ยังเป็น experimental ตาม Lighthouse และเป็นผลของ URL ที่ใส่เท่านั้น ไม่ยืนยัน Google index หรืออันดับค้นหา
 
+## จัดระเบียบชุดทดสอบ
+
+- [x] chore: ย้ายชุดทดสอบไป tools/test
+
+ตรวจสอบแล้ว: ย้ายชุดทดสอบ helpers และ fixtures ครบ 66 ไฟล์ไป `tools/test/` ปรับ npm script, import และ working directory ของ child process พร้อมคำสั่งในเอกสาร `npm test` ผ่าน 284 ข้อ ไม่มีข้อที่ล้มเหลวหรือถูกข้าม ไม่เปลี่ยนเงื่อนไขการตรวจเว็บไซต์
+
 ## งานเพิ่มหลังเวอร์ชันแรก
 
 - [ ] เชื่อม Search Console ของเจ้าของเว็บไซต์เพื่อดูสถานะ index ที่ Google รู้จัก

@@ -222,7 +222,7 @@ coverage. Protected transport loads selected-origin local assets and public CDN
 assets, with bounded GET-only requests and no cookies/authentication. Blocked
 resources make results partial; unavailable browser/runtime publishes no scores.
 See [local Lighthouse setup and limitations](LOCAL-LIGHTHOUSE.md).
-Focused test discovery is available with `node --test test/*.test.js`. The suite
+Focused test discovery is available with `node --test tools/test/*.test.js`. The suite
 includes good/bad HTML fixtures served through real HTTP, changing bytes on the
 same URL, and changing only response headers through the framework API routes.
 Frontend tests use Playwright with installed Google Chrome (`channel: chrome`).
