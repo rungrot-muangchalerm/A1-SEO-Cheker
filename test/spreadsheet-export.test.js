@@ -32,7 +32,7 @@ test('XLSX round-trips actual report tables, all affected URLs and evidence with
   source.issues[0].urls.push('https://fixture.example/another');
   const original = JSON.stringify(source);
   const workbook = await readWorkbook(await createWorkbook(source, ExcelJS).xlsx.writeBuffer());
-  assert.deepEqual(workbook.worksheets.map(sheet => sheet.name), ['Summary', 'Pages', 'Issues', 'Issue URLs', 'Evidence', 'Scores', 'Not Checked', 'Discovered', 'Skipped']);
+  assert.deepEqual(workbook.worksheets.map(sheet => sheet.name), ['Summary', 'Pages', 'Issues', 'Issue URLs', 'Evidence', 'Scores', 'Agentic', 'Not Checked', 'Discovered', 'Skipped']);
   assert.equal(workbook.getWorksheet('Pages').getCell('B2').value, source.pages[0].finalUrl);
   assert.equal(workbook.getWorksheet('Pages').getCell('F2').value, source.pages[0].metadata.title);
   assert.equal(workbook.getWorksheet('Issues').rowCount, source.issues.length + 1);
@@ -62,6 +62,36 @@ test('spreadsheet cells neutralize formula prefixes and encode XML controls whil
   assert.equal(sheet.getCell('L2').value, 'before\\u0000after\\uffff');
   for (const cell of ['G2', 'H2', 'I2', 'L2']) assert.equal(sheet.getCell(cell).type, ExcelJS.ValueType.String);
   workbook.eachSheet(worksheet => worksheet.eachRow(row => row.eachCell(cell => assert.notEqual(cell.type, ExcelJS.ValueType.Formula))));
+  assert.equal(JSON.stringify(source), original);
+});
+
+test('Agentic XLSX preserves partial audit statuses, engine fraction and safe evidence without fabricating scores', async () => {
+  const source = exported(report('https://fixture.example/', good));
+  const lhr = require('./helpers/lighthouse').lhr();
+  lhr.categories['agentic-browsing'] = { categoryScoreDisplayMode: 'fraction', auditRefs: [{ id: 'pass' }, { id: 'error' }, { id: 'na' }] };
+  lhr.audits = { pass: { title: '=DO_NOT_EXECUTE()', scoreDisplayMode: 'binary', score: 1, details: { type: 'table', items: [{ message: '@safe literal' }] } },
+    error: { scoreDisplayMode: 'error', score: null, errorMessage: 'PRIVATE_ERROR' }, na: { scoreDisplayMode: 'notApplicable', score: 1 } };
+  source.lighthouse = require('../app/service/lighthouse-result.service').format({ status: 'received', data: { lighthouseResult: lhr } }, lhr.requestedUrl);
+  const original = JSON.stringify(source);
+  const workbook = await readWorkbook(await createWorkbook(source, ExcelJS).xlsx.writeBuffer());
+  const sheet = workbook.getWorksheet('Agentic');
+  assert.equal(sheet.rowCount, 4);
+  assert.equal(sheet.getCell('B2').value, "'=DO_NOT_EXECUTE()");
+  assert.equal(sheet.getCell('C2').value, 'pass');
+  assert.equal(sheet.getCell('D2').value, 1);
+  assert.equal(sheet.getCell('C3').value, 'not-checked');
+  assert.equal(sheet.getCell('D3').value, '');
+  assert.equal(sheet.getCell('E3').value, 'audit-runtime-error');
+  assert.equal(sheet.getCell('C4').value, 'not-applicable');
+  assert.equal(sheet.getCell('D4').value, '');
+  assert.deepEqual(JSON.parse(sheet.getCell('H2').value), [{ message: '@safe literal' }]);
+  assert.equal(sheet.getCell('L2').value, lhr.lighthouseVersion);
+  assert.equal(source.lighthouse.status, 'partial');
+  const summary = workbook.getWorksheet('Summary');
+  const fields = new Map(summary.getRows(2, summary.rowCount - 1).map(row => [row.getCell(1).value, row.getCell(2).value]));
+  assert.equal(fields.get('Agentic Not Checked'), 1);
+  assert.deepEqual(JSON.parse(fields.get('Agentic Engine Fraction')), { passed: 1, total: 2 });
+  assert.ok(!JSON.stringify(source.lighthouse).includes('PRIVATE_ERROR'));
   assert.equal(JSON.stringify(source), original);
 });
 

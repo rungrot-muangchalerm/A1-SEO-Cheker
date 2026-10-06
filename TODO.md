@@ -179,6 +179,7 @@ JSON ของปัญหาที่กรองเก็บโครงสร
 ## ตรวจเว็บในเครื่อง
 
 - [x] feat: ตรวจ localhost และใช้ Lighthouse ในเครื่อง
+- [x] feat: ตรวจ Agentic Browsing ด้วย Lighthouse ในเครื่อง
 
 ตรวจสอบแล้ว: `npm test` ผ่าน 274 ข้อ รวมเว็บ native localhost/127.0.0.1/[::1], sitemap-only, canonical, HTTP 404, redirect ใน origin เดิม และ JavaScript ในเครื่อง การตรวจ localhost ต้องเลือก origin/พอร์ตตรง ๆ ไม่ตรวจพอร์ตของ checker ไม่เปิดสิทธิ์ไป LAN/private IP อื่นหรือยอมให้ public redirect เข้า local
 
@@ -189,6 +190,20 @@ JSON ของปัญหาที่กรองเก็บโครงสร
 ทดลองผ่าน localhost:3000 และ UI/CDN จริงกับเว็บ localhost ที่ควบคุมเอง ได้ HTML 4 หน้าและ Lighthouse desktop ครบ 4 คะแนน สถานะ completed, engine 13.5.0; JSON/XLSX อ่านกลับตรงกับคะแนน มือถือ 320 px/desktop 1440 px ไม่ล้น ไม่มี browser error และ F5 ล้างผล/URL/storage ไม่สร้างรายงานหรือ screenshot ของเว็บจริงที่ backend ภาพ fixture สำหรับทดสอบถูกลบหลังตรวจ คู่มืออยู่ใน docs/project/LOCAL-LIGHTHOUSE.md
 
 `npm audit` ยังพบ 6 warnings เดิม: moderate 2 (ExcelJS/uuid), high 3 (nodemon/chokidar/braces), critical 1 (proxy-addr) งานนี้ไม่ได้แก้ dependencies เหล่านั้น และไม่อ้างว่าตรวจ lab ในเครื่องยืนยันอันดับหรือ Google index ได้
+
+### ผลตรวจ Agentic Browsing
+
+ตรวจสอบแล้ว: `npm test` ผ่าน 284 ข้อ และชุดเฉพาะ Agentic/transport/Lighthouse/export ผ่าน 30 ข้อ
+
+Lighthouse ในเครื่องขอหมวด `agentic-browsing` จริงร่วมกับคะแนน 4 หมวดเดิม แสดงสัดส่วนผ่านของข้อที่ตรวจได้ พร้อมสถานะรายข้อและหลักฐาน selector/HTML จาก engine ไม่แปลง Agentic เป็นคะแนน 0-100 ข้อที่ไม่มีหลักฐาน อ่านไม่ได้ หรือ audit error แยกเป็น not-checked โดยไม่หักเป็นข้อไม่ผ่าน JSON เก็บ engineFraction ต้นฉบับแยกไว้เมื่อ source refs ครบ
+
+ทดสอบจริงกับปุ่มไม่มีชื่อแล้วได้ข้อไม่ผ่านและ node evidence หลังแก้ HTML เปลี่ยนเป็นผ่าน ทดสอบ llms.txt ที่ถูกต้อง catalog 404 ที่ไม่มี Content-Type และไฟล์ผิดรูปแบบ รวมทั้งการบล็อก robots/บริการ local พอร์ตอื่น redirect ที่ผ่านกฎเดิม การจำกัด bytes และการยกเลิกขณะอ่านไฟล์จริงที่ปิดทั้ง socket/browser ไม่มีการเปิด experimental flags หรือเรียก WebMCP tools/ส่งแบบฟอร์ม
+
+ไฟล์ประกอบจาก gatherers ของ Lighthouse ใช้ protected Node transport แยกเฉพาะ instance ของแต่ละรอบ รวม robots.txt, llms.txt และ AI catalog ที่ค้นจาก HTML/Link header/Agentmap ไม่เปิด direct CDP network และไม่เพิ่มสิทธิ์ไป private IP หรือพอร์ตอื่น รายละเอียด bounded และ HTML แสดงเป็นข้อความเท่านั้น
+
+ทดลองผ่าน localhost:3000 และ UI/CDN จริงแล้ว ได้ Agentic 7 รายการตรงกับ JSON/XLSX; XLSX มีแท็บ Agentic พร้อมสถานะ หลักฐาน URL โหมดและ engine version หน้าจอ 320/1440 px ไม่ล้น ไม่มี browser error และ F5 ล้าง URL/ผล/storage ไม่มีประวัติหรือรายงานที่ backend ภาพ fixture ถูกลบหลังตรวจ คู่มือและ schema อัปเดตแล้ว ยังไม่ได้อัปโหลดในบัญชี Google Sheets จริง
+
+`npm audit` ยังพบ warnings เดิม 6 รายการ (moderate 2, high 3, critical 1) ไม่ได้เปลี่ยน dependencies ในงานนี้ Agentic ยังเป็น experimental ตาม Lighthouse และเป็นผลของ URL ที่ใส่เท่านั้น ไม่ยืนยัน Google index หรืออันดับค้นหา
 
 ## งานเพิ่มหลังเวอร์ชันแรก
 

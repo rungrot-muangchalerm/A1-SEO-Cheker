@@ -46,7 +46,7 @@ checker ไม่เรียก MySQL/JWT ของ framework จึงไม�
 - JavaScript เป็นตัวเลือก ใช้ Chromium เปรียบเทียบก่อน/หลังสำหรับไม่เกิน 2 หน้า ไม่ได้จำลอง Googlebot และไม่ยืนยันสถานะ index
 - Lighthouse ในเครื่องเปิดไว้เป็นค่าเริ่มต้น ตรวจ Performance, Accessibility, Best Practices และ SEO จริง เลือก mobile/desktop ได้ ไม่ต้องมี API key หรือส่ง URL ไปบริการตรวจของ Google
 - คะแนนเป็นของ URL ที่ใส่ ไม่เฉลี่ยทั้งเว็บไซต์ เป็น lab test ภายใต้ข้อจำกัด network ของ checker ไม่ใช่ข้อมูลผู้ใช้จริงหรือการยืนยัน Google index ดู [ตรวจ localhost ด้วย Lighthouse](docs/project/LOCAL-LIGHTHOUSE.md)
-- Agentic แสดงสัดส่วนเฉพาะเมื่อ provider คืนหลักฐานที่รองรับ ไม่ใช้ Chrome ของเครื่อง checker หรือคะแนนตัวอย่างแทน
+- Agentic Browsing ตรวจจริงด้วย Lighthouse ในเครื่อง แสดงสัดส่วนที่ผ่านและรายละเอียดรายข้อ แยกไม่ผ่าน/ตรวจไม่ได้/ไม่เข้าข่าย พร้อมหลักฐาน HTML และส่งออก JSON/XLSX
 - รายงานบอกขอบเขตและสิ่งที่ยังตรวจไม่ได้ ไม่สรุปว่า SEO 100 ต้องติดหน้าแรก หรือว่าตรวจครบโดเมนเมื่อหยุดตามลิมิต
 
 JSON มีทั้งรายงานทั้งรอบและเฉพาะปัญหาตามตัวกรอง พร้อมเวลา/schema และชื่อไฟล์แยกรอบ

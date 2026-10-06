@@ -4,18 +4,20 @@ const { chromium } = require('playwright');
 const website = require('../data/website.data');
 const robots = require('./robots.service');
 const result = require('./lighthouse-result.service');
+const gatherers = require('./lighthouse-gatherers.service');
 
 const limits = Object.freeze({ timeoutMs: 90000, launchTimeoutMs: 10000, maxRequests: 300, maxResourceBytes: 4 * 1024 * 1024,
   maxTotalBytes: 32 * 1024 * 1024, maxRedirects: 5, maxRecords: 100 });
 const headersAllowed = ['content-type', 'content-security-policy', 'x-content-type-options', 'referrer-policy', 'permissions-policy',
   'cross-origin-resource-policy', 'cross-origin-opener-policy', 'cross-origin-embedder-policy', 'access-control-allow-origin',
-  'access-control-allow-credentials', 'access-control-expose-headers', 'location', 'cache-control', 'expires', 'last-modified', 'etag'];
+  'access-control-allow-credentials', 'access-control-expose-headers', 'location', 'cache-control', 'expires', 'last-modified', 'etag', 'link'];
 
 module.exports = {
   limits,
   run: async (value, options = {}) => {
     const startedAt = new Date().toISOString();
-    const format = response => result.format(response, value, { ...options, startedAt, provider: 'lighthouse-local' });
+    const agenticUnavailable = {};
+    const format = response => result.format(response, value, { ...options, startedAt, agenticUnavailable, provider: 'lighthouse-local' });
     if (options.strategy !== undefined && !['mobile', 'desktop'].includes(options.strategy)) return format({ status: 'not-checked', reason: 'LIGHTHOUSE_INVALID_STRATEGY' });
     const controller = new AbortController();
     let browser, closing, pendingRun;
@@ -49,7 +51,7 @@ module.exports = {
       controller.signal.throwIfAborted();
       if (rules.status === 'not-checked' || rules.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
       if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
-      const { default: lighthouse, desktopConfig } = await import('lighthouse');
+      const { default: lighthouse } = await import('lighthouse');
       controller.signal.throwIfAborted();
       await new Promise((resolve, reject) => { proxy.once('error', reject); proxy.listen(0, '127.0.0.1', resolve); });
       browser = await puppeteer.launch({ headless: true, defaultViewport: null, timeout: limits.launchTimeoutMs,
@@ -69,6 +71,30 @@ module.exports = {
       });
       page.on('popup', popup => { record({ reason: 'LIGHTHOUSE_POPUP_BLOCKED' }); void popup.close().catch(() => {}); });
       page.on('dialog', dialog => { void dialog.dismiss().catch(() => {}); });
+      const fetchResource = async (url, artifact) => {
+        controller.signal.throwIfAborted();
+        if (budgetBytes >= limits.maxTotalBytes) throw new website.WebsiteError('LIGHTHOUSE_BYTE_LIMIT');
+        const allowance = Math.min(limits.maxResourceBytes, limits.maxTotalBytes - budgetBytes);
+        budgetBytes += allowance;
+        const localOrigin = url.origin === selected.origin ? options.localOrigin : undefined;
+        const fetch = artifact ? website.fetchLighthouseAuditResource : website.fetchLighthouseResource;
+        const response = await fetch(url.href, { signal: controller.signal, localOrigin,
+          scopeOrigin: url.origin, maxBytes: allowance, timeoutMs: 10000,
+          beforeRequest: async target => {
+            if (artifact && ++requests > limits.maxRequests) {
+              controller.abort(new website.WebsiteError('LIGHTHOUSE_REQUEST_LIMIT')); void close();
+              throw controller.signal.reason;
+            }
+            const policy = await robots.load(target.href, { signal: controller.signal, localOrigin, robotsCache });
+            if (policy.status === 'not-checked' || policy.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
+            if (policy.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
+          } });
+        bytes += response.bytes;
+        budgetBytes -= allowance - response.bytes;
+        const headers = {};
+        for (const name of headersAllowed) if (typeof response.headers[name] === 'string') headers[name] = response.headers[name];
+        return { ...response, headers };
+      };
       // Chrome has no direct network path: only vetted GET responses reach the audited page.
       await page.setRequestInterception(true);
       page.on('request', request => {
@@ -90,37 +116,39 @@ module.exports = {
           if (options.localOrigin && url.origin === options.localOrigin && previous.some(entry => new URL(entry.url()).origin !== options.localOrigin)) {
             throw new website.WebsiteError('OUTSIDE_SCOPE');
           }
-          if (budgetBytes >= limits.maxTotalBytes) throw new website.WebsiteError('LIGHTHOUSE_BYTE_LIMIT');
-          const allowance = Math.min(limits.maxResourceBytes, limits.maxTotalBytes - budgetBytes);
-          budgetBytes += allowance;
-          const localOrigin = url.origin === selected.origin ? options.localOrigin : undefined;
-          const response = await website.fetchLighthouseResource(url.href, { signal: controller.signal, localOrigin,
-            scopeOrigin: url.origin, maxBytes: allowance, timeoutMs: 10000,
-            beforeRequest: async target => {
-              const policy = await robots.load(target.href, { signal: controller.signal, localOrigin, robotsCache });
-              if (policy.status === 'not-checked' || policy.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
-              if (policy.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
-            } });
-          bytes += response.bytes;
-          budgetBytes -= allowance - response.bytes;
-          const headers = {};
-          for (const name of headersAllowed) if (typeof response.headers[name] === 'string') headers[name] = response.headers[name];
+          const response = await fetchResource(url);
           record({ url: url.href, status: response.status, bytes: response.bytes });
-          await request.respond({ status: response.status, headers, body: response.body });
+          await request.respond({ status: response.status, headers: response.headers, body: response.body });
         });
         pending = operation.then(() => {}, async error => {
           record({ url: request.url(), reason: error instanceof website.WebsiteError ? error.code : 'LIGHTHOUSE_RESOURCE_FAILED' });
           await request.abort('blockedbyclient').catch(() => {});
         });
       });
-      pendingRun = lighthouse(selected.href, { onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo'],
+      const config = await gatherers.configure(options.strategy, async (value, artifact) => {
+        const auditId = { LlmsTxt: 'llms-txt', AgentResourceDiscovery: 'ard-schema' }[artifact];
+        try {
+          controller.signal.throwIfAborted();
+          const url = website.parseUrl(value, options);
+          const response = await fetchResource(url, artifact);
+          record({ url: url.href, finalUrl: response.finalUrl, redirects: response.redirects,
+            kind: 'audit-resource', artifact, status: response.status, bytes: response.bytes });
+          return { status: response.status, content: response.status >= 200 && response.status < 300 ? response.body.toString('utf8') : null, headers: response.headers };
+        } catch (error) {
+          const reason = error instanceof website.WebsiteError ? error.code : 'LIGHTHOUSE_RESOURCE_FAILED';
+          if (auditId) agenticUnavailable[auditId] = reason;
+          record({ url: value, kind: 'audit-resource', artifact, reason });
+          throw new website.WebsiteError(reason);
+        }
+      });
+      pendingRun = lighthouse(selected.href, { onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo', 'agentic-browsing'],
         output: 'json', logLevel: 'silent', enableErrorReporting: false, disableFullPageScreenshot: true,
-        maxWaitForLoad: 15000, maxWaitForFcp: 15000 }, options.strategy === 'desktop' ? desktopConfig : undefined, page);
+        maxWaitForLoad: 15000, maxWaitForFcp: 15000 }, config, page);
       const outcome = await aborted(pendingRun);
       await pending;
       controller.signal.throwIfAborted();
       const report = format({ status: 'received', data: { lighthouseResult: outcome?.lhr } });
-      if (report.categories.length && (records.some(entry => entry.reason || entry.status >= 400) || omitted)) {
+      if (report.categories.length && (records.some(entry => entry.reason || (entry.kind !== 'audit-resource' && entry.status >= 400)) || omitted)) {
         report.status = 'partial'; report.reason = 'LIGHTHOUSE_NETWORK_INCOMPLETE';
       }
       report.network = { requests, bytes, budgetBytes, records, omitted, limits };

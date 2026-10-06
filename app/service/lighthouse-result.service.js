@@ -31,9 +31,10 @@ module.exports = {
     if (['mobile', 'desktop'].includes(formFactor) && formFactor !== base.strategy) return { ...base, completedAt,
       status: 'not-checked', reason: prefix + '_MODE_MISMATCH' };
     const result = { ...base, completedAt, status: categories.every((entry) => entry.status === 'completed') ? 'completed' : 'partial',
-      requestedUrl, finalUrl, categories, agentic: agentic.analyze(lhr), fetchTime: text(lhr.fetchTime) && Number.isFinite(Date.parse(lhr.fetchTime)) ? lhr.fetchTime : undefined,
+      requestedUrl, finalUrl, categories, agentic: agentic.analyze(lhr, options.agenticUnavailable), fetchTime: text(lhr.fetchTime) && Number.isFinite(Date.parse(lhr.fetchTime)) ? lhr.fetchTime : undefined,
       engine: { name: 'Lighthouse', version: text(lhr.lighthouseVersion), userAgent: text(lhr.environment?.hostUserAgent || lhr.userAgent, 1024) },
       mode: { formFactor, throttlingMethod: text(lhr.configSettings?.throttlingMethod) }, warningCount: Array.isArray(lhr.runWarnings) ? lhr.runWarnings.length : 0 };
+    if (result.agentic.notChecked > 0) { result.status = 'partial'; result.reason = 'LIGHTHOUSE_AGENTIC_INCOMPLETE'; }
     return result;
   }
 };

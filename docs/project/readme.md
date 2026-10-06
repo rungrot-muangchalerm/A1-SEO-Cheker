@@ -214,7 +214,8 @@ or set backend-only `RENDER_BROWSER_CHANNEL=chrome` to use installed Google Chro
 Chromium sandbox stays enabled; use a non-root, OS/container-isolated service
 account for public untrusted-site rendering. Missing browser/sandbox prerequisites
 produce `BROWSER_UNAVAILABLE` without substituting a fake rendered report.
-Lighthouse is selected by default and runs locally with four real categories,
+Lighthouse is selected by default and runs locally with four percentage categories
+plus the real experimental Agentic Browsing fraction and per-audit evidence,
 mobile/desktop configuration and source engine metadata. No API key or remote
 score service is used. Scores describe one input URL, independently of crawl
 coverage. Protected transport loads selected-origin local assets and public CDN

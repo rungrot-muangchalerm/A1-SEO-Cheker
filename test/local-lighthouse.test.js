@@ -55,6 +55,10 @@ test('real local mobile Lighthouse computes all four categories without a key, e
   assert.equal(report.mode.formFactor, 'mobile');
   assert.equal(report.mode.throttlingMethod, 'simulate');
   assert.equal(report.categories.length, 4);
+  assert.equal(report.agentic.status, 'completed');
+  assert.equal(report.agentic.audits.length, 7);
+  assert.equal(report.agentic.notChecked, 0);
+  assert.deepEqual(report.agentic.engineFraction, { passed: report.agentic.passed, total: report.agentic.total });
   for (const category of report.categories) {
     assert.equal(category.status, 'completed');
     assert.ok(Number.isFinite(category.score) && category.score >= 0 && category.score <= 1);
@@ -63,6 +67,8 @@ test('real local mobile Lighthouse computes all four categories without a key, e
   assert.equal(remoteRequests, 0);
   assert.ok(site.requests.some(request => request.path === '/style.css'));
   assert.ok(site.requests.some(request => request.path === '/pixel.png'));
+  assert.ok(site.requests.some(request => request.path === '/llms.txt'));
+  assert.ok(site.requests.some(request => request.path === '/.well-known/ai-catalog.json'));
   assert.ok(site.requests.every(request => request.method === 'GET' && !request.headers.cookie && !request.headers.authorization));
   assert.ok(report.network.bytes > 0 && report.network.bytes <= lighthouse.limits.maxTotalBytes);
   assert.ok(!report.network.records.some(entry => entry.reason));
@@ -102,6 +108,9 @@ test('actual browser/API localhost desktop workflow shows real Lighthouse scores
   const json = JSON.parse((await download(page, '#export-json-button')).toString('utf8'));
   assert.equal(json.lighthouse.provider, 'lighthouse-local');
   assert.deepEqual(json.lighthouse.categories, report.lighthouse.categories);
+  assert.deepEqual(json.lighthouse.agentic, report.lighthouse.agentic);
+  assert.ok((await page.locator('#agentic-status').textContent()).includes(report.lighthouse.agentic.passed + '/' + report.lighthouse.agentic.total));
+  assert.equal(await page.locator('[data-agentic-audit]').count(), report.lighthouse.agentic.audits.length);
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await download(page, '#export-xlsx-button'));
   assert.equal(workbook.getWorksheet('Pages').rowCount, 5);
@@ -109,10 +118,19 @@ test('actual browser/API localhost desktop workflow shows real Lighthouse scores
     assert.equal(workbook.getWorksheet('Scores').getCell('C' + (index + 2)).value, category.score);
     assert.equal(workbook.getWorksheet('Scores').getCell('G' + (index + 2)).value, 'lighthouse-local');
   }
+  for (const [index, audit] of json.lighthouse.agentic.audits.entries()) {
+    const row = index + 2;
+    assert.equal(workbook.getWorksheet('Agentic').getCell('A' + row).value, audit.id);
+    assert.equal(workbook.getWorksheet('Agentic').getCell('C' + row).value, audit.status);
+    assert.deepEqual(JSON.parse(workbook.getWorksheet('Agentic').getCell('H' + row).value), audit.evidence);
+    assert.equal(workbook.getWorksheet('Agentic').getCell('L' + row).value, report.lighthouse.engine.version);
+  }
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     if (width === 320) await page.locator('[data-bs-target="#lighthouse-scores"]').click();
     await page.waitForFunction(() => document.getElementById('lighthouse-scores').classList.contains('show'));
+    await page.locator('[data-agentic-audit="llms-txt"]').evaluate(element => { element.open = true; });
+    await page.locator('[data-agentic-audit="ard-schema"]').evaluate(element => { element.open = true; });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     if (process.env.SEO_SCREENSHOTS === 'true') {
       await page.screenshot({ path: path.join(os.tmpdir(), 'seo-checker-local-lighthouse-' + width + '.png'), fullPage: true });
@@ -122,10 +140,75 @@ test('actual browser/API localhost desktop workflow shows real Lighthouse scores
   await page.waitForFunction(() => window.bootstrap && document.querySelector('header svg'));
   assert.equal(await page.locator('#website-url').inputValue(), '');
   assert.equal(await page.locator('#report').isVisible(), false);
+  assert.equal(await page.locator('[data-agentic-audit]').count(), 0);
   assert.equal(await page.locator('#lighthouse-enabled').isChecked(), true);
   assert.equal(await page.locator('#pagespeed-enabled').count(), 0);
   assert.deepEqual(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length })), { local: 0, session: 0 });
   assert.deepEqual(errors, []);
+});
+
+test('native Agentic identifies an unnamed button with real node evidence, then passes after fixing HTML; absent optional catalog is N/A', { timeout: 150000 }, async t => {
+  const site = await start(t, { routes: {
+    '/llms.txt': (_req, res) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('# Local fixture\n\nA controlled local website for actual agentic audits.\n\n- [Home](/)\n'); },
+    '/.well-known/ai-catalog.json': (_req, res) => { res.writeHead(404); res.end(); }
+  } });
+  const root = body => site.routes.set('/', (_req, res) => { res.writeHead(200, { 'content-type': 'text/html' }); res.end(markup('Agentic fixture', body)); });
+  root('<button id="empty"></button>');
+  const options = { ...website.auditOptions(site.origin + '/'), strategy: 'desktop' };
+  const bad = await lighthouse.run(site.origin + '/', options);
+  assert.equal(bad.status, 'completed', JSON.stringify(bad.network?.records));
+  const tree = bad.agentic.audits.find(audit => audit.id === 'agent-accessibility-tree');
+  assert.equal(tree.status, 'fail');
+  assert.ok(tree.evidence.some(entry => entry.selector.includes('#empty') && entry.snippet.includes('<button')), JSON.stringify(tree.evidence));
+  assert.equal(bad.agentic.audits.find(audit => audit.id === 'llms-txt').status, 'pass');
+  assert.equal(bad.agentic.audits.find(audit => audit.id === 'ard-schema').status, 'not-applicable');
+  assert.equal(bad.agentic.failed, 1);
+  root('<button id="empty" aria-label="Continue">Continue</button>');
+  const fixed = await lighthouse.run(site.origin + '/', options);
+  assert.equal(fixed.agentic.audits.find(audit => audit.id === 'agent-accessibility-tree').status, 'pass');
+  assert.equal(fixed.agentic.failed, 0);
+  assert.equal(fixed.agentic.passed, fixed.agentic.total);
+  assert.equal(fixed.agentic.total, 3);
+});
+
+test('Agentic auxiliary fetches respect robots, local-port and byte limits without converting refusals into failed checks', { timeout: 150000 }, async t => {
+  const other = await start(t);
+  const site = await start(t, { routes: {
+    '/robots.txt': (_req, res) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('User-agent: *\nDisallow: /llms.txt\n'); }
+  } });
+  site.routes.set('/', (_req, res) => { res.writeHead(200, { 'content-type': 'text/html', link: '<' + other.origin + '/secret>; rel="ai-catalog"' }); res.end(markup('Agentic protected fixture', '<p>Visible page.</p>')); });
+  const report = await lighthouse.run(site.origin + '/', website.auditOptions(site.origin + '/'));
+  assert.equal(report.status, 'partial');
+  assert.equal(report.agentic.status, 'partial');
+  assert.equal(report.agentic.notChecked, 2);
+  assert.equal(report.agentic.failed, 0);
+  assert.equal(report.agentic.audits.find(audit => audit.id === 'llms-txt').reason, 'ROBOTS_BLOCKED');
+  assert.equal(report.agentic.audits.find(audit => audit.id === 'ard-schema').reason, 'PORT_NOT_ALLOWED');
+  assert.equal(other.requests.length, 0);
+  assert.ok(!site.requests.some(request => request.path === '/llms.txt'));
+  assert.ok(report.network.budgetBytes <= lighthouse.limits.maxTotalBytes);
+  assert.ok(site.requests.every(request => request.method === 'GET' && !request.headers.cookie && !request.headers.authorization));
+});
+
+test('cancelling an active Agentic file read closes its actual socket and Lighthouse browser before completion', { timeout: 120000 }, async t => {
+  let disconnected = false;
+  const site = await start(t, { routes: {
+    '/llms.txt': (_req, res) => { res.writeHead(200, { 'content-type': 'text/plain' }); res.write('# Slow fixture\n'); res.on('close', () => { disconnected = true; }); }
+  } });
+  const controller = new AbortController();
+  const launch = puppeteer.launch.bind(puppeteer);
+  let browser;
+  t.mock.method(puppeteer, 'launch', async options => { browser = await launch(options); return browser; });
+  const pending = lighthouse.run(site.origin + '/', { ...website.auditOptions(site.origin + '/'), signal: controller.signal });
+  const rejection = assert.rejects(pending, { code: 'CANCELLED' });
+  const deadline = Date.now() + 60000;
+  while (!site.requests.some(request => request.path === '/llms.txt') && Date.now() < deadline) await wait(50);
+  assert.ok(site.requests.some(request => request.path === '/llms.txt'));
+  controller.abort();
+  await rejection;
+  assert.equal(disconnected, true);
+  assert.equal(browser.connected, false);
+  assert.equal(getEventListeners(controller.signal, 'abort').length, 0);
 });
 
 test('invalid strategy, private targets, browser launch failures and pre-cancelled runs publish no fabricated scores or raw error', async t => {

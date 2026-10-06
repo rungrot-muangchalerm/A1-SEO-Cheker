@@ -35,6 +35,7 @@ JSON เปิดเป็นตารางใน Google Sheets โดยตร
 - `Issue URLs`: URL ที่ได้รับผลกระทบแต่ละรายการ เชื่อมด้วย Issue ID
 - `Evidence`: หลักฐานของแต่ละปัญหา พร้อม source URL ตำแหน่ง และรายละเอียด JSON
 - `Scores`: คะแนน Lighthouse ในเครื่อง พร้อม URL, โหมด และ engine version ไม่สร้างคะแนนแทนข้อมูลที่ไม่มี และไม่เฉลี่ยข้ามหน้า
+- `Agentic`: ผล Agentic Browsing รายข้อ พร้อมสถานะ เหตุผล หลักฐาน URL และ engine version; สัดส่วน/จำนวนตรวจไม่ได้อยู่ใน Summary
 - `Not Checked`, `Discovered`, `Skipped`: สิ่งที่ยังตรวจไม่ได้ URL ที่พบ และเหตุผลที่ข้าม
 
 XLSX ของปัญหาที่กรองมีเฉพาะ Summary, Issues, Issue URLs และ Evidence; Summary ระบุจำนวนที่เลือกแยกจากยอดทั้งรอบ

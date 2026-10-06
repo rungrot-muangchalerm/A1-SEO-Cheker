@@ -144,7 +144,7 @@ the inspected URL or a stored job ID. CSV is no longer generated.
 
 Each scope also has a browser-only ExcelJS XLSX projection for manual Google Sheets
 import. JSON remains authoritative for complete fetched HTML and rendered snapshots;
-XLSX contains Summary, Issues, Issue URLs and Evidence, plus Pages, Scores,
+XLSX contains Summary, Issues, Issue URLs and Evidence, plus Pages, Scores, Agentic,
 Not Checked, Discovered and Skipped for whole-round exports. Every cell is literal;
 formula prefixes are neutralized only in XLSX, not the JSON or in-memory report.
 Long values are split into ordered JSON chunks in Long Text, not silently truncated.
@@ -166,7 +166,7 @@ stay separate. Runtime failures publish no scores or raw error messages.
 No raw LHR, trace, screenshot or report is written to disk or logged. Browser
 temporary profiles are disposed on close. Disconnect closes the browser and aborts
 pending Node sockets before releasing admission. Browser failures keep HTML findings.
-Limits: 90 seconds, 10-second launch, 300 intercepted requests, 4 MiB per resource,
+Limits: 90 seconds, 10-second launch, 300 page and auxiliary requests, 4 MiB per resource,
 32 MiB total allocation and 5 redirects. Failed resources consume reserved allowance.
 Network records are capped at 100 with 8,192-character URL previews and explicit
 `urlTruncated` flags; omissions make the result partial. `network`
@@ -177,6 +177,25 @@ data rather than field data. This can differ from unrestricted DevTools Lighthou
 Images/fonts and public CDN resources may load through DNS-pinned default-port GET;
 only the selected local origin can access loopback. Browser direct networking is
 blocked by a deny-only proxy. See [local setup](LOCAL-LIGHTHOUSE.md).
+
+`agentic` comes from the actual `agentic-browsing` category (fraction format),
+requiring source Chrome/Chromium 150+. `passed`/`total` count verified binary/numeric
+audits with Lighthouse's >=0.9 pass threshold; `failed`, `notChecked`, `excluded`
+and `informational` remain separate. Errors, policy refusals and missing evidence
+are not failures. `engineFraction` preserves Lighthouse's own ratio (which includes
+errors in its denominator) when its source refs are complete. Partial observations
+retain valid audit results; no applicable checks yields not-checked, never 100.
+Rows include ID/title/mode/status, score when valid, reason for unavailable audits,
+bounded text and allowlisted node/table evidence (20 entries, 100 visited items,
+256-character titles, 2048-character descriptions/snippets, 1024-character table
+text). Explicit `truncated` identifies limited evidence; raw details/runtime errors
+are not retained. Hidden refs are excluded; manual/N/A/informative rows remain
+visible but do not affect the ratio. JSON/XLSX use the same current-round results.
+Per-run official gatherer instances use the protected Node transport for robots,
+llms.txt and catalog discovery, rather than CDP resource loading. Headers are
+allowlisted (including Link); all requests share DNS/robots/byte/cancellation limits.
+Optional resource 404s are factual N/A results, not network-incomplete failures.
+WebMCP is observed only; no tools/forms are executed and no origin trial is faked.
 
 ## Local Target Policy
 

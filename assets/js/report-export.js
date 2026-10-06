@@ -63,7 +63,10 @@
       ['Export Scope', report.export.scope], ['Filters', report.export.filters || {}], ['Scope', report.scope],
       ['Coverage', report.coverage], ['Summary', report.summary], ['Selected Issues', report.issues.length],
       ['Crawl', report.crawl], ['Lighthouse Status', report.lighthouse?.status], ['Lighthouse Reason', report.lighthouse?.reason],
-      ['Score Provider', report.lighthouse?.provider], ['Lighthouse Network', report.lighthouse?.network], ['Lighthouse Limitations', report.lighthouse?.limitations]
+      ['Score Provider', report.lighthouse?.provider], ['Lighthouse Network', report.lighthouse?.network], ['Lighthouse Limitations', report.lighthouse?.limitations],
+      ['Agentic Status', report.lighthouse?.agentic?.status], ['Agentic Reason', report.lighthouse?.agentic?.reason],
+      ['Agentic Passed', report.lighthouse?.agentic?.passed], ['Agentic Total Checked', report.lighthouse?.agentic?.total],
+      ['Agentic Not Checked', report.lighthouse?.agentic?.notChecked], ['Agentic Engine Fraction', report.lighthouse?.agentic?.engineFraction]
     ];
     sheet('Summary', ['Field', 'Value'], summary);
     if (report.pages) sheet('Pages', ['Requested URL', 'Final URL', 'HTTP Status', 'Fetch Status', 'Analysis Status', 'Title', 'Description', 'Canonical', 'Googlebot Allowed'],
@@ -85,6 +88,10 @@
       sheet('Scores', ['Category ID', 'Title', 'Score', 'Display Score', 'URL', 'Strategy', 'Provider', 'Fetched At'],
         (report.lighthouse?.categories || []).map(category => [category.id, category.title, category.score, category.displayScore,
           report.lighthouse.url, report.lighthouse.strategy, report.lighthouse.provider, report.lighthouse.fetchTime]));
+      sheet('Agentic', ['Audit ID', 'Title', 'Status', 'Score', 'Reason', 'Description', 'Details', 'Evidence', 'Truncated', 'URL', 'Strategy', 'Engine Version', 'Fetched At'],
+        (report.lighthouse?.agentic?.audits || []).map(audit => [audit.id, audit.title, audit.status, audit.score, audit.reason, audit.description,
+          audit.explanation || audit.displayValue, audit.evidence, Boolean(audit.truncated), report.lighthouse.finalUrl || report.lighthouse.url,
+          report.lighthouse.strategy, report.lighthouse.engine?.version, report.lighthouse.fetchTime]));
       sheet('Not Checked', ['Rule ID', 'URL', 'Reason', 'Message'], (report.notChecked || []).map(entry => [entry.id, entry.url, entry.reason, entry.message]));
       sheet('Discovered', ['URL', 'Sources'], (report.discovery?.urls || []).map(entry => [entry.url, entry.sources]));
       sheet('Skipped', ['URL', 'Reason'], (report.coverage?.skipped || []).map(entry => [entry.url, entry.reason]));

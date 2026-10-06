@@ -213,10 +213,30 @@
       ['\u0e40\u0e27\u0e25\u0e32\u0e08\u0e32\u0e01 engine', lighthouse.fetchTime], ['Lighthouse', lighthouse.engine?.version],
       ['Browser', lighthouse.engine?.userAgent], ['Form factor', lighthouse.mode?.formFactor], ['Throttling', lighthouse.mode?.throttlingMethod]
     ].map(([label, value]) => '<dt>' + escapeHtml(label) + '</dt><dd class="mb-2 text-break">' + escapeHtml(value || unknown) + '</dd>').join('') : '');
+    const agentic = lighthouse?.agentic;
+    byId('agentic-section').hidden = !lighthouse?.provider;
     byId('agentic-status').hidden = !lighthouse?.provider;
-    byId('agentic-status').textContent = lighthouse?.agentic?.status === 'completed' ?
-      'Agentic Browsing: ' + lighthouse.agentic.passed + '/' + lighthouse.agentic.total + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1c\u0e48\u0e32\u0e19' :
+    byId('agentic-status').textContent = agentic?.total > 0 ?
+      'Agentic Browsing: ' + agentic.passed + '/' + agentic.total + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1c\u0e48\u0e32\u0e19' +
+        (agentic.status === 'partial' ? ' (\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') :
       'Agentic Browsing: \u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (' + (lighthouse?.agentic?.reason || 'not-requested') + ')';
+    byId('agentic-counts').textContent = agentic?.audits ?
+      '\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19 ' + agentic.failed + ' \u00b7 \u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 ' + agentic.notChecked +
+      ' \u00b7 \u0e44\u0e21\u0e48\u0e40\u0e02\u0e49\u0e32\u0e02\u0e48\u0e32\u0e22/\u0e15\u0e23\u0e27\u0e08\u0e40\u0e2d\u0e07 ' + agentic.excluded +
+      ' \u00b7 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a ' + agentic.informational : '';
+    const agenticLabels = { pass: ['success', '\u0e1c\u0e48\u0e32\u0e19'], fail: ['danger', '\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19'],
+      'not-checked': ['warning', '\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49'], 'not-applicable': ['secondary', '\u0e44\u0e21\u0e48\u0e40\u0e02\u0e49\u0e32\u0e02\u0e48\u0e32\u0e22'],
+      manual: ['secondary', '\u0e15\u0e49\u0e2d\u0e07\u0e15\u0e23\u0e27\u0e08\u0e40\u0e2d\u0e07'], informational: ['info', '\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a'] };
+    replaceContent(byId('agentic-audits'), (agentic?.audits || []).map(audit => {
+      const [color, label] = agenticLabels[audit.status] || agenticLabels['not-checked'];
+      return '<details class="border-top border-info-subtle py-2" data-agentic-audit="' + escapeHtml(audit.id) + '"><summary class="small text-break">' +
+        '<span class="badge rounded-1 bg-' + color + '-subtle text-' + color + '-emphasis me-2">' + label + '</span>' + escapeHtml(audit.title) +
+        '</summary><div class="small pt-2 text-break"><p>' + escapeHtml(audit.description) + '</p>' +
+        '<p>' + escapeHtml(audit.reason || audit.explanation || audit.displayValue || '') + '</p>' +
+        (audit.evidence || []).map(entry => '<dl class="mb-2">' + Object.entries(entry).map(([key, value]) => '<dt>' + escapeHtml(key) +
+          '</dt><dd class="text-break mb-1">' + escapeHtml(value) + '</dd>').join('') + '</dl>').join('') +
+        (audit.truncated ? '<p class="text-secondary">\u0e41\u0e2a\u0e14\u0e07\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19\u0e15\u0e32\u0e21\u0e25\u0e34\u0e21\u0e34\u0e15</p>' : '') + '</div></details>';
+    }).join(''));
     byId('crawl-limit').hidden = !report.coverage.limitReached;
     byId('crawl-limit').textContent = report.coverage.limitReached ? limitMessage(report.crawl?.stopReason, report.crawl?.limits, report.coverage.fetched) : '';
     byId("not-checked-section").hidden = report.notChecked.length === 0;
@@ -447,10 +467,12 @@
     state.page = 1;
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
-    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'agentic-audits', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
     byId('lighthouse-metadata').hidden = true;
     byId('agentic-status').hidden = true;
     byId('agentic-status').textContent = '';
+    byId('agentic-counts').textContent = '';
+    byId('agentic-section').hidden = true;
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
       'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count', 'progress-counts', 'progress-url',

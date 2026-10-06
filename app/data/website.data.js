@@ -111,7 +111,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
       },
       headers: {
         'User-Agent': 'SEOChecker/0.1',
-        Accept: kind === 'lighthouse' ? '*/*' : kind === 'json' ? 'application/json' : kind === 'robots' ? 'text/plain, text/html;q=0.5' : kind === 'sitemap' ? 'application/xml, text/xml, application/*+xml;q=0.9' :
+        Accept: ['lighthouse', 'lighthouse-audit'].includes(kind) ? '*/*' : kind === 'json' ? 'application/json' : kind === 'robots' ? 'text/plain, text/html;q=0.5' : kind === 'sitemap' ? 'application/xml, text/xml, application/*+xml;q=0.9' :
           kind === 'render' ? 'application/javascript, text/javascript, text/css, application/json, text/plain;q=0.5' : 'text/html, application/xhtml+xml',
         'Accept-Encoding': 'identity'
       }
@@ -130,12 +130,16 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         response.destroy();
         return resolve({ status, headers, rawHeaders: response.rawHeaders || [], text: '', encoding: 'UTF-8', bytes: 0, receivedBytes: 0 });
       }
+      if (kind === 'lighthouse-audit' && (status < 200 || status >= 300)) {
+        response.destroy();
+        return resolve({ status, headers, body: Buffer.alloc(0), bytes: 0, receivedBytes: 0 });
+      }
       let mediaType;
-      try { mediaType = new MIMEType(kind === 'robots' ? 'text/plain; charset=utf-8' : headers['content-type'] || ''); } catch {
+      try { mediaType = new MIMEType(kind === 'robots' ? 'text/plain; charset=utf-8' : headers['content-type'] || (kind === 'lighthouse-audit' ? 'application/octet-stream' : '')); } catch {
         response.destroy();
         return reject(observedFailure('UNSUPPORTED_TYPE'));
       }
-      const supportedType = kind === 'lighthouse' || kind === 'robots' || (kind === 'json' ? mediaType.essence === 'application/json' : kind === 'render' ? renderTypes.has(mediaType.essence) || mediaType.essence.endsWith('+json') : kind === 'sitemap' ?
+      const supportedType = ['lighthouse', 'lighthouse-audit', 'robots'].includes(kind) || (kind === 'json' ? mediaType.essence === 'application/json' : kind === 'render' ? renderTypes.has(mediaType.essence) || mediaType.essence.endsWith('+json') : kind === 'sitemap' ?
         ['application/xml', 'text/xml'].includes(mediaType.essence) || mediaType.essence.endsWith('+xml') :
         ['text/html', 'application/xhtml+xml'].includes(mediaType.essence));
       if (!supportedType) {
@@ -186,7 +190,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
           if (charset) new TextDecoder(charset);
           if (['sitemap', 'json'].includes(kind) && charset && !['utf-8', 'utf8'].includes(charset.toLowerCase())) throw failure('UNSUPPORTED_CHARSET');
           const buffer = Buffer.concat(chunks);
-          if (['render', 'lighthouse'].includes(kind)) {
+          if (['render', 'lighthouse', 'lighthouse-audit'].includes(kind)) {
             resolve({ status, headers, rawHeaders: response.rawHeaders || [], body: buffer, bytes: size, receivedBytes });
             return;
           }
@@ -263,6 +267,7 @@ module.exports = {
   fetchPage: (value, options = {}) => fetchResource(value, options, 'html'),
   fetchRenderResource: (value, options = {}) => fetchResource(value, options, 'render'),
   fetchLighthouseResource: (value, options = {}) => fetchResource(value, options, 'lighthouse'),
+  fetchLighthouseAuditResource: (value, options = {}) => fetchResource(value, options, 'lighthouse-audit'),
   fetchRobots: (value, options = {}) => fetchResource(value, {
     timeoutMs: 5000, maxBytes: 500 * 1024, maxRedirects: 5, ...options
   }, 'robots'),

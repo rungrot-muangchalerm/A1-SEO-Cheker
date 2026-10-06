@@ -46,17 +46,44 @@ HTTP localhost ใช้ได้ ไม่บังคับ HTTPS ส่วน
 ว่าเว็บไซต์เข้าถึงได้จากอินเทอร์เน็ต คะแนนอาจต่างจาก DevTools เพราะสภาพเครื่อง
 และ network policy ของ checker
 
+## Agentic Browsing
+
+เมื่อเปิด Lighthouse จะตรวจ Agentic Browsing ของ URL เดียวกันและโหมดเดียวกันด้วย
+ใช้หมวดจริงของ Lighthouse 13.5.0 ไม่ต้องซื้อบริการหรือใช้ AI API key ต้องใช้
+Chrome/Chromium 150 ขึ้นไป หมวดนี้ยังเป็น experimental ไม่ใช่คะแนนจัดอันดับ SEO
+
+แสดงจำนวนข้อที่ผ่าน/ข้อที่ตรวจได้ ไม่แปลงเป็นคะแนน 0-100 รายละเอียดแต่ละข้อ
+แยกผ่าน ไม่ผ่าน ตรวจไม่ได้ ไม่เข้าข่าย ตรวจเอง และข้อมูลประกอบ พร้อมข้อความ
+จาก engine และ selector/HTML snippet เมื่อมี เช่น ปุ่มไม่มีชื่อหรือ label
+WebMCP ที่ไม่เข้าข่ายจะไม่ถูกนับเป็นคะแนนตก และไม่เปิด experimental flags
+หรือจำลอง origin trial ให้เว็บเป้าหมาย
+
+ตรวจ accessibility tree, CLS, llms.txt, AI catalog และ WebMCP ตามที่ engine รองรับ
+ไม่ใช่ให้ AI agent คลิก/ซื้อสินค้า/ส่งแบบฟอร์มหรือเรียก WebMCP tools จริง
+การไม่มี llms.txt/catalog (HTTP 404) ใช้ผล notApplicable ของ Lighthouse
+ส่วนอ่านไม่ได้จาก robots/network/ลิมิต หรือ audit error เป็นตรวจไม่ได้ ไม่ใช่ไม่ผ่าน
+
+กรณี partial สัดส่วนบนหน้าเว็บนับเฉพาะข้อที่ตรวจได้ จึงอาจต่างจากรายงาน
+Lighthouse ที่รวม audit error ในตัวหาร JSON เก็บ `engineFraction` ต้นฉบับไว้
+แยกต่างหาก และระบุ `notChecked` ชัดเจน ไม่แทนด้วยคะแนนสมมติ
+หลักฐานจำกัด 20 รายการต่อ audit และข้อความมีขอบเขต พร้อม `truncated` เมื่อเกิน
+JSON เก็บผลเดียวกับหน้าเว็บ XLSX มีแท็บ Agentic พร้อมสถานะ/หลักฐาน/URL/engine
+
+อ้างอิง: [Agentic scoring และข้อจำกัด](https://developer.chrome.com/docs/lighthouse/agentic-browsing/scoring)
+
 ## Network และการเก็บข้อมูล
 
 - อนุญาต loopback เฉพาะ origin/พอร์ตของ URL ที่ใส่ ไม่อ่านบริการ local พอร์ตอื่นหรือ LAN
 - เว็บสาธารณะและ public CDN ยังผ่าน DNS pinning/private-IP checks และพอร์ต 80/443
 - ใช้ GET เท่านั้น ไม่ส่ง cookie/auth/header จาก browser ไม่คลิกหรือ login
 - บล็อก subframes, popups, workers, service workers, WebSockets และ WebRTC
-- จำกัด 90 วินาที, 300 intercepted requests, 4 MiB/resource, allocation รวม 32 MiB
+- จำกัด 90 วินาที, 300 requests รวมหน้าเว็บและ audit resources, 4 MiB/resource, allocation รวม 32 MiB
   และ redirect 5 ครั้ง เก็บ network evidence ไม่เกิน 100 รายการพร้อมจำนวนที่ละไว้
 - ยกเลิก/F5/ปิดแท็บปิด browser และยุติ socket ก่อนคืนช่องงาน ไม่มีคิวหรือประวัติ
 - รายงานอยู่ใน RAM รอบปัจจุบันเท่านั้น ไม่เขียน raw LHR, HTML report, trace หรือ screenshot
   profile ชั่วคราวของ browser ถูกจัดการและล้างเมื่อปิด ไม่ใช่ที่เก็บประวัติรายงาน
+- llms.txt, robots.txt และ AI catalog ของ Lighthouse ใช้ protected transport เดียวกัน
+  รวมการค้นจาก Link header, HTML link และ Agentmap ไม่เปิด CDP direct network
 
 หน้า checker ใช้ Bootstrap/Lucide/ExcelJS CDN จึงยังต้องเข้าถึง CDN เพื่อใช้ UI ครบ
 Lighthouse อาจร้องขอ public asset ที่เว็บเป้าหมายอ้างถึง ไม่ได้หมายถึงทั้งระบบ offline
