@@ -20,7 +20,7 @@ function check(url, ruleId, title, outcome, complete, reason, found, evidence, d
 module.exports = {
   limits,
   analyze: (crawl) => {
-    const index = responses.createIndex(crawl.responses);
+    const index = responses.createIndex(crawl.responses, crawl);
     const pages = new Map(crawl.pages.map((page) => [page.finalUrl, page]));
     const skipped = new Map(crawl.skipped.map((entry) => [entry.url, entry.reason]));
     const maps = crawl.discovery.sitemaps.filter((entry) => entry.status === 'checked' && entry.type === 'urlset');

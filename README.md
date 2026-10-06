@@ -6,7 +6,7 @@
 
 ## ติดตั้งและรัน
 
-ต้องมี Node.js 20.18.1 ขึ้นไปและ npm ใช้โฟลเดอร์ repository นี้ ไม่ใช่ติดตั้ง framework จาก npm เพื่อแทนโค้ด checker
+ต้องมี Node.js 22.19.0 ขึ้นไปและ npm สำหรับ Lighthouse ในเครื่อง ใช้โฟลเดอร์ repository นี้ ไม่ใช่ติดตั้ง framework จาก npm เพื่อแทนโค้ด checker
 
 ```sh
 npm ci
@@ -25,7 +25,6 @@ if (!(Test-Path -LiteralPath .env)) { Copy-Item -LiteralPath example.env -Destin
 ```dotenv
 PORT=3000
 LIVERELOAD=false
-PAGESPEED_API_KEY=
 ```
 
 ตั้งค่าเสร็จแล้วเริ่ม server:
@@ -45,8 +44,8 @@ checker ไม่เรียก MySQL/JWT ของ framework จึงไม�
 - เลือกค้นหา URL หรือ crawl ใน origin เดียว: ลิงก์/sitemap ซ้อน ปัญหาซ้ำ ลิงก์เสีย canonical เป้าหมาย และ URL ใน sitemap พร้อมหลักฐาน
 - crawl ไล่ URL ที่ค้นพบต่อจากทุกหน้าและ sitemap จนหมดคิว ค่าเริ่มต้นรองรับ 5,000 URL ที่ลองตรวจใน 1 ชั่วโมง และเคารพ robots ของ SEOChecker
 - JavaScript เป็นตัวเลือก ใช้ Chromium เปรียบเทียบก่อน/หลังสำหรับไม่เกิน 2 หน้า ไม่ได้จำลอง Googlebot และไม่ยืนยันสถานะ index
-- PageSpeed เป็นตัวเลือก ส่ง URL ไป Google ขอ Performance, Accessibility, Best Practices และ SEO เลือก mobile/desktop ได้ คะแนนเป็นของ URL เดียว ไม่เฉลี่ยทั้งเว็บไซต์
-- ไม่มี key จะไม่เรียก PageSpeed และแสดงว่ายังไม่ได้ตั้งค่า ดู [ตั้งค่า PageSpeed](docs/project/PAGESPEED.md) ซึ่งยังต้องยืนยันสิทธิ์/quota/คะแนนด้วย key จริง
+- Lighthouse ในเครื่องเปิดไว้เป็นค่าเริ่มต้น ตรวจ Performance, Accessibility, Best Practices และ SEO จริง เลือก mobile/desktop ได้ ไม่ต้องมี API key หรือส่ง URL ไปบริการตรวจของ Google
+- คะแนนเป็นของ URL ที่ใส่ ไม่เฉลี่ยทั้งเว็บไซต์ เป็น lab test ภายใต้ข้อจำกัด network ของ checker ไม่ใช่ข้อมูลผู้ใช้จริงหรือการยืนยัน Google index ดู [ตรวจ localhost ด้วย Lighthouse](docs/project/LOCAL-LIGHTHOUSE.md)
 - Agentic แสดงสัดส่วนเฉพาะเมื่อ provider คืนหลักฐานที่รองรับ ไม่ใช้ Chrome ของเครื่อง checker หรือคะแนนตัวอย่างแทน
 - รายงานบอกขอบเขตและสิ่งที่ยังตรวจไม่ได้ ไม่สรุปว่า SEO 100 ต้องติดหน้าแรก หรือว่าตรวจครบโดเมนเมื่อหยุดตามลิมิต
 
@@ -78,7 +77,7 @@ URL ที่ถูก robots บล็อก อ่านไม่ได้ ไ
 
 ลิมิตกำหนดที่ backend เท่านั้น browser เปลี่ยนเองไม่ได้ เมื่อชนลิมิตจะยังรายงานหน้าที่ตรวจแล้วและ URL ที่เหลือพร้อมเหตุผล
 การไล่ครบ URL ที่ค้นพบไม่ยืนยันว่าค้นพบทุกหน้าของโดเมน เช่น หน้าที่ไม่มีลิงก์/sitemap หน้า login หรือ URL อีก origin
-ข้อจำกัด JavaScript 2 หน้าและ PageSpeed 1 URL ยังแยกจากการตรวจ HTML ทั้งเว็บ
+ข้อจำกัด JavaScript 2 หน้าและ Lighthouse 1 URL ยังแยกจากการตรวจ HTML ทั้งเว็บ
 
 ## Browser Renderer
 
@@ -87,6 +86,7 @@ Linux ที่รองรับอาจต้องติดตั้ง depe
 เลือก Chrome ที่ติดตั้งไว้ได้ด้วย `RENDER_BROWSER_CHANNEL=chrome` ฝั่ง backend
 ถ้าขาด browser/sandbox prerequisites ให้รายงานว่า browser ใช้ไม่ได้ ไม่ปลอม DOM หรือคะแนน
 renderer ใช้ network gate แบบ DNS pinning/default ports/same-origin GET, 20 วินาที และ 3 MiB รวม assets
+เมื่อเลือก localhost gate อนุญาตเฉพาะ origin และพอร์ตนั้น โดยไม่เปิดสิทธิ์อ่านเครือข่ายภายในทั้งหมด
 ไม่โหลดภาพ/fonts/media หรือ assets ข้าม origin ไม่คลิก/ล็อกอิน จึงอาจได้ผลบางส่วนอย่างถูกต้อง
 
 ## ทดสอบ
@@ -98,7 +98,7 @@ npm audit --omit=dev
 
 ชุด UI ใช้ Playwright กับ Google Chrome ที่ติดตั้งในเครื่อง (`channel: chrome`)
 หากยังไม่มี Chrome ให้ติดตั้งก่อนทดสอบ หรือใช้ `npx playwright install chrome` ตามข้อกำหนดเครื่อง
-fixture CDN ใช้ Bootstrap/Lucide เวอร์ชันตรงกับ CDN จริง ผล fixture ไม่ใช่คะแนนจาก Google จริง
+fixture CDN ใช้ Bootstrap/Lucide/ExcelJS เวอร์ชันตรงกับ CDN จริง ชุดทดสอบมีทั้งผลจำลองสำหรับ UI และ Lighthouse จริงกับเว็บ localhost ที่ควบคุมเอง
 ชุดทดสอบตรวจ API/network gates, cancellation, crawl, หลักฐาน, UI, การล้างข้อมูล และไฟล์ดาวน์โหลด
 ไม่มีการบันทึกผลเว็บจริงระหว่างตรวจ screenshot ใช้ fixture เท่านั้น
 
@@ -108,15 +108,17 @@ fixture CDN ใช้ Bootstrap/Lucide เวอร์ชันตรงกั�
 หน้าเว็บและ API อยู่พอร์ตเดียวกัน ใช้ `fetch('/api/audits')` ไม่ต้องเปิด CORS
 ให้ server รับเฉพาะ loopback และอย่าเปิดพอร์ตออกอินเทอร์เน็ตหรือใช้ tunnel เมื่อใช้ส่วนตัว
 entry point ฟังที่ `127.0.0.1` เท่านั้น รับ Host เป็น localhost/127.0.0.1 ของพอร์ตนั้น และปฏิเสธคำขอตรวจจาก origin อื่นหรือ form POST ที่ไม่ใช่ JSON
-URL ที่นำมาตรวจยังต้องเป็นเว็บสาธารณะ HTTP/HTTPS เพราะตัวดึงข้อมูลป้องกันการอ่านเครือข่ายภายใน
-การรัน checker ในเครื่องไม่ทำให้ตรวจ `http://localhost` หรือ IP ภายในเป็นเป้าหมายได้เอง
+URL เป้าหมายรองรับ HTTP/HTTPS ของ `localhost`, `127.0.0.1` หรือ `[::1]` กับพอร์ตของเว็บที่กำลังทำ เช่น `http://localhost:5173/` ไม่บังคับ HTTPS
+checker กับเว็บเป้าหมายต้องอยู่คนละพอร์ต ถ้าเว็บใช้ 3000 ให้เปลี่ยน `PORT` ของ checker เป็น 3001 แล้ว restart
+สิทธิ์ local ผูกกับ origin ที่ผู้ใช้ใส่เท่านั้น redirect ไม่สามารถข้าม alias/พอร์ตไปอ่านบริการอื่นได้ ยังบล็อก LAN/private IP อื่น และโดเมนสาธารณะที่ resolve ไป private IP
+เว็บสาธารณะยังรองรับเฉพาะพอร์ต 80/443 ตาม policy เดิม localhost HTTPS ต้องมี certificate ที่ Node เชื่อถือ ไม่ปิดการตรวจ TLS
 
-เก็บ `.env`/API key ฝั่ง Node.js ไม่ใช่ JavaScript ที่ browser โหลด แม้เป็นเครื่องส่วนตัว
+เก็บ `.env` ฝั่ง Node.js ไม่ใช่ JavaScript ที่ browser โหลด แม้เป็นเครื่องส่วนตัว ไม่ต้องตั้ง API key สำหรับตรวจ
 API เป็น `no-store` ไม่ใช้ request/access logs หรือฐานข้อมูลเก็บรายงาน
 รับงานพร้อมกันไม่เกิน 2 รอบ และเริ่มได้ไม่เกิน 10 รอบต่อ 10 วินาที ไม่มีคิวงาน หากเต็มให้ลองใหม่หลังงานเดิมสิ้นสุด
 ตัวควบคุมเก็บแค่จำนวนงานและเวลาหน้าต่างชั่วคราวใน RAM ไม่เก็บ URL หรือผลตรวจ การปิดแท็บคืนช่องหลัง cleanup เสร็จ
-อย่าเปิด DEBUG HTTP หรือ dump environment เพราะคำขอไป Google มี key ใน query
-Google เป็นบริการภายนอก ไม่อยู่ภายใต้คำรับประกันการไม่เก็บข้อมูลของ checker
+อย่าเปิด DEBUG HTTP หรือ dump environment เพื่อไม่ให้ข้อมูลของเว็บที่ตรวจหลุดใน log
+Lighthouse ใช้ Chrome/Chromium ในเครื่อง ไม่มีบริการคะแนนภายนอก แต่ยังโหลด resource ของเว็บเป้าหมายและ public CDN ที่หน้าเว็บอ้างถึง
 ไม่มีงาน deploy/SSL/hosting ที่ต้องทำเพื่อใช้งานส่วนตัวตามขอบเขตปัจจุบัน
 
 ## เอกสาร

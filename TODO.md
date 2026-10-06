@@ -2,7 +2,7 @@
 
 เป้าหมาย: ใส่ URL แล้วตรวจเว็บไซต์จริงเป็นรอบ ๆ แสดงหลักฐาน ปัญหา และวิธีแก้เป็นภาษาไทย โดยไม่เก็บประวัติหรือผลตรวจถาวร ผู้ใช้ดาวน์โหลดรายงานลงเครื่องเองเมื่อต้องการ
 
-ขอบเขตล่าสุด: ผู้ใช้ใช้คนเดียวในเครื่อง รันตัว checker บน localhost ไม่ต้องซื้อ VPS ตั้งโดเมน HTTPS หรือ deploy ออนไลน์ URL ที่นำมาตรวจยังเป็นเว็บสาธารณะ ไม่ได้เปิดสิทธิ์อ่าน localhost/เครือข่ายภายในของเป้าหมาย
+ขอบเขตล่าสุด: ใช้ส่วนตัวบน localhost เป็นหลัก ตรวจเว็บที่กำลังพัฒนาบน localhost/127.0.0.1/[::1] คนละพอร์ตกับ checker ได้ ไม่ต้องใช้ VPS โดเมน HTTPS หรือ API key ใช้ Lighthouse ในเครื่องแทนบริการคะแนนภายนอก เว็บสาธารณะยังตรวจได้ตาม policy เดิม ไม่เปิดสิทธิ์อ่าน LAN/private IP ทั้งหมด
 
 ทำตามลำดับทีละข้อ เมื่อทำและทดสอบผ่านแล้วให้ติ๊ก `[x]` ตรวจไฟล์ที่จะ stage แล้วใช้ `git add .` และ commit ด้วยข้อความของข้อนั้น ก่อนทำข้อถัดไป
 
@@ -116,7 +116,7 @@
 
 เสร็จเมื่อ: คะแนนมาจาก engine จริง และผล JavaScript มีหลักฐานก่อน/หลัง render โดยไม่มีการสร้างคะแนนเอง
 
-PageSpeed ขอ Performance, Accessibility, Best Practices และ SEO อย่างชัดเจน เพราะค่าปริยายตรวจเฉพาะ Performance ตาม [API reference](https://developers.google.com/speed/docs/insights/v5/reference/pagespeedapi/runpagespeed) โค้ดและขั้นตอนตั้ง key พร้อมแล้วตามที่ผู้ใช้ขอ แต่ยังไม่มี key จึงยังไม่ได้ยืนยันคะแนนจาก Google จริง ทดสอบ contract/failure/UI และชุดรวม 221 ข้อผ่าน ทดลอง API กับ example.com จริงได้ HTML และ `not-configured` โดยไม่มีคะแนนแทน ดู [ขั้นตอนตั้งค่า](docs/project/PAGESPEED.md)
+บันทึกรอบเดิม: เคยเตรียม PageSpeed API และทดสอบ contract/failure/UI 221 ข้อ แต่ไม่ได้ยืนยันคะแนน Google เพราะไม่มี key ปัจจุบันยกเลิก integration นี้ตามคำขอผู้ใช้ ใช้ [Lighthouse ในเครื่อง](docs/project/LOCAL-LIGHTHOUSE.md) แทน
 
 ## รอบที่ 7: ดาวน์โหลดรายงานลงเครื่อง
 
@@ -175,6 +175,20 @@ JSON ของปัญหาที่กรองเก็บโครงสร
 ทดลอง localhost:3000 กับ example.com ผ่าน API/CDN จริงแล้ว โหลด ExcelJS 4.4.0 พร้อม SRI ตรงกับไฟล์จริง JSON/XLSX อ่านกลับตรงกับรายงาน มือถือ 320 px และ desktop 1440 px ไม่ล้น F5 ล้างข้อมูล และไม่มี browser error ไม่เขียนไฟล์หรือ screenshot ของรายงานจริง ส่วน screenshot จาก fixture ถูกลบหลังตรวจ ขั้นตอนนำเข้า Google Sheets อยู่ใน docs/project/GOOGLE-SHEETS.md; ยังไม่ได้อัปโหลดในบัญชี Google จริง
 
 `npm audit` พบ 6 warnings: moderate 2 (ExcelJS/uuid, GHSA-w5hq-g745-h8pq) เพิ่มจาก dependency สำหรับ XLSX; high 3 (nodemon/chokidar/braces) และ critical 1 (proxy-addr) เป็นของเดิม ยังไม่ได้แก้ dependencies ในงานนี้ และไม่อ้างว่า SRI แก้ช่องโหว่ของ library
+
+## ตรวจเว็บในเครื่อง
+
+- [x] feat: ตรวจ localhost และใช้ Lighthouse ในเครื่อง
+
+ตรวจสอบแล้ว: `npm test` ผ่าน 274 ข้อ รวมเว็บ native localhost/127.0.0.1/[::1], sitemap-only, canonical, HTTP 404, redirect ใน origin เดิม และ JavaScript ในเครื่อง การตรวจ localhost ต้องเลือก origin/พอร์ตตรง ๆ ไม่ตรวจพอร์ตของ checker ไม่เปิดสิทธิ์ไป LAN/private IP อื่นหรือยอมให้ public redirect เข้า local
+
+ใช้ Lighthouse 13.5.0 กับ Chromium/Puppeteer จริง เลือกมือถือ/เดสก์ท็อปได้ คะแนน 4 หมวดเป็นของ URL ที่ใส่ ไม่เฉลี่ยทั้งเว็บ ไม่ต้องมี API key และเอา PageSpeed ออกจาก UI, service/data, env template และเอกสารปัจจุบันแล้ว ต้องใช้ Node.js 22.19.0 ขึ้นไปตาม engine
+
+ทดสอบคะแนนจริงทั้งสองโหมด การยกเลิก socket/browser การจำกัด requests/bytes และหลักฐาน URL ที่ยาว การบล็อก POST/private DNS/บริการ local พอร์ตอื่น/subframes/robots พร้อมรายงาน partial ตามข้อมูลที่ขาด ไม่มีคะแนนแทนเมื่อ engine ล้มเหลว โค้ดตรวจ public แบบเดิมและการไล่ HTML หลายหน้ายังผ่าน regression tests
+
+ทดลองผ่าน localhost:3000 และ UI/CDN จริงกับเว็บ localhost ที่ควบคุมเอง ได้ HTML 4 หน้าและ Lighthouse desktop ครบ 4 คะแนน สถานะ completed, engine 13.5.0; JSON/XLSX อ่านกลับตรงกับคะแนน มือถือ 320 px/desktop 1440 px ไม่ล้น ไม่มี browser error และ F5 ล้างผล/URL/storage ไม่สร้างรายงานหรือ screenshot ของเว็บจริงที่ backend ภาพ fixture สำหรับทดสอบถูกลบหลังตรวจ คู่มืออยู่ใน docs/project/LOCAL-LIGHTHOUSE.md
+
+`npm audit` ยังพบ 6 warnings เดิม: moderate 2 (ExcelJS/uuid), high 3 (nodemon/chokidar/braces), critical 1 (proxy-addr) งานนี้ไม่ได้แก้ dependencies เหล่านั้น และไม่อ้างว่าตรวจ lab ในเครื่องยืนยันอันดับหรือ Google index ได้
 
 ## งานเพิ่มหลังเวอร์ชันแรก
 

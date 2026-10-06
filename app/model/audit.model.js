@@ -40,7 +40,7 @@ module.exports = {
         reason: page.render?.reason || (page.render ? 'render-incomplete' : 'not-requested'),
         message: 'JavaScript: ' + page.finalUrl }] : []),
       ...(lighthouse?.status !== 'completed' ? [{ id: 'lighthouse', url: lighthouse?.url || page.finalUrl,
-        reason: lighthouse?.reason || (lighthouse ? 'PAGESPEED_SCORE_UNAVAILABLE' : 'not-requested'), message: 'Lighthouse: ' + (lighthouse?.url || page.finalUrl) }] : []),
+        reason: lighthouse?.reason || (lighthouse ? 'LIGHTHOUSE_SCORE_UNAVAILABLE' : 'not-requested'), message: 'Lighthouse: ' + (lighthouse?.url || page.finalUrl) }] : []),
       { id: 'site-crawl', url: page.finalUrl, reason: 'outside-scope', message: '\u0e23\u0e2d\u0e1a\u0e19\u0e35\u0e49\u0e15\u0e23\u0e27\u0e08\u0e40\u0e09\u0e1e\u0e32\u0e30 URL \u0e17\u0e35\u0e48\u0e23\u0e30\u0e1a\u0e38 \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e44\u0e25\u0e48\u0e15\u0e23\u0e27\u0e08\u0e17\u0e31\u0e49\u0e07\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c' }
     );
     if (!siteChecks.some((entry) => entry.ruleId === 'canonical-target')) notChecked.push({ id: 'canonical-target', url: page.finalUrl,
@@ -77,6 +77,7 @@ module.exports = {
       startedAt,
       completedAt: new Date().toISOString(),
       scope: { type: crawl ? 'same-origin-crawl' : discovery ? 'same-origin-discovery' : 'single-page', origin: new URL(page.finalUrl).origin,
+        ...(['localhost', '127.0.0.1', '[::1]'].includes(new URL(page.finalUrl).hostname) ? { environment: 'local-development' } : {}),
         maxPages: crawl ? crawl.limits.maxPages : 1 },
       coverage: { discovered: discovery ? discovery.urls.length : 1, fetched: pages.length, analyzed: pages.filter((item) => item.checks.length).length,
         skipped: crawl?.skipped || [], limitReached: !!(crawl?.limitReached || discovery?.limitReached) },

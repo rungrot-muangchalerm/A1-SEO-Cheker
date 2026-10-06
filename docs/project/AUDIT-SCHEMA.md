@@ -92,7 +92,8 @@ Google's own rendering/indexing is a different observation; see
 [Google's JavaScript basics](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics).
 
 Same-origin GET scripts/styles/XHR/fetch are fulfilled through protected Node
-transport with public pinned DNS, default ports, robots and per-hop checks. CDP
+transport with public pinned DNS/default ports or explicitly selected loopback
+origin/port, robots and per-hop checks. CDP
 Fetch pauses every redirect hop; resources keep their actual final browser URL,
 so relative module imports work after redirects. No browser request is continued
 to the network. An offline context, deny-only proxy, disabled browser DNS/QUIC,
@@ -149,21 +150,45 @@ formula prefixes are neutralized only in XLSX, not the JSON or in-memory report.
 Long values are split into ordered JSON chunks in Long Text, not silently truncated.
 Writer failure, missing library or size limits preserve the JSON export option.
 
-## PageSpeed Insights
+## Local Lighthouse
 
-Explicit `pagespeed: true` requests four Lighthouse categories from the fixed
-Google HTTPS provider endpoint, with a backend-only `PAGESPEED_API_KEY`.
-Missing configuration makes no provider request. `lighthouse` includes status,
+Explicit `lighthouse: true` runs Lighthouse 13.5.0 with local Chromium/Puppeteer,
+without API keys or a remote scoring endpoint. The UI selects this by default.
+The four categories describe the input URL only, never an average over the crawl.
+`lighthouse` includes status,
 reason, provider, URL, request timestamps, requested/final URL, source fetchTime,
 engine/version and returned mode when available. `categories` keeps source scores
 in [0,1]; `displayScore` only rounds score * 100 for presentation. Null/missing/
 invalid values are unavailable, not zero. Runtime errors never publish scores.
-Partial means some source scores are unavailable. HTML issues/summary stay separate.
-No provider body/error/screenshot is logged or retained; only allowlisted facts
-enter the current report. API failures keep the HTML report with no fallback scores.
-The request is cancelled on disconnect, is capped at 90 seconds/8 MiB, refuses
-provider redirects, and uses shared pinned public DNS transport. See
-[setup and external validation still needed](PAGESPEED.md).
+Partial means missing scores or incomplete network coverage; existing numeric
+scores remain actual engine output, not recomputed estimates. HTML issues/summary
+stay separate. Runtime failures publish no scores or raw error messages.
+No raw LHR, trace, screenshot or report is written to disk or logged. Browser
+temporary profiles are disposed on close. Disconnect closes the browser and aborts
+pending Node sockets before releasing admission. Browser failures keep HTML findings.
+Limits: 90 seconds, 10-second launch, 300 intercepted requests, 4 MiB per resource,
+32 MiB total allocation and 5 redirects. Failed resources consume reserved allowance.
+Network records are capped at 100 with 8,192-character URL previews and explicit
+`urlTruncated` flags; omissions make the result partial. `network`
+includes actual successful bytes, allocation usage, limits and bounded refusal facts.
+`limitations` discloses protected GET-only transport, no cookies/auth, same-origin
+navigation, no subframes/popups/workers/service workers/websockets/WebRTC, and lab
+data rather than field data. This can differ from unrestricted DevTools Lighthouse.
+Images/fonts and public CDN resources may load through DNS-pinned default-port GET;
+only the selected local origin can access loopback. Browser direct networking is
+blocked by a deny-only proxy. See [local setup](LOCAL-LIGHTHOUSE.md).
+
+## Local Target Policy
+
+The API derives local permission only from the selected HTTP(S) target hostname
+(`localhost`, `127.0.0.1`, `[::1]`), not client-supplied policy flags. Local ports
+are permitted except the checker's listening port (`CHECKER_TARGET`). Connections
+pin to literal loopback; all local redirects/discovered URLs must stay on the
+selected origin. Aliases, other ports and LAN/private IPs remain blocked. A public
+target cannot gain local permission by redirecting or through body options.
+`scope.environment: local-development` identifies local reports. HTTP is supported;
+HTTPS still requires a trusted certificate. Local lab audits cannot verify public
+availability, Google indexing or ranking. The checker itself remains loopback-only.
 
 ## URL Discovery
 

@@ -12,7 +12,7 @@ module.exports = {
     const port = reservation.address().port;
     await new Promise(resolve => reservation.close(resolve));
     const child = spawn(process.execPath, ['index.js'], { cwd: path.resolve(__dirname, '../..'), windowsHide: true,
-      env: { ...process.env, PORT: String(port), LIVERELOAD: 'false', NODE_DEBUG: '', PAGESPEED_API_KEY: '', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+      env: { ...process.env, PORT: String(port), LIVERELOAD: 'false', NODE_DEBUG: '', ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '', stderr = '';
     child.stdout.on('data', chunk => { stdout += chunk.toString(); });
     child.stderr.on('data', chunk => { stderr += chunk.toString(); });

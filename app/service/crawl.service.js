@@ -11,7 +11,7 @@ const stopCodes = new Set(['CRAWL_DEADLINE', 'CRAWL_REQUEST_LIMIT', 'CRAWL_BYTE_
 module.exports = {
   limits,
   run: async (value, options = {}) => {
-    const requested = website.parseUrl(value);
+    const requested = website.parseUrl(value, options);
     const controller = new AbortController();
     const cancel = () => controller.abort(new website.WebsiteError('CANCELLED'));
     if (options.signal?.aborted) cancel();
@@ -47,7 +47,7 @@ module.exports = {
       stats.requests++;
     };
     const onConnect = () => { lastRequest = Date.now(); };
-    const policyOptions = { signal: controller.signal, robotsCache, beforeConnect: throttle, onConnect };
+    const policyOptions = { signal: controller.signal, localOrigin: options.localOrigin, robotsCache, beforeConnect: throttle, onConnect };
     const beforeRequest = async (url, signal) => {
       if (seen.has(url.href)) throw new website.WebsiteError('ALREADY_FETCHED');
       const rules = await robots.load(url.href, policyOptions);
@@ -58,7 +58,7 @@ module.exports = {
       if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
       requestCrawlDelay = rules.crawlDelay || 0;
     };
-    const networkOptions = { signal: controller.signal, beforeRequest, onConnect,
+    const networkOptions = { signal: controller.signal, localOrigin: options.localOrigin, beforeRequest, onConnect,
       beforeConnect: (url, signal) => throttle(url, signal, requestCrawlDelay), includeCanonical: true,
       onDiscovery: async (collection) => { discovery = collection; await notify('discovering'); } };
     const analyze = async (page) => {
@@ -84,7 +84,8 @@ module.exports = {
         if (options.signal?.aborted || !stopCodes.has(error.code)) throw error;
         stopReason = error.code;
         discovery = { origin: new URL(root.finalUrl).origin, urls: [], sitemaps: [], skipped: [], skippedOmitted: 0,
-          limitReached: true, linkExtractionComplete: false, limits: discoveryService.limits };
+          limitReached: true, linkExtractionComplete: false, limits: discoveryService.limits,
+          ...(options.localOrigin ? { localOrigin: options.localOrigin } : {}) };
         discoveryService.extend(discovery, root, true, true);
       }
       // Drain the growing queue, including links found beyond the starting page and sitemap.
@@ -114,7 +115,8 @@ module.exports = {
         await notify('crawling', entry.url);
       }
       await notify('completed');
-      return { page: root, pages, responses, discovery, skipped, limits, stats, stopReason, limitReached: !!stopReason };
+      return { page: root, pages, responses, discovery, skipped, limits, stats, stopReason, limitReached: !!stopReason,
+        ...(options.localOrigin ? { localOrigin: options.localOrigin } : {}) };
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener('abort', cancel);

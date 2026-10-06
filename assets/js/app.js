@@ -188,12 +188,13 @@
     byId("report-result").textContent = report.issues.length ? "\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2b\u0e23\u0e37\u0e2d\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 " + report.issues.length + " \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23" : "\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e15\u0e32\u0e21\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49";
     byId("report-result").dataset.result = report.issues.length ? "issues" : "none";
     const lighthouse = report.lighthouse;
-    const scoreMessages = { 'not-configured': '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e31\u0e49\u0e07\u0e04\u0e48\u0e32 PageSpeed API key',
-      'not-requested': '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e23\u0e27\u0e08', PAGESPEED_AUTH: 'PageSpeed: API key \u0e44\u0e21\u0e48\u0e16\u0e39\u0e01\u0e15\u0e49\u0e2d\u0e07\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c',
-      PAGESPEED_QUOTA: 'PageSpeed: \u0e16\u0e36\u0e07\u0e02\u0e35\u0e14\u0e08\u0e33\u0e01\u0e31\u0e14\u0e04\u0e33\u0e02\u0e2d', PAGESPEED_TIMEOUT: 'PageSpeed: \u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32\u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14' };
-    byId('lighthouse-status').textContent = lighthouse?.status === 'completed' ? 'PageSpeed Insights' : lighthouse?.status === 'partial' ?
-      'PageSpeed Insights: \u0e04\u0e30\u0e41\u0e19\u0e19\u0e1a\u0e32\u0e07\u0e2b\u0e21\u0e27\u0e14\u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49' :
-      (scoreMessages[lighthouse?.reason] || 'PageSpeed: \u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e04\u0e30\u0e41\u0e19\u0e19\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (' + (lighthouse?.reason || 'unavailable') + ')');
+    const scoreProvider = 'Lighthouse (\u0e43\u0e19\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07)';
+    const scoreMessages = { 'not-requested': '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e23\u0e27\u0e08',
+      BROWSER_UNAVAILABLE: 'Lighthouse: \u0e40\u0e1b\u0e34\u0e14 Chromium \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49',
+      LIGHTHOUSE_TIMEOUT: 'Lighthouse: \u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32\u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14' };
+    byId('lighthouse-status').textContent = lighthouse?.status === 'completed' ? scoreProvider : lighthouse?.status === 'partial' ?
+      scoreProvider + ': \u0e1c\u0e25\u0e15\u0e23\u0e27\u0e08\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19 (' + (lighthouse.reason || 'score-unavailable') + ')' :
+      (scoreMessages[lighthouse?.reason] || scoreProvider + ': \u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e04\u0e30\u0e41\u0e19\u0e19\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (' + (lighthouse?.reason || 'unavailable') + ')');
     replaceContent(byId('lighthouse-categories'), '<div class="row g-3 mt-1">' + (lighthouse?.categories || []).map((category) => {
       const valid = category.status === 'completed' && Number.isFinite(category.score) && category.score >= 0 && category.score <= 1;
       const score = valid ? Math.round(category.score * 100) : null;
@@ -487,7 +488,7 @@
       byId('website-url').value = '';
       byId('website-url').setCustomValidity('');
     }
-    byId('pagespeed-options').hidden = !byId('pagespeed-enabled').checked;
+    byId('lighthouse-options').hidden = !byId('lighthouse-enabled').checked;
   }
 
   function readAuditStream(response, onProgress) {
@@ -516,8 +517,8 @@
       .finally(() => reader.releaseLock());
   }
 
-  byId('pagespeed-enabled').addEventListener('change', () => {
-    byId('pagespeed-options').hidden = !byId('pagespeed-enabled').checked;
+  byId('lighthouse-enabled').addEventListener('change', () => {
+    byId('lighthouse-options').hidden = !byId('lighthouse-enabled').checked;
   });
 
   byId('export-button').addEventListener('click', () => {
@@ -594,7 +595,7 @@
       headers: { "Content-Type": "application/json", Accept: byId('crawl-pages').checked ? 'application/x-ndjson' : 'application/json' },
       body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}),
         ...(byId('crawl-pages').checked ? { crawl: true } : {}), ...(byId('render-pages').checked ? { render: true } : {}),
-        ...(byId('pagespeed-enabled').checked ? { pagespeed: true, strategy: byId('strategy-desktop').checked ? 'desktop' : 'mobile' } : {}) })
+        ...(byId('lighthouse-enabled').checked ? { lighthouse: true, strategy: byId('strategy-desktop').checked ? 'desktop' : 'mobile' } : {}) })
     }).then((response) => {
       const body = (response.headers.get('content-type') || '').split(';')[0] === 'application/x-ndjson' ?
         readAuditStream(response, (progress) => {

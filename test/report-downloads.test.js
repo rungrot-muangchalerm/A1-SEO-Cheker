@@ -6,7 +6,7 @@ const os = require('node:os');
 const { randomUUID } = require('node:crypto');
 const { stubTransport } = require('./helpers/transport');
 const { frontend, scan, good, bad, report } = require('./helpers/frontend');
-const { base, jsonResponse, key } = require('./helpers/pagespeed');
+const { base, stubLighthouse } = require('./helpers/lighthouse');
 
 async function readDownload(page, selector) {
   const event = page.waitForEvent('download');
@@ -19,13 +19,12 @@ async function readDownload(page, selector) {
 }
 
 test('manual JSON contains the entire actual API round, independent of issue filters, including HTML evidence and source scores', async (t) => {
-  key(t);
-  stubTransport(t, [{ html: bad }, { status: 404 }, jsonResponse()]);
+  stubLighthouse(t);
+  stubTransport(t, [{ html: bad }, { status: 404 }]);
   const { page, errors } = await frontend(t);
   assert.equal(await page.locator('#export-json-button').isDisabled(), true);
   const response = page.waitForResponse((response) => response.url().endsWith('/api/audits'));
-  await page.locator('#pagespeed-enabled').check();
-  await scan(page, base);
+  await scan(page, base, { lighthouse: true });
   const original = await (await response).json();
   await page.locator('#issue-search').fill('no-matching-issue');
   assert.equal(await page.locator('#export-button').isDisabled(), true);

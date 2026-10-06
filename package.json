@@ -19,7 +19,7 @@
     "index.js"
   ],
   "engines": {
-    "node": ">=20.18.1"
+    "node": ">=22.19.0"
   },
   "repository": {
     "type": "git",
@@ -55,10 +55,12 @@
     "http-link-header": "^1.1.4",
     "ipaddr.js": "^2.5.0",
     "jsonwebtoken": "^9.0.3",
+    "lighthouse": "13.5.0",
     "livereload": "^0.10.3",
     "multer": "^2.4.0",
     "mysql2": "^3.16.1",
     "playwright": "^1.63.0",
+    "puppeteer-core": "25.9.0",
     "robots-parser": "^3.0.1",
     "saxes": "^6.0.0"
   },

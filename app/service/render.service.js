@@ -96,10 +96,10 @@ module.exports = {
         const info = { startedAt, url: item.finalUrl, mode: 'bounded-same-origin-render', limits };
         try {
           controller.signal.throwIfAborted();
-          const selected = website.parseUrl(item.finalUrl);
+          const selected = website.parseUrl(item.finalUrl, options);
           if (item.status < 200 || item.status >= 300) throw new website.WebsiteError('RENDER_HTTP_STATUS');
           if ((item.headers['content-type'] || 'text/html').split(';')[0].trim().toLowerCase() !== 'text/html') throw new website.WebsiteError('RENDER_DOCUMENT_TYPE');
-          const rules = await robots.load(selected.href, { signal: controller.signal, robotsCache, beforeConnect, onConnect });
+          const rules = await robots.load(selected.href, { signal: controller.signal, localOrigin: options.localOrigin, robotsCache, beforeConnect, onConnect });
           if (rules.status === 'not-checked' || rules.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
           if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
           if (!browser) browser = await chromium.launch({ headless: true, chromiumSandbox: true, timeout: limits.launchTimeoutMs,
@@ -144,7 +144,7 @@ module.exports = {
             };
             const operation = pending.then(async () => {
               requestSignal.throwIfAborted();
-              const url = website.parseUrl(request.url);
+              const url = website.parseUrl(request.url, options);
               if (url.origin !== selected.origin) throw new website.WebsiteError('OUTSIDE_SCOPE');
               if (request.method !== 'GET') throw new website.WebsiteError('RENDER_METHOD_BLOCKED');
               if (event.resourceType === 'Document') {
@@ -162,9 +162,10 @@ module.exports = {
               const allowance = Math.min(limits.maxResourceBytes, remainingBytes);
               stats.budgetBytes += allowance;
               const result = await website.fetchRenderResource(url.href, { signal: requestSignal, scopeOrigin: selected.origin, onConnect,
+                localOrigin: options.localOrigin,
                 timeoutMs: Math.max(1, Math.min(5000, deadline - Date.now())), maxBytes: allowance,
                 beforeRequest: async (target, signal) => {
-                  const policy = await robots.load(target.href, { signal, robotsCache, beforeConnect, onConnect });
+                  const policy = await robots.load(target.href, { signal, localOrigin: options.localOrigin, robotsCache, beforeConnect, onConnect });
                   if (policy.status === 'not-checked' || policy.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
                   if (policy.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
                 }, beforeConnect: (target, signal) => beforeConnect(target, signal, rules.crawlDelay) });

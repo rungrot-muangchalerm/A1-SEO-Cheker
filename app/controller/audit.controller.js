@@ -26,10 +26,14 @@ module.exports = {
       return res.status(status).json(data);
     };
     try {
-      const result = await auditService.create(req.body, { signal: controller.signal,
+      const result = await auditService.create(req.body, { signal: controller.signal, checkerPort: req.socket?.localPort,
         ...(stream ? { onProgress: (progress) => frame('progress', progress) } : {}) });
       if (controller.signal.aborted || res.destroyed) return;
       if (!result.ok) {
+        if (result.code === 'CHECKER_TARGET') {
+          return await respond(400, { schemaVersion: auditModel.version, status: 'failed', error: result.code,
+            message: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e43\u0e0a\u0e49\u0e1e\u0e2d\u0e23\u0e4c\u0e15\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a\u0e17\u0e35\u0e48\u0e08\u0e30\u0e15\u0e23\u0e27\u0e08 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e1e\u0e2d\u0e23\u0e4c\u0e15 SEO Checker' });
+        }
         if (result.code === 'CRAWL_DEADLINE') {
           return await respond(504, { schemaVersion: auditModel.version, status: 'failed', error: result.code,
             message: '\u0e16\u0e36\u0e07\u0e40\u0e27\u0e25\u0e32\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14\u0e02\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08 \u0e01\u0e48\u0e2d\u0e19\u0e2d\u0e48\u0e32\u0e19\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e23\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08' });
@@ -42,7 +46,8 @@ module.exports = {
           return await respond(500, { schemaVersion: auditModel.version, status: 'failed', error: 'INTERNAL_ERROR', message: '\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08' });
         }
         if (['INVALID_URL', 'URL_CREDENTIALS', 'PORT_NOT_ALLOWED', 'PRIVATE_TARGET'].includes(result.code)) {
-          return await respond(400, { schemaVersion: auditModel.version, status: 'failed', error: result.code, message: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e43\u0e0a\u0e49 URL HTTP/HTTPS \u0e2a\u0e32\u0e18\u0e32\u0e23\u0e13\u0e30 \u0e1e\u0e2d\u0e23\u0e4c\u0e15 80 \u0e2b\u0e23\u0e37\u0e2d 443 \u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e43\u0e2a\u0e48\u0e23\u0e2b\u0e31\u0e2a\u0e1c\u0e48\u0e32\u0e19' });
+          return await respond(400, { schemaVersion: auditModel.version, status: 'failed', error: result.code,
+            message: 'URL HTTP/HTTPS: localhost, 127.0.0.1, [::1] \u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e27\u0e47\u0e1a\u0e2a\u0e32\u0e18\u0e32\u0e23\u0e13\u0e30\u0e1e\u0e2d\u0e23\u0e4c\u0e15 80/443 \u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e43\u0e2a\u0e48\u0e23\u0e2b\u0e31\u0e2a\u0e1c\u0e48\u0e32\u0e19' });
         }
         if (result.code === 'TIMEOUT') {
           return await respond(504, { schemaVersion: auditModel.version, status: 'failed', error: result.code, message: '\u0e40\u0e27\u0e47\u0e1a\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07\u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32\u0e19\u0e32\u0e19\u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14' });

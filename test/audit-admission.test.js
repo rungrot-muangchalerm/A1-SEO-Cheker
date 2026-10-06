@@ -132,7 +132,7 @@ test('real entry enforces start admission and protects every Express audit URL v
     assert.ok(!(await malformed.text()).includes('PRIVATE_MARKER'));
   }
   for (let i = 0; i < admission.limits.maxStarts; i++) {
-    const response = await fetch(server.origin + '/api/audits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"url":"http://127.0.0.1/"}' });
+    const response = await fetch(server.origin + '/api/audits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"url":"http://10.0.0.1/"}' });
     assert.equal(response.status, 400);
     await response.text();
   }

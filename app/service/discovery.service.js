@@ -11,7 +11,7 @@ function skip(collection, entry) {
 
 function add(collection, value, evidence) {
   let url;
-  try { url = website.parseUrl(value); } catch { skip(collection, { value, reason: 'invalid-url', ...evidence }); return; }
+  try { url = website.parseUrl(value, { localOrigin: collection.localOrigin }); } catch { skip(collection, { value, reason: 'invalid-url', ...evidence }); return; }
   if (url.origin !== collection.origin) { skip(collection, { url: url.href, reason: 'outside-origin', ...evidence }); return; }
   let index = urlIndexes.get(collection);
   if (!index) {
@@ -49,14 +49,15 @@ module.exports = {
   discover: async (page, options = {}) => {
     const origin = new URL(page.finalUrl).origin;
     const skipped = [];
-    const collection = { origin, urls: [], skipped, skippedOmitted: 0, limitReached: false, linkExtractionComplete: true, limits };
+    const collection = { origin, urls: [], skipped, skippedOmitted: 0, limitReached: false, linkExtractionComplete: true, limits,
+      ...(options.localOrigin ? { localOrigin: options.localOrigin } : {}) };
     add(collection, page.finalUrl, { kind: 'requested-page', sourceUrl: page.finalUrl });
     extend(collection, page, false, options.includeCanonical === true);
     const queue = [];
     const queued = new Set();
     const enqueue = (value, evidence = {}) => {
       let url;
-      try { url = website.parseUrl(value); } catch { skip(collection, { value, kind: 'sitemap', reason: 'invalid-url', ...evidence }); return; }
+      try { url = website.parseUrl(value, options); } catch { skip(collection, { value, kind: 'sitemap', reason: 'invalid-url', ...evidence }); return; }
       if (url.origin !== origin) { skip(collection, { url: url.href, kind: 'sitemap', reason: 'outside-origin', ...evidence }); return; }
       if (queued.has(url.href)) return;
       if (queue.length >= limits.maxSitemapCandidates) {
@@ -73,7 +74,7 @@ module.exports = {
       const { value, sourceUrl, entryIndex } = queue[index];
       options.signal?.throwIfAborted();
       let url;
-      try { url = website.parseUrl(value); } catch { skip(collection, { value, kind: 'sitemap', reason: 'invalid-url' }); continue; }
+      try { url = website.parseUrl(value, options); } catch { skip(collection, { value, kind: 'sitemap', reason: 'invalid-url' }); continue; }
       if (url.origin !== origin) { skip(collection, { url: url.href, kind: 'sitemap', reason: 'outside-origin' }); continue; }
       if (seen.has(url.href)) continue;
       seen.add(url.href);
@@ -82,6 +83,7 @@ module.exports = {
       if (remainingMs <= 0) { collection.limitReached = true; skip(collection, { url: url.href, kind: 'sitemap', reason: 'sitemap-deadline' }); continue; }
       try {
         const response = await website.fetchSitemap(url.href, { signal: options.signal, timeoutMs: Math.min(5000, remainingMs), scopeOrigin: origin,
+          localOrigin: options.localOrigin,
           beforeRequest: options.beforeRequest, beforeConnect: options.beforeConnect, onConnect: options.onConnect });
         options.signal?.throwIfAborted();
         seen.add(response.finalUrl);
@@ -91,7 +93,7 @@ module.exports = {
           sitemaps.push({ ...evidence, status: 'not-checked', reason: 'sitemap-http-status' });
           continue;
         }
-        const parsed = sitemapService.parse(response.text);
+        const parsed = sitemapService.parse(response.text, options);
         sitemaps.push({ ...evidence, ...parsed, status: 'checked' });
         if (parsed.truncated) collection.limitReached = true;
         for (const entry of parsed.entries) {

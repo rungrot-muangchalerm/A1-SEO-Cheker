@@ -62,10 +62,13 @@ async function frontend(t, viewport = { width: 1280, height: 900 }) {
   const origin = 'http://127.0.0.1:' + server.address().port;
   await page.goto(origin);
   await page.waitForFunction(() => window.bootstrap && document.querySelector('header svg'));
+  // Legacy workflow fixtures opt out of the new default; Lighthouse has separate real-engine coverage.
+  await page.locator('#lighthouse-enabled').uncheck();
   return { page, browser, context, origin, errors };
 }
 
-async function scan(page, url) {
+async function scan(page, url, options = {}) {
+  await page.locator('#lighthouse-enabled').setChecked(options.lighthouse === true);
   await page.locator('#website-url').fill(url);
   await page.locator('#scan-button').click();
   await page.waitForFunction(() => document.getElementById('report').getAttribute('aria-busy') === 'false');

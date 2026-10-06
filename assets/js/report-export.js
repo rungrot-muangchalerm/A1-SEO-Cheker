@@ -62,7 +62,8 @@
       ['Started At', report.startedAt], ['Completed At', report.completedAt], ['Exported At', report.export.exportedAt],
       ['Export Scope', report.export.scope], ['Filters', report.export.filters || {}], ['Scope', report.scope],
       ['Coverage', report.coverage], ['Summary', report.summary], ['Selected Issues', report.issues.length],
-      ['Crawl', report.crawl], ['PageSpeed Status', report.lighthouse?.status], ['PageSpeed Reason', report.lighthouse?.reason]
+      ['Crawl', report.crawl], ['Lighthouse Status', report.lighthouse?.status], ['Lighthouse Reason', report.lighthouse?.reason],
+      ['Score Provider', report.lighthouse?.provider], ['Lighthouse Network', report.lighthouse?.network], ['Lighthouse Limitations', report.lighthouse?.limitations]
     ];
     sheet('Summary', ['Field', 'Value'], summary);
     if (report.pages) sheet('Pages', ['Requested URL', 'Final URL', 'HTTP Status', 'Fetch Status', 'Analysis Status', 'Title', 'Description', 'Canonical', 'Googlebot Allowed'],

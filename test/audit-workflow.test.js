@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const ExcelJS = require('exceljs');
 const { frontend, scan, good } = require('./helpers/frontend');
 const { stubTransport } = require('./helpers/transport');
-const { base, key, jsonResponse } = require('./helpers/pagespeed');
+const { base, stubLighthouse } = require('./helpers/lighthouse');
 
 async function download(page, selector, binary = false) {
   const event = page.waitForEvent('download');
@@ -16,7 +16,7 @@ async function download(page, selector, binary = false) {
 }
 
 test('complete browser/API workflow crawls, analyzes, opens factual evidence, exports both formats and replaces the round', async t => {
-  key(t);
+  stubLighthouse(t);
   const root = '<title>Repeated title</title><meta name="description" content="Root"><link rel="canonical" href="/">' +
     '<h1>Catalog</h1><a href="/child">Child</a><a href="/missing">Missing</a>';
   const child = '<title>Repeated title</title><meta name="description" content="Child"><link rel="canonical" href="/child">' +
@@ -24,7 +24,7 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   const transport = stubTransport(t, [{ status: 404 }, { html: root },
     { html: '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' + base + 'child</loc></url><url><loc>' + base + 'missing</loc></url></urlset>',
       headers: { 'content-type': 'application/xml' } },
-    { html: child }, { status: 404, html: '<title>Missing</title>' }, jsonResponse(), { html: good }, { status: 404 }]);
+    { html: child }, { status: 404, html: '<title>Missing</title>' }, { html: good }, { status: 404 }]);
   const service = require('../app/service/audit.service');
   const original = service.create;
   let result;
@@ -39,9 +39,8 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   });
   const { page, errors } = await frontend(t);
   await page.locator('#crawl-pages').check();
-  await page.locator('#pagespeed-enabled').check();
   const event = page.waitForResponse(response => response.url().endsWith('/api/audits'));
-  await scan(page, base);
+  await scan(page, base, { lighthouse: true });
   const response = await event;
   assert.equal(response.headers()['cache-control'], 'no-store');
   assert.equal(response.headers()['set-cookie'], undefined);
@@ -49,7 +48,7 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   assert.ok(progressCount >= 3);
   assert.equal(result.scope.type, 'same-origin-crawl');
   assert.equal(result.pages.length, 3);
-  assert.equal(transport.calls.length, 6);
+  assert.equal(transport.calls.length, 5);
   assert.ok(result.issues.some(issue => issue.ruleId === 'duplicate-title'));
   const broken = result.issues.find(issue => issue.ruleId === 'internal-link-target');
   assert.equal(broken.details.httpStatus, 404);
@@ -94,9 +93,8 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   await page.locator('#issue-drawer [data-bs-dismiss="offcanvas"]').click();
   await page.locator('#issue-drawer.show').waitFor({ state: 'hidden' });
   await page.locator('#crawl-pages').uncheck();
-  await page.locator('#pagespeed-enabled').uncheck();
   await scan(page, base + 'fresh');
-  assert.equal(transport.calls.length, 8);
+  assert.equal(transport.calls.length, 7);
   assert.equal(await page.locator('#summary-pages').textContent(), '1');
   assert.equal(await page.locator('#issue-search').inputValue(), '');
   assert.equal(await page.locator('#detail-content').textContent(), '');

@@ -36,7 +36,7 @@ function check(pages, target, sources, outcome, reason, result, evidenceOmitted 
 module.exports = {
   limits,
   analyze: (crawl) => {
-    const index = responses.createIndex(crawl.responses);
+    const index = responses.createIndex(crawl.responses, crawl);
     const origin = new URL(crawl.page.finalUrl).origin;
     const targets = new Map();
     const sourceUrls = new Map();
@@ -49,7 +49,7 @@ module.exports = {
       for (const link of page.metadata.links) {
         if (!link.url || new URL(link.url).origin !== origin) continue;
         let target;
-        try { target = website.parseUrl(link.url).href; } catch (error) {
+        try { target = website.parseUrl(link.url, crawl).href; } catch (error) {
           invalidLinks++; incomplete = true;
           if (invalidEvidence.length < 20) invalidEvidence.push({ kind: 'html', selector: link.selector, source: link.source,
             location: link.location, sourceTruncated: link.sourceTruncated, sourceUrl: page.finalUrl, reason: error.code,

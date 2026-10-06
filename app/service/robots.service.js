@@ -9,6 +9,7 @@ module.exports = {
       let operation = options.robotsCache?.get(url);
       if (!operation) {
         operation = website.fetchRobots(url, { signal: options.signal, scopeOrigin: new URL(pageUrl).origin,
+          localOrigin: options.localOrigin,
           beforeRequest: options.beforeRequest, beforeConnect: options.beforeConnect, onConnect: options.onConnect });
         options.robotsCache?.set(url, operation);
       }

@@ -19,7 +19,7 @@ function element(node, inherited = {}) {
 }
 
 module.exports = {
-  parse: (xml) => {
+  parse: (xml, options = {}) => {
     if (typeof xml !== 'string' || Buffer.byteLength(xml) > 512 * 1024) throw new website.WebsiteError('SITEMAP_TOO_LARGE');
     // Validate namespaces/entities strictly and reject real DTDs before data parsing.
     try {
@@ -55,7 +55,7 @@ module.exports = {
       const textOnly = loc && loc.children.every((child) => Object.hasOwn(child, '#text'));
       const value = textOnly ? loc.children.map((child) => child['#text']).join('').trim() : '';
       let url = null;
-      try { if (textOnly && locations.length === 1) url = website.parseUrl(value).href; } catch {}
+      try { if (textOnly && locations.length === 1) url = website.parseUrl(value, options).href; } catch {}
       return { value, url, kind: 'sitemap', selector: root.name + ' > ' + tag + ' > loc', entryIndex: index + 1 };
     });
     return { type: root.name, namespaceVerified: root.namespace === namespace, entries,

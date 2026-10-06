@@ -26,7 +26,7 @@ test('the actual framework entry starts on HTTP loopback, serves frontend/assets
   assert.equal(assets.status, 200);
   assert.ok(assets.body.includes('fetch("/api/audits"'));
   const result = await request(server.origin, { path: '/api/audits', method: 'POST',
-    headers: { 'Content-Type': 'application/json', Origin: server.origin } }, '{"url":"http://127.0.0.1/"}');
+    headers: { 'Content-Type': 'application/json', Origin: server.origin } }, '{"url":"http://10.0.0.1/"}');
   assert.equal(result.status, 400);
   assert.equal(JSON.parse(result.body).error, 'PRIVATE_TARGET');
   assert.equal(result.headers['cache-control'], 'no-store');
@@ -55,17 +55,17 @@ test('untrusted Host/Origin/cross-site forms cannot invoke the local checker or 
   assert.ok(!JSON.stringify(server.logs()).includes('PRIVATE_MARKER'));
 });
 
-test('backend key remains server-side across real frontend/static/error responses and .env cannot be downloaded or tracked', async (t) => {
+test('server environment remains private across real frontend/static/error responses and .env cannot be downloaded or tracked', async (t) => {
   const { execFileSync } = require('node:child_process');
   const secret = 'PRIVATE_SERVER_KEY_MUST_NOT_LEAK';
-  const server = await start(t, { PAGESPEED_API_KEY: secret });
-  for (const path of ['/', '/assets/js/app.js', '/.env', '/example.env', '/app/data/pagespeed.data.js', '/api/audits/old']) {
+  const server = await start(t, { PRIVATE_TEST_SECRET: secret });
+  for (const path of ['/', '/assets/js/app.js', '/.env', '/example.env', '/app/service/lighthouse.service.js', '/api/audits/old']) {
     const result = await request(server.origin, { path });
     assert.ok(!result.body.includes(secret));
     if (path.startsWith('/.') || path.startsWith('/app/') || path === '/example.env') assert.equal(result.status, 404);
   }
   const rejected = await request(server.origin, { path: '/api/audits', method: 'POST', headers: { 'Content-Type': 'application/json' } },
-    JSON.stringify({ url: 'http://127.0.0.1/', pagespeed: true, key: 'CLIENT_KEY_OVERRIDE' }));
+    JSON.stringify({ url: 'http://10.0.0.1/', lighthouse: true }));
   assert.equal(rejected.status, 400);
   assert.ok(!rejected.body.includes(secret));
   assert.ok(!JSON.stringify(server.logs()).includes(secret));
@@ -79,7 +79,7 @@ test('real entry parser failures never write private request bytes to stdout/std
   for (const [path, body, expected] of [
     ['/api/audits', '{"url":"https://fixture.example/' + marker + '"', 400],
     ['/API/AUDITS/', '{"url":"' + marker.repeat(7000) + '"}', 413],
-    ['/api/audits/', '{"url":"http://127.0.0.1/?' + marker + '"}', 400]
+    ['/api/audits/', '{"url":"http://10.0.0.1/?' + marker + '"}', 400]
   ]) {
     const response = await request(server.origin, { path, method: 'POST', headers: { 'Content-Type': 'application/json' } }, body);
     assert.equal(response.status, expected);

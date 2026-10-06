@@ -24,15 +24,32 @@ function failure(code) {
   return new WebsiteError(code);
 }
 
-function parseUrl(value) {
+function parseUrl(value, options = {}) {
   if (typeof value !== 'string' || value.length > 8192) throw failure('INVALID_URL');
   let url;
   try { url = new URL(value.trim()); } catch { throw failure('INVALID_URL'); }
   if (!['http:', 'https:'].includes(url.protocol)) throw failure('INVALID_URL');
   if (url.username || url.password) throw failure('URL_CREDENTIALS');
-  if (url.port) throw failure('PORT_NOT_ALLOWED');
+  if (url.port && !(options.localOrigin === url.origin && isLocalHost(url.hostname))) throw failure('PORT_NOT_ALLOWED');
   url.hash = '';
   return url;
+}
+
+function isLocalHost(hostname) {
+  return ['localhost', '127.0.0.1', '[::1]'].includes(hostname);
+}
+
+function auditOptions(value, options = {}) {
+  let candidate;
+  try { candidate = new URL(value.trim()); } catch { throw failure('INVALID_URL'); }
+  if (!isLocalHost(candidate.hostname)) {
+    parseUrl(value);
+    return { ...options, localOrigin: undefined };
+  }
+  const target = parseUrl(value, { localOrigin: candidate.origin });
+  const checkerPort = Number(options.checkerPort || process.env.PORT || 3000);
+  if (Number(target.port || (target.protocol === 'https:' ? 443 : 80)) === checkerPort) throw failure('CHECKER_TARGET');
+  return { ...options, localOrigin: target.origin };
 }
 
 function isPublicIp(address) {
@@ -55,8 +72,12 @@ function withSignal(promise, signal) {
   });
 }
 
-async function resolvePublicTarget(url, signal) {
+async function resolvePublicTarget(url, signal, options = {}) {
   signal.throwIfAborted();
+  if (options.localOrigin === url.origin && isLocalHost(url.hostname)) {
+    return [{ address: url.hostname === '[::1]' ? '::1' : '127.0.0.1', family: url.hostname === '[::1]' ? 6 : 4 }];
+  }
+  if (isLocalHost(url.hostname)) throw failure('PRIVATE_TARGET');
   const hostname = url.hostname.replace(/^\[|\]$/g, '');
   let addresses;
   if (net.isIP(hostname)) {
@@ -90,7 +111,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
       },
       headers: {
         'User-Agent': 'SEOChecker/0.1',
-        Accept: kind === 'json' ? 'application/json' : kind === 'robots' ? 'text/plain, text/html;q=0.5' : kind === 'sitemap' ? 'application/xml, text/xml, application/*+xml;q=0.9' :
+        Accept: kind === 'lighthouse' ? '*/*' : kind === 'json' ? 'application/json' : kind === 'robots' ? 'text/plain, text/html;q=0.5' : kind === 'sitemap' ? 'application/xml, text/xml, application/*+xml;q=0.9' :
           kind === 'render' ? 'application/javascript, text/javascript, text/css, application/json, text/plain;q=0.5' : 'text/html, application/xhtml+xml',
         'Accept-Encoding': 'identity'
       }
@@ -114,7 +135,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
         response.destroy();
         return reject(observedFailure('UNSUPPORTED_TYPE'));
       }
-      const supportedType = kind === 'robots' || (kind === 'json' ? mediaType.essence === 'application/json' : kind === 'render' ? renderTypes.has(mediaType.essence) || mediaType.essence.endsWith('+json') : kind === 'sitemap' ?
+      const supportedType = kind === 'lighthouse' || kind === 'robots' || (kind === 'json' ? mediaType.essence === 'application/json' : kind === 'render' ? renderTypes.has(mediaType.essence) || mediaType.essence.endsWith('+json') : kind === 'sitemap' ?
         ['application/xml', 'text/xml'].includes(mediaType.essence) || mediaType.essence.endsWith('+xml') :
         ['text/html', 'application/xhtml+xml'].includes(mediaType.essence));
       if (!supportedType) {
@@ -165,7 +186,7 @@ function requestPage(url, addresses, signal, maxBytes, kind = 'html') {
           if (charset) new TextDecoder(charset);
           if (['sitemap', 'json'].includes(kind) && charset && !['utf-8', 'utf8'].includes(charset.toLowerCase())) throw failure('UNSUPPORTED_CHARSET');
           const buffer = Buffer.concat(chunks);
-          if (kind === 'render') {
+          if (['render', 'lighthouse'].includes(kind)) {
             resolve({ status, headers, rawHeaders: response.rawHeaders || [], body: buffer, bytes: size, receivedBytes });
             return;
           }
@@ -199,29 +220,30 @@ async function fetchResource(value, options, kind) {
   let lastObservation;
   const redirects = [];
   try {
-    let url = parseUrl(value);
+    let url = parseUrl(value, options);
     requestedUrl = url.href;
     const seen = new Set();
     for (; ;) {
       controller.signal.throwIfAborted();
       if (options.scopeOrigin && url.origin !== options.scopeOrigin) throw failure('OUTSIDE_SCOPE');
+      if (options.localOrigin && url.origin !== options.localOrigin) throw failure('OUTSIDE_SCOPE');
       if (seen.has(url.href)) throw failure('REDIRECT_LOOP');
       seen.add(url.href);
       await options.beforeRequest?.(url, controller.signal);
       controller.signal.throwIfAborted();
-      const addresses = await resolvePublicTarget(url, controller.signal);
+      const addresses = await resolvePublicTarget(url, controller.signal, options);
       await options.beforeConnect?.(url, controller.signal);
       controller.signal.throwIfAborted();
       options.onConnect?.();
       const result = await requestPage(url, addresses, controller.signal, maxBytes, kind);
       lastObservation = { url: url.href, status: result.status, headers: result.headers, rawHeaders: result.rawHeaders || [] };
       if (!result.redirect) return { requestedUrl, finalUrl: url.href, redirects, ...result };
-      if (kind === 'render') return { requestedUrl, finalUrl: url.href, redirects, ...result, body: Buffer.alloc(0), bytes: 0, receivedBytes: 0 };
+      if (['render', 'lighthouse'].includes(kind)) return { requestedUrl, finalUrl: url.href, redirects, ...result, body: Buffer.alloc(0), bytes: 0, receivedBytes: 0 };
       if (redirects.length >= maxRedirects) throw failure('TOO_MANY_REDIRECTS');
       let next;
       try { next = new URL(result.redirect, url); } catch { throw failure('INVALID_REDIRECT'); }
       redirects.push({ url: url.href, status: result.status, destination: next.href });
-      url = parseUrl(next.href);
+      url = parseUrl(next.href, options);
     }
   } catch (error) {
     const result = controller.signal.aborted ? controller.signal.reason : error;
@@ -237,9 +259,10 @@ async function fetchResource(value, options, kind) {
 }
 
 module.exports = {
-  limits, WebsiteError, parseUrl, isPublicIp, resolvePublicTarget, requestPage,
+  limits, WebsiteError, parseUrl, isPublicIp, isLocalHost, auditOptions, resolvePublicTarget, requestPage,
   fetchPage: (value, options = {}) => fetchResource(value, options, 'html'),
   fetchRenderResource: (value, options = {}) => fetchResource(value, options, 'render'),
+  fetchLighthouseResource: (value, options = {}) => fetchResource(value, options, 'lighthouse'),
   fetchRobots: (value, options = {}) => fetchResource(value, {
     timeoutMs: 5000, maxBytes: 500 * 1024, maxRedirects: 5, ...options
   }, 'robots'),

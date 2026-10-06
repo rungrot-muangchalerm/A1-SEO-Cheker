@@ -11,7 +11,7 @@
   <form id="scan-form" class="row g-2 align-items-end mb-3" autocomplete="off">
     <div class="col-12 col-md-8 col-lg-9">
       <label for="website-url" class="form-label">URL &#3648;&#3623;&#3655;&#3610;&#3652;&#3595;&#3605;&#3660;</label>
-      <input type="url" class="form-control bg-success-subtle border-success text-success-emphasis" id="website-url" name="url" placeholder="https://example.com" autocomplete="off" inputmode="url" spellcheck="false" required>
+      <input type="url" class="form-control bg-success-subtle border-success text-success-emphasis" id="website-url" name="url" placeholder="http://localhost:5173" autocomplete="off" inputmode="url" spellcheck="false" required>
     </div>
     <div class="col-12 col-md-4 col-lg-3 d-flex gap-2">
       <button type="submit" class="btn btn-success d-flex flex-grow-1 justify-content-center align-items-center gap-2" id="scan-button">
@@ -37,11 +37,11 @@
         <label class="form-check-label small" for="render-pages">&#3605;&#3619;&#3623;&#3592; JavaScript</label>
       </div>
       <div class="form-check mt-1">
-        <input type="checkbox" class="form-check-input" id="pagespeed-enabled" name="pagespeed">
-        <label class="form-check-label small" for="pagespeed-enabled">PageSpeed Insights &middot; &#3626;&#3656;&#3591; URL &#3652;&#3611;&#3605;&#3619;&#3623;&#3592;&#3607;&#3637;&#3656; Google</label>
+        <input type="checkbox" class="form-check-input" id="lighthouse-enabled" name="lighthouse" checked>
+        <label class="form-check-label small" for="lighthouse-enabled">Lighthouse (&#3651;&#3609;&#3648;&#3588;&#3619;&#3639;&#3656;&#3629;&#3591;)</label>
       </div>
-      <div id="pagespeed-options" class="mt-2" hidden>
-        <div class="btn-group btn-group-sm" role="group" aria-label="PageSpeed device">
+      <div id="lighthouse-options" class="mt-2">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Lighthouse device">
           <input type="radio" class="btn-check" id="strategy-mobile" name="strategy" value="mobile" autocomplete="off" checked>
           <label class="btn btn-outline-success d-inline-flex align-items-center gap-2" for="strategy-mobile"><i data-lucide="smartphone" width="16" height="16" aria-hidden="true"></i>&#3617;&#3639;&#3629;&#3606;&#3639;&#3629;</label>
           <input type="radio" class="btn-check" id="strategy-desktop" name="strategy" value="desktop" autocomplete="off">

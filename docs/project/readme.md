@@ -171,8 +171,11 @@ and data modules. Do not add audit history or persistence.
   to local/session storage, IndexedDB, cookies, service workers or Cache Storage.
   Download object URLs are released after use and revoked when leaving the page.
   Failures that occur during display also clear partial result DOM and disable export.
-- Only HTTP/HTTPS on ports 80/443 are supported. Credentials and non-public
-  destinations are rejected. Defaults: 15 seconds, 2 MiB HTML, 5 redirects.
+- Public HTTP/HTTPS targets support ports 80/443. Explicit localhost/127.0.0.1/[::1]
+  targets allow the development port, except the checker port. Local permission
+  stays on that exact origin; other private addresses and public-to-local redirects
+  are rejected. Credentials remain blocked. Defaults: 15 seconds, 2 MiB HTML,
+  5 redirects. Local HTTP works without TLS; HTTPS requires a trusted certificate.
 - gzip, deflate, and Brotli are decoded with limits on both transferred and
   decompressed bytes. Redirect hops share the same deadline.
 - Audit responses, errors, and unknown-report routes use `Cache-Control: no-store`.
@@ -196,9 +199,9 @@ npm test
 
 Open `http://localhost:3000` or the configured `PORT`; no VPS, domain or HTTPS is
 needed for this personal checker. Follow the [root README](../../README.md) for
-safe `.env` setup. This does not permit private/local URLs as audit targets.
+safe `.env` setup. Use a different port for the checker and the development site.
 
-Node.js 20.18.1 or newer is required by the HTML parser.
+Node.js 22.19.0 or newer is required by local Lighthouse.
 The optional JavaScript checkbox runs a real Playwright/Chromium before/after
 comparison for at most two fetched pages with executable content. Initial HTML
 and checks remain untouched; rendered DOM and metadata have separate proof.
@@ -211,10 +214,13 @@ or set backend-only `RENDER_BROWSER_CHANNEL=chrome` to use installed Google Chro
 Chromium sandbox stays enabled; use a non-root, OS/container-isolated service
 account for public untrusted-site rendering. Missing browser/sandbox prerequisites
 produce `BROWSER_UNAVAILABLE` without substituting a fake rendered report.
-PageSpeed Insights is separately opt-in and requires a backend-only
-`PAGESPEED_API_KEY` in this application. Without it, HTML auditing still works
-and the score panel reports `not-configured`, not placeholder scores. Follow
-[PageSpeed setup](PAGESPEED.md) to enable the Google API and restrict its key.
+Lighthouse is selected by default and runs locally with four real categories,
+mobile/desktop configuration and source engine metadata. No API key or remote
+score service is used. Scores describe one input URL, independently of crawl
+coverage. Protected transport loads selected-origin local assets and public CDN
+assets, with bounded GET-only requests and no cookies/authentication. Blocked
+resources make results partial; unavailable browser/runtime publishes no scores.
+See [local Lighthouse setup and limitations](LOCAL-LIGHTHOUSE.md).
 Focused test discovery is available with `node --test test/*.test.js`. The suite
 includes good/bad HTML fixtures served through real HTTP, changing bytes on the
 same URL, and changing only response headers through the framework API routes.
@@ -222,6 +228,6 @@ Frontend tests use Playwright with installed Google Chrome (`channel: chrome`).
 Exact Bootstrap/Lucide npm versions provide offline CDN test fixtures; production
 HTML continues to use the user's CDN URLs.
 
-The upstream framework's dev dependencies currently produce three high-severity
-`npm audit` entries in the nodemon dependency chain. They have been left unchanged
-to preserve the supplied framework; `npm audit --omit=dev` reports no findings.
+Dependency warnings from the existing framework and XLSX tooling remain separate
+from this feature. Run `npm audit` for current findings; this project does not claim
+that its dependency tree is free of vulnerabilities.

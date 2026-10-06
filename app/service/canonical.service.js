@@ -5,13 +5,13 @@ const robots = require('./robots-directives.service');
 
 const reference = 'https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls';
 
-function declarations(metadata) {
+function declarations(metadata, options = {}) {
   if (metadata.truncated.includes('canonical') || metadata.linkHeaderError) return { reason: 'canonical-declarations-incomplete' };
   if (!metadata.canonical.length) return { reason: 'no-canonical-declaration' };
   if (metadata.canonical.some((entry) => Object.keys(entry.parameters || {}).length)) return { reason: 'canonical-annotation-parameters' };
   const targets = [];
   try {
-    for (const entry of metadata.canonical) targets.push(website.parseUrl(entry.url).href);
+    for (const entry of metadata.canonical) targets.push(website.parseUrl(entry.url, options).href);
   } catch { return { reason: 'invalid-canonical-declaration' }; }
   if (new Set(targets).size !== 1) return { reason: 'conflicting-canonical-declarations' };
   return { target: targets[0] };
@@ -24,12 +24,12 @@ function evidence(page, entries) {
 
 module.exports = {
   analyze: (crawl) => {
-    const index = responses.createIndex(crawl.responses);
+    const index = responses.createIndex(crawl.responses, crawl);
     const pages = new Map(crawl.pages.map((page) => [page.finalUrl, page]));
     const skipped = new Map(crawl.skipped.map((entry) => [entry.url, entry.reason]));
     const origin = new URL(crawl.page.finalUrl).origin;
     return crawl.pages.map((page) => {
-      const declared = declarations(page.metadata);
+      const declared = declarations(page.metadata, crawl);
       const facts = [];
       const entries = evidence(page, page.metadata.canonical);
       const details = { declaredTargets: page.metadata.canonical.map((entry) => entry.url || entry.value),
@@ -77,7 +77,7 @@ module.exports = {
               message: directives.noindex ? '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 noindex \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22 index' : '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e21\u0e35 unavailable_after \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e40\u0e27\u0e25\u0e32' });
             entries.push(...evidence(target, directives.applicable.map((entry) => entry.evidence)));
           }
-          const next = declarations(target.metadata);
+          const next = declarations(target.metadata, crawl);
           if (next.reason && next.reason !== 'no-canonical-declaration') entries.push(...evidence(target, target.metadata.canonical));
           if (next.target && next.target !== result.url) {
             facts.push({ code: next.target === page.finalUrl && !details.selfReferential ? 'canonical-cycle' : 'canonical-chain',

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const agentic = require('../app/service/agentic.service');
 const { stubTransport } = require('./helpers/transport');
 const { frontend, scan, good } = require('./helpers/frontend');
-const { base, lhr, jsonResponse, key } = require('./helpers/pagespeed');
+const { base, lhr, stubLighthouse } = require('./helpers/lighthouse');
 const source = () => {
   const result = lhr();
   result.categories['agentic-browsing'] = { categoryScoreDisplayMode: 'fraction', score: 1,
@@ -47,14 +47,13 @@ test('no applicable refs is unavailable, not an invented 0/0 or 100', () => {
 });
 
 test('actual API/UI displays only a supported source fraction; next provider without category clears it, and F5 clears results', async (t) => {
-  key(t);
-  stubTransport(t, [{ html: good }, { status: 404 }, jsonResponse(source()), { html: good }, { status: 404 }, jsonResponse()]);
+  stubLighthouse(t, [source(), lhr()]);
+  stubTransport(t, [{ html: good }, { status: 404 }, { html: good }, { status: 404 }]);
   const { page, errors } = await frontend(t);
-  await page.locator('#pagespeed-enabled').check();
-  await scan(page, base);
+  await scan(page, base, { lighthouse: true });
   assert.ok((await page.locator('#agentic-status').textContent()).includes('2/4'));
   assert.equal(await page.locator('[data-score-category="agentic-browsing"]').count(), 0);
-  await scan(page, base);
+  await scan(page, base, { lighthouse: true });
   assert.ok((await page.locator('#agentic-status').textContent()).includes('not-returned-by-provider'));
   assert.ok(!(await page.locator('#agentic-status').textContent()).includes('2/4'));
   await page.reload();

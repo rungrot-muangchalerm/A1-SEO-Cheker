@@ -29,12 +29,12 @@ JSON เปิดเป็นตารางใน Google Sheets โดยตร
 
 ## ตารางใน XLSX
 
-- `Summary`: URL เวลา ขอบเขต ตัวกรอง สถานะ จำนวน และข้อจำกัดจริงของรอบนั้น
+- `Summary`: URL เวลา ขอบเขต ตัวกรอง สถานะ จำนวน และข้อจำกัดจริง รวม provider, network และ limitations ของ Lighthouse
 - `Pages`: HTTP สถานะตรวจ title description canonical และกฎ Googlebot ของหน้าที่อ่านสำเร็จ
 - `Issues`: ปัญหาแต่ละรายการ พร้อมความสำคัญ ผลที่พบ ผลกระทบ วิธีแก้ และ references
 - `Issue URLs`: URL ที่ได้รับผลกระทบแต่ละรายการ เชื่อมด้วย Issue ID
 - `Evidence`: หลักฐานของแต่ละปัญหา พร้อม source URL ตำแหน่ง และรายละเอียด JSON
-- `Scores`: คะแนนที่ provider คืนจริง ไม่สร้างคะแนนแทนข้อมูลที่ไม่มี
+- `Scores`: คะแนน Lighthouse ในเครื่อง พร้อม URL, โหมด และ engine version ไม่สร้างคะแนนแทนข้อมูลที่ไม่มี และไม่เฉลี่ยข้ามหน้า
 - `Not Checked`, `Discovered`, `Skipped`: สิ่งที่ยังตรวจไม่ได้ URL ที่พบ และเหตุผลที่ข้าม
 
 XLSX ของปัญหาที่กรองมีเฉพาะ Summary, Issues, Issue URLs และ Evidence; Summary ระบุจำนวนที่เลือกแยกจากยอดทั้งรอบ
