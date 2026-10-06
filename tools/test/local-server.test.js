@@ -97,7 +97,8 @@ test('restarting the actual entry restores no successful fixture report and rese
   const preload = { NODE_OPTIONS: '--require="' + path.join(__dirname, 'helpers/entry-fixture.cjs').replace(/\\/g, '/') + '"' };
   const first = await start(t, preload);
   const headers = { 'Content-Type': 'application/json' };
-  const response = await request(first.origin, { path: '/api/audits', method: 'POST', headers }, '{"url":"https://fixture.example/"}');
+  const response = await request(first.origin, { path: '/api/audits', method: 'POST', headers },
+    JSON.stringify({ url: 'https://fixture.example/', discover: false, crawl: false, render: false, lighthouse: false }));
   assert.equal(response.status, 200);
   const result = JSON.parse(response.body);
   assert.equal(result.pages[0].metadata.title, 'PRIVATE_RESTART_FIXTURE');

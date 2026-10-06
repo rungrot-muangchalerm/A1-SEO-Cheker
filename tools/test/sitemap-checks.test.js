@@ -7,7 +7,7 @@ const sitemap = require('../../app/service/sitemap.service');
 const checksService = require('../../app/service/sitemap-checks.service');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 const base = 'https://site.example';
 const ns = 'http://www.sitemaps.org/schemas/sitemap/0.9';
@@ -181,7 +181,7 @@ test('browser shows parsed loc proof as text, with real HTTP and manual JSON; un
   stubTransport(t, [{ status: 404 }, { html: markup('Root', '/') }, xml(map([target])),
     { status: 404, headers: { 'content-type': 'application/json' }, html: '{}' }]);
   const { page: browserPage, errors } = await frontend(t, { width: 390, height: 844 });
-  await browserPage.locator('#crawl-pages').check();
+  setAuditOptions(browserPage, { crawl: true });
   await scan(browserPage, base + '/');
   await browserPage.locator('[data-issue-id^="sitemap-url-target:"]').click();
   assert.ok((await browserPage.locator('#detail-content').textContent()).includes('HTTP 404'));

@@ -5,7 +5,7 @@ const html = require('../../app/service/html.service');
 const cross = require('../../app/service/cross-page.service');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 const markup = (title, description, path, links = '') => '<title>' + title + '</title><meta name="description" content="' + description +
   '"><link rel="canonical" href="' + path + '">' + links;
@@ -95,7 +95,7 @@ test('browser opens every grouped URL and actual evidence; JSON exports the whol
   const { page: browserPage, errors } = await frontend(t);
   const stacks = [];
   browserPage.on('pageerror', (error) => stacks.push(error.stack));
-  await browserPage.locator('#crawl-pages').check();
+  setAuditOptions(browserPage, { crawl: true });
   await scan(browserPage, 'https://site.example/');
   assert.equal(await browserPage.locator('#summary-review').textContent(), '2');
   assert.equal(await browserPage.locator('#issue-rows tr').count(), 2);

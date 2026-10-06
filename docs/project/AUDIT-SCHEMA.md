@@ -1,5 +1,13 @@
 # Audit Check Contract
 
+`POST /api/audits` with only `{ "url": "http://localhost:5173/" }` enables discovery,
+crawl, JavaScript comparison and local Lighthouse/Agentic by default. `strategy`
+defaults to `mobile`; `desktop` is also available. Explicit boolean flags can scope
+API-only requests, but the browser UI has no audit-selection checkboxes.
+Ordinary clients receive one JSON report; `Accept: application/x-ndjson` receives
+progress frames and one terminal report on the same connection. Neither mode stores
+reports, issues job IDs or creates a polling/history endpoint.
+
 The report schema is versioned by `schemaVersion`. Each page contains `checks`;
 `issues` contains only checks with a fail or review outcome, never every check.
 
@@ -27,7 +35,8 @@ At most 50 evidence entries are previewed; copying or JSON includes the full evi
 returned by the API, including any disclosed parser truncation.
 
 Passing one rule is not a ranking score, an indexing confirmation, or proof that
-the entire website passed. JavaScript is examined only with explicit render opt-in.
+the entire website passed. JavaScript comparison is enabled by default at the API
+boundary, within the renderer limits below; it can be disabled with `render: false`.
 
 ## Outcomes and Coverage
 
@@ -66,7 +75,7 @@ filtered individual issues and full evidence, not synthetic group rows.
 
 ## JavaScript Comparison
 
-`render: true` adds `pages[].render` for pages selected from actually fetched HTML
+Rendering adds `pages[].render` by default for pages selected from fetched HTML
 with executable scripts/load/error handlers (JSON-LD/data-only scripts do not
 trigger execution). At most two eligible pages are rendered; static/non-2xx/XHTML,
 unknown/denied robots, browser failures and later pages have explicit unavailable
@@ -152,8 +161,9 @@ Writer failure, missing library or size limits preserve the JSON export option.
 
 ## Local Lighthouse
 
-Explicit `lighthouse: true` runs Lighthouse 13.5.0 with local Chromium/Puppeteer,
-without API keys or a remote scoring endpoint. The UI selects this by default.
+Lighthouse runs by default (`lighthouse: false` disables it), using 13.5.0 with
+local Chromium/Puppeteer, without API keys or a remote scoring endpoint.
+The UI sends only URL/device mode; the API enables Lighthouse automatically.
 The four categories describe the input URL only, never an average over the crawl.
 `lighthouse` includes status,
 reason, provider, URL, request timestamps, requested/final URL, source fetchTime,
@@ -224,7 +234,8 @@ discovery, not a complete site audit; skipped reasons and `notChecked` disclose 
 
 ## Bounded Crawl
 
-`crawl: true` uses scope `same-origin-crawl`. `pages` contains only fetched HTML,
+Default crawling uses scope `same-origin-crawl` unless explicitly disabled with
+`crawl: false`. `pages` contains only fetched HTML,
 including real 4xx/5xx HTML responses; failed fetches are in `coverage.skipped` with
 a reason and no guessed HTTP code. `discovery.urls` grows as later pages yield links.
 `coverage.fetched/analyzed` and `summary.pages` count actual page records, not candidates.

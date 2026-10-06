@@ -43,7 +43,8 @@ async function fixtureApi(t) {
   const api = await listen(t, http.createServer(app));
   const audit = async (url) => {
     const response = await fetch(api + '/api/audits', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, discover: false, crawl: false, render: false, lighthouse: false })
     });
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('cache-control'), 'no-store');

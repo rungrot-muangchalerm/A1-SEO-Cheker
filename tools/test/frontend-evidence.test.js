@@ -59,13 +59,22 @@ test('actual API HTML with scripts, event attributes, iframe and markup in metad
     '<svg onload="globalThis.__evidenceXss=true"></svg><iframe src="https://attacker.example/frame"></iframe>' +
     '<script>globalThis.__evidenceXss=true;</script></body></html>';
   const transport = stubTransport(t, [{ html: source }, { status: 404 }]);
+  const service = require('../../app/service/audit.service');
+  const create = service.create;
+  let result;
+  t.mock.method(service, 'create', async (body, options) => {
+    const outcome = await create(body, options);
+    result = outcome.data;
+    return outcome;
+  });
   const { page, errors } = await frontend(t);
   let attackerRequests = 0, dialogs = 0;
   page.on('request', request => { if (request.url().includes('attacker.example')) attackerRequests++; });
   page.on('dialog', dialog => { dialogs++; return dialog.dismiss(); });
   const event = page.waitForResponse(response => response.url().endsWith('/api/audits'));
   await scan(page, 'https://fixture.example/untrusted');
-  const result = await (await event).json();
+  assert.match((await event).headers()['content-type'], /^application\/x-ndjson/);
+  assert.ok(result);
   assert.equal(transport.calls.length, 2);
   assert.equal(result.pages[0].metadata.title, payload);
   const issue = result.issues.find(item => item.ruleId === 'image-alt');

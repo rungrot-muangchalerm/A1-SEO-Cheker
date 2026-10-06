@@ -21,11 +21,20 @@ async function readDownload(page, selector) {
 test('manual JSON contains the entire actual API round, independent of issue filters, including HTML evidence and source scores', async (t) => {
   stubLighthouse(t);
   stubTransport(t, [{ html: bad }, { status: 404 }]);
+  const service = require('../../app/service/audit.service');
+  const create = service.create;
+  let original;
+  t.mock.method(service, 'create', async (body, options) => {
+    const outcome = await create(body, options);
+    original = outcome.data;
+    return outcome;
+  });
   const { page, errors } = await frontend(t);
   assert.equal(await page.locator('#export-json-button').isDisabled(), true);
   const response = page.waitForResponse((response) => response.url().endsWith('/api/audits'));
   await scan(page, base, { lighthouse: true });
-  const original = await (await response).json();
+  assert.match((await response).headers()['content-type'], /^application\/x-ndjson/);
+  assert.ok(original);
   await page.locator('#issue-search').fill('no-matching-issue');
   assert.equal(await page.locator('#export-button').isDisabled(), true);
   assert.equal(await page.locator('#export-json-button').isDisabled(), false);

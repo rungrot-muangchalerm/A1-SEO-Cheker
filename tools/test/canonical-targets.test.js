@@ -5,7 +5,7 @@ const html = require('../../app/service/html.service');
 const canonical = require('../../app/service/canonical.service');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 const base = 'https://site.example';
 const markup = (title, target, extra = '') => '<title>' + title + '</title><meta name="description" content="' + title + '">' +
@@ -175,7 +175,7 @@ test('browser shows canonical source, target status and noindex target location 
   stubTransport(t, [{ status: 404 }, { html: markup('Variant', '/main') }, { status: 404 },
     { html: markup('Main', '/main', '<meta name="robots" content="noindex">') }]);
   const { page: browserPage, errors } = await frontend(t, { width: 390, height: 844 });
-  await browserPage.locator('#crawl-pages').check();
+  setAuditOptions(browserPage, { crawl: true });
   await scan(browserPage, base + '/');
   await browserPage.locator('[data-issue-id="canonical-target:https://site.example/"]').click();
   const details = await browserPage.locator('#detail-content').textContent();

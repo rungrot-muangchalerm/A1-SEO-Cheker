@@ -75,7 +75,7 @@ test('real local mobile Lighthouse computes all four categories without a key, e
 });
 
 test('actual browser/API localhost desktop workflow shows real Lighthouse scores, exports JSON/XLSX and F5 restores the local default with no history', { timeout: 150000 }, async t => {
-  const site = await start(t);
+  const site = await start(t, { scripts: '<script>document.title="Rendered local fixture";</script>' });
   const audit = require('../../app/service/audit.service');
   const create = audit.create;
   let report;
@@ -84,23 +84,29 @@ test('actual browser/API localhost desktop workflow shows real Lighthouse scores
     report = outcome.data;
     return outcome;
   });
-  const { page, errors } = await frontend(t);
+  const { page, errors } = await frontend(t, undefined, { fullAudit: true });
   page.setDefaultTimeout(120000);
   await page.reload();
   await page.waitForFunction(() => window.bootstrap && document.querySelector('header svg'));
-  assert.equal(await page.locator('#lighthouse-enabled').isChecked(), true);
+  assert.equal(await page.locator('#lighthouse-enabled').count(), 0);
   assert.equal(await page.locator('#pagespeed-enabled').count(), 0);
   await page.locator('label[for="strategy-desktop"]').click();
-  await page.locator('#crawl-pages').check();
   const event = page.waitForResponse(response => response.url().endsWith('/api/audits'));
   await scan(page, site.origin + '/', { lighthouse: true });
-  assert.ok((await event).headers()['content-type'].startsWith('application/x-ndjson'));
+  const response = await event;
+  assert.ok(response.headers()['content-type'].startsWith('application/x-ndjson'));
+  assert.deepEqual(response.request().postDataJSON(), { url: site.origin + '/', strategy: 'desktop' });
+  assert.equal(await page.locator('#scan-form input[type="checkbox"]').count(), 0);
   assert.ok(report);
   assert.equal(report.scope.environment, 'local-development');
   assert.equal(report.lighthouse.status, 'completed', report.lighthouse.reason);
   assert.equal(report.lighthouse.provider, 'lighthouse-local');
   assert.equal(report.lighthouse.mode.formFactor, 'desktop');
   assert.equal(report.pages.length, 4);
+  assert.ok(report.discovery.urls.some(entry => entry.url.endsWith('/sitemap-only')));
+  assert.ok(report.crawl.stats.attemptedPages >= 4);
+  assert.ok(report.pages.every(entry => entry.render));
+  assert.equal(report.pages[0].render.after.title, 'Rendered local fixture');
   assert.ok((await page.locator('#lighthouse-status').textContent()).startsWith('Lighthouse'));
   for (const category of report.lighthouse.categories) {
     assert.equal(await page.locator('[data-score-category="' + category.id + '"] [data-score-value]').textContent(), String(category.displayScore));
@@ -141,7 +147,7 @@ test('actual browser/API localhost desktop workflow shows real Lighthouse scores
   assert.equal(await page.locator('#website-url').inputValue(), '');
   assert.equal(await page.locator('#report').isVisible(), false);
   assert.equal(await page.locator('[data-agentic-audit]').count(), 0);
-  assert.equal(await page.locator('#lighthouse-enabled').isChecked(), true);
+  assert.equal(await page.locator('#lighthouse-enabled').count(), 0);
   assert.equal(await page.locator('#pagespeed-enabled').count(), 0);
   assert.deepEqual(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length })), { local: 0, session: 0 });
   assert.deepEqual(errors, []);

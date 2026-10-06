@@ -26,7 +26,9 @@ module.exports = {
       return res.status(status).json(data);
     };
     try {
-      const result = await auditService.create(req.body, { signal: controller.signal, checkerPort: req.socket?.localPort,
+      const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ?
+        { discover: true, crawl: true, render: true, lighthouse: true, ...req.body } : req.body;
+      const result = await auditService.create(body, { signal: controller.signal, checkerPort: req.socket?.localPort,
         ...(stream ? { onProgress: (progress) => frame('progress', progress) } : {}) });
       if (controller.signal.aborted || res.destroyed) return;
       if (!result.ok) {

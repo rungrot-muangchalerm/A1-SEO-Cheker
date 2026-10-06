@@ -1,7 +1,8 @@
 # SEO Checker
 
 ตรวจ URL จริงเป็นรอบ ๆ ด้วย Express + EJS ของ DevTeam Framework และหน้า Bootstrap 5 CDN แบบ CSR ไม่มี CSS เพิ่ม
-ไม่มีฐานข้อมูล ประวัติ หรือการกู้รายงานเก่า กด F5 แล้ว URL ผลตรวจ และตัวกรองเริ่มใหม่
+ไม่มีฐานข้อมูล ประวัติ หรือระบบกู้รายงานเก่า ผลตรวจอยู่ในหน่วยความจำของรอบปัจจุบัน
+การ refresh เป็น reload ปกติของ browser ไม่ใช่ฟีเจอร์ F5 และไม่มีโค้ดดักปุ่ม F5
 ผู้ใช้ดาวน์โหลด JSON/XLSX ลงเครื่องเองเท่านั้น ไม่สร้างไฟล์หรือสำเนาที่ backend
 
 ## ติดตั้งและรัน
@@ -41,9 +42,9 @@ checker ไม่เรียก MySQL/JWT ของ framework จึงไม�
 ## ขอบเขตที่ตรวจ
 
 - HTML เริ่มต้น: HTTP, title/description, canonical, robots meta/header, รูปที่ไม่มี alt, robots.txt, JSON-LD และ OG สำหรับการแชร์
-- เลือกค้นหา URL หรือ crawl ใน origin เดียว: ลิงก์/sitemap ซ้อน ปัญหาซ้ำ ลิงก์เสีย canonical เป้าหมาย และ URL ใน sitemap พร้อมหลักฐาน
+- ค้นหา URL และ crawl ใน origin เดียวอัตโนมัติ: ลิงก์/sitemap ซ้อน ปัญหาซ้ำ ลิงก์เสีย canonical เป้าหมาย และ URL ใน sitemap พร้อมหลักฐาน
 - crawl ไล่ URL ที่ค้นพบต่อจากทุกหน้าและ sitemap จนหมดคิว ค่าเริ่มต้นรองรับ 5,000 URL ที่ลองตรวจใน 1 ชั่วโมง และเคารพ robots ของ SEOChecker
-- JavaScript เป็นตัวเลือก ใช้ Chromium เปรียบเทียบก่อน/หลังสำหรับไม่เกิน 2 หน้า ไม่ได้จำลอง Googlebot และไม่ยืนยันสถานะ index
+- ตรวจ JavaScript อัตโนมัติ ใช้ Chromium เปรียบเทียบก่อน/หลังสำหรับไม่เกิน 2 หน้า ไม่ได้จำลอง Googlebot และไม่ยืนยันสถานะ index
 - Lighthouse ในเครื่องเปิดไว้เป็นค่าเริ่มต้น ตรวจ Performance, Accessibility, Best Practices และ SEO จริง เลือก mobile/desktop ได้ ไม่ต้องมี API key หรือส่ง URL ไปบริการตรวจของ Google
 - คะแนนเป็นของ URL ที่ใส่ ไม่เฉลี่ยทั้งเว็บไซต์ เป็น lab test ภายใต้ข้อจำกัด network ของ checker ไม่ใช่ข้อมูลผู้ใช้จริงหรือการยืนยัน Google index ดู [ตรวจ localhost ด้วย Lighthouse](docs/project/LOCAL-LIGHTHOUSE.md)
 - Agentic Browsing ตรวจจริงด้วย Lighthouse ในเครื่อง แสดงสัดส่วนที่ผ่านและรายละเอียดรายข้อ แยกไม่ผ่าน/ตรวจไม่ได้/ไม่เข้าข่าย พร้อมหลักฐาน HTML และส่งออก JSON/XLSX
@@ -61,7 +62,7 @@ JSON ยังคงเป็นข้อมูลต้นฉบับฉบั
 
 ไม่มีเพดานเดิม 20 URL / 60 วินาทีแล้ว เว็บที่ค้นพบ 74 URL จะถูกไล่ตรวจต่อจนหมดคิว
 URL ที่ถูก robots บล็อก อ่านไม่ได้ ไม่ใช่ HTML หรือ redirect ไปหน้าที่อ่านแล้วจะมีเหตุผลแยก ไม่ถูกนับเป็น HTML ที่ตรวจสำเร็จ
-คำขอทั้งหมดเว้นช่วงอย่างน้อย 500 ms และเคารพ crawl-delay ที่นานกว่านั้น ปุ่มยกเลิก/F5/ปิดแท็บยุติงานและล้างข้อมูลรอบนั้น
+คำขอทั้งหมดเว้นช่วงอย่างน้อย 500 ms และเคารพ crawl-delay ที่นานกว่านั้น เมื่อยกเลิกหรือการเชื่อมต่อปิด backend ยุติงานและคืนทรัพยากร
 
 ปรับเพดานป้องกัน URL วนและ RAM เต็มได้ใน `.env` แล้ว restart server ไม่ต้องมี VPS หรือบันทึกประวัติ:
 
@@ -78,6 +79,26 @@ URL ที่ถูก robots บล็อก อ่านไม่ได้ ไ
 ลิมิตกำหนดที่ backend เท่านั้น browser เปลี่ยนเองไม่ได้ เมื่อชนลิมิตจะยังรายงานหน้าที่ตรวจแล้วและ URL ที่เหลือพร้อมเหตุผล
 การไล่ครบ URL ที่ค้นพบไม่ยืนยันว่าค้นพบทุกหน้าของโดเมน เช่น หน้าที่ไม่มีลิงก์/sitemap หน้า login หรือ URL อีก origin
 ข้อจำกัด JavaScript 2 หน้าและ Lighthouse 1 URL ยังแยกจากการตรวจ HTML ทั้งเว็บ
+
+## API คำขอเดียว
+
+หน้าเว็บมีช่อง URL ปุ่มตรวจ และโหมดมือถือ/เดสก์ท็อป ไม่ต้องติ๊กเลือกส่วนที่จะตรวจ
+เรียก API โดยตรงได้ด้วย JSON เพียง URL:
+
+```http
+POST /api/audits
+Content-Type: application/json
+Accept: application/json
+
+{"url":"http://localhost:5173/"}
+```
+
+API เปิด discovery, crawl, JavaScript และ Lighthouse รวม Agentic เป็นค่าเริ่มต้น
+ตอบรายงาน JSON ทั้งรอบ มี HTML/metadata/checks ของหน้า ปัญหา หลักฐาน URL ที่พบ/ข้าม คะแนน และส่วนที่ตรวจไม่ได้
+`strategy` เป็นตัวเลือก `mobile` (ค่าเริ่มต้น) หรือ `desktop` ไม่ต้องส่ง flags จากหน้าเว็บ
+ถ้าต้องการ progress ให้ส่ง `Accept: application/x-ndjson` ใน POST เดิม ได้ progress frames แล้วจบด้วย report เดียว ไม่มี job ID หรือ API ประวัติ
+API ยังรับ `discover`, `crawl`, `render`, `lighthouse` แบบ boolean เพื่อจำกัดขอบเขตเฉพาะงานได้ แต่หน้าเว็บไม่ส่ง flags เหล่านี้
+การเปิดครบทุกส่วนไม่ได้ข้าม robots หรือขยายลิมิตเดิม: JavaScript ยังไม่เกิน 2 หน้า และ Lighthouse/Agentic ตรวจ URL ที่ใส่หนึ่ง URL
 
 ## Browser Renderer
 

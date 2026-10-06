@@ -8,7 +8,7 @@ const html = require('../../app/service/html.service');
 const links = require('../../app/service/internal-links.service');
 const responseModel = require('../../app/model/response.model');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 function clock(t) {
   let now = 1000;
@@ -149,7 +149,7 @@ test('browser displays actual target status and source evidence; grouped sources
     { status: 404 }, { html: markup('Source', '/source', '<a href="/json">Missing again</a>') },
     { status: 404, html: '{}', headers: { 'content-type': 'application/json' } }]);
   const { page, errors } = await frontend(t);
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   await scan(page, 'https://site.example/');
   await page.locator('#category-filter').selectOption('links');
   assert.equal(await page.locator('#issue-rows tr').count(), 1);

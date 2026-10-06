@@ -4,7 +4,7 @@ const website = require('../../app/data/website.data');
 const audit = require('../../app/service/audit.service');
 const crawl = require('../../app/service/crawl.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 const markup = (title, links = '') => '<title>' + title + '</title><meta name="description" content="' + title + '"><link rel="canonical" href="/">' + links;
 const scenario = () => [
@@ -130,11 +130,11 @@ test('crawl delay greater than the default is honored without keeping a policy a
   assert.equal(transport.calls.filter((entry) => entry.url.endsWith('/robots.txt')).length, 2);
 });
 
-test('front-end crawl opt-in reports actual page counts and skipped reasons, with no implicit crawling or refresh recovery', async (t) => {
+test('front-end crawl reports actual page counts and skipped reasons without audit checkboxes or refresh recovery', async (t) => {
   stubTransport(t, scenario());
   const { page, errors } = await frontend(t, { width: 390, height: 844 });
-  assert.equal(await page.locator('#crawl-pages').isChecked(), false);
-  await page.locator('#crawl-pages').check();
+  assert.equal(await page.locator('#crawl-pages').count(), 0);
+  setAuditOptions(page, { crawl: true });
   await scan(page, 'https://site.example/');
   assert.equal(await page.locator('#summary-pages').textContent(), '4');
   await page.locator('#skipped-section summary').click();
@@ -146,7 +146,7 @@ test('front-end crawl opt-in reports actual page counts and skipped reasons, wit
   assert.ok((await page.locator('#detail-content').textContent()).includes('404'));
   await page.reload();
   await page.waitForFunction(() => document.querySelector('header svg'));
-  assert.equal(await page.locator('#crawl-pages').isChecked(), false);
+  assert.equal(await page.locator('#crawl-pages').count(), 0);
   assert.equal(await page.locator('#skipped-list').textContent(), '');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.deepEqual(errors, []);

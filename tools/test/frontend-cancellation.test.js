@@ -121,7 +121,7 @@ test('closing the checker tab aborts active backend work and frees admission for
   await slow.cancelled;
   assert.equal(slow.signal().aborted, true);
   const response = await fetch(origin + '/api/audits', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url: 'https://fixture.example/after-close' }) });
+    body: JSON.stringify({ url: 'https://fixture.example/after-close', discover: false, crawl: false, render: false, lighthouse: false }) });
   assert.equal(response.status, 200);
   assert.equal((await response.json()).requestedUrl, 'https://fixture.example/after-close');
   assert.deepEqual(errors, []);

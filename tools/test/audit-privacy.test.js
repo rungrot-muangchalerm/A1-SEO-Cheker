@@ -41,7 +41,8 @@ test('parser errors, failed requests and unknown reports are not cached or logge
     throw error;
   });
   const failed = await fetch(origin + '/api/audits', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"url":"https://example.com"}'
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url: 'https://example.com', discover: false, crawl: false, render: false, lighthouse: false })
   });
   assert.equal(failed.status, 500);
   assert.equal((await failed.text()).includes(marker), false);
@@ -82,7 +83,8 @@ test('successful same-URL audits fetch fresh documents without filesystem/databa
   const reports = [];
   for (let i = 0; i < 2; i++) {
     const response = await fetch(origin + '/api/audits', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: 'https://fixture.example/?private=' + marker }) });
+      body: JSON.stringify({ url: 'https://fixture.example/?private=' + marker,
+        discover: false, crawl: false, render: false, lighthouse: false }) });
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     assert.equal(response.headers.get('set-cookie'), null);

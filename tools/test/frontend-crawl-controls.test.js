@@ -6,7 +6,7 @@ const timers = require('node:timers/promises');
 require('./helpers/small-crawl-budgets').configure();
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, report } = require('./helpers/frontend');
+const { frontend, scan, report, setAuditOptions } = require('./helpers/frontend');
 
 async function childStarted(transport) {
   const deadline = Date.now() + 5000;
@@ -22,7 +22,7 @@ test('manual cancel, refresh and replacing a live crawl stop backend work and cl
     t.mock.restoreAll();
     const transport = stubTransport(t, [{ status: 404 }, { html: '<title>First</title><a href="/child">Child</a>' },
       { status: 404 }, { neverRespond: true }, { status: 404 }, { html: '<title>Replacement</title>' }, { status: 404 }]);
-    await page.locator('#crawl-pages').check();
+    setAuditOptions(page, { crawl: true });
     await page.locator('#website-url').fill('https://site.example/');
     await page.locator('#scan-button').click();
     await childStarted(transport);
@@ -64,7 +64,7 @@ test('page-limit notice reports the actual bound/count and skipped reasons, fits
   assert.equal(data.crawl.stopReason, 'CRAWL_PAGE_LIMIT');
   const { page, errors } = await frontend(t);
   await page.route('**/api/audits', (route) => route.fulfill({ json: data }));
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   await scan(page, 'https://site.example/');
   assert.equal(await page.locator('#crawl-limit').isVisible(), true);
   const notice = await page.locator('#crawl-limit').textContent();
@@ -97,7 +97,7 @@ test('late progress and terminal frames cannot overwrite a newer round even if c
     window.fetch = () => Promise.resolve(new Response(new ReadableStream({ start(stream) { window.testStreams.push(stream); } }),
       { headers: { 'Content-Type': 'application/x-ndjson' } }));
   });
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   await page.locator('#website-url').fill(first.requestedUrl);
   await page.locator('#scan-button').click();
   await page.waitForFunction(() => window.testStreams.length === 1);

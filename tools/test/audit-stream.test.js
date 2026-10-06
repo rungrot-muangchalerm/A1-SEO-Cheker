@@ -18,7 +18,8 @@ async function api(t) {
   return 'http://127.0.0.1:' + server.address().port;
 }
 const request = (origin, body) => fetch(origin + '/api/audits', { method: 'POST',
-  headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' }, body: JSON.stringify(body) });
+  headers: { 'Content-Type': 'application/json', Accept: 'application/x-ndjson' },
+  body: JSON.stringify({ render: false, lighthouse: false, ...body }) });
 
 test('one POST connection streams real counts before completion and finishes with one report, not a saved job', async (t) => {
   stubTransport(t, [{ status: 404 }, { html: '<title>Root</title><a href="/child">Child</a><a href="/pdf">PDF</a>' },

@@ -19,10 +19,10 @@ npm start
 ถ้าเว็บใช้พอร์ต 3000 ให้ตั้ง `PORT=3001` ใน `.env` ของ checker แล้ว restart
 ห้ามตรวจพอร์ตเดียวกับ checker เพื่อป้องกันการตรวจตัวเองวน
 
-Lighthouse เปิดไว้เป็นค่าเริ่มต้น เลือกมือถือหรือเดสก์ท็อปก่อนกดตรวจ
-เลือกไล่ตรวจหน้าในเว็บไซต์เพื่อหาปัญหา HTML หลายหน้าร่วมด้วยได้
-หากไม่ต้องการคะแนนในรอบนั้นให้ปิด Lighthouse; HTML/discovery/crawl ยังทำงาน
-Lighthouse อ่านหน้าและรัน JavaScript เอง ส่วนตัวเลือกตรวจ JavaScript เป็นการ
+ใส่ URL เลือกมือถือหรือเดสก์ท็อปแล้วกดตรวจได้เลย ไม่มี checkbox เลือกส่วนที่จะตรวจ
+API คำขอเดียวเปิด discovery, crawl, JavaScript, Lighthouse และ Agentic อัตโนมัติ
+เรียก `POST /api/audits` ด้วย `{ "url": "http://localhost:5173/" }` เพื่อรับ JSON ทั้งรอบได้
+Lighthouse อ่านหน้าและรัน JavaScript เอง ส่วนการตรวจ JavaScript แยกเป็นการ
 เปรียบเทียบ HTML/DOM ก่อนและหลังของไม่เกิน 2 หน้า แยกจากคะแนน Lighthouse
 
 HTTP localhost ใช้ได้ ไม่บังคับ HTTPS ส่วน HTTPS ต้องมี certificate ที่ Node เชื่อถือ

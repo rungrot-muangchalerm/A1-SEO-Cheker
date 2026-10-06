@@ -23,10 +23,12 @@ test('URL form posts each current request, including its path and query, with no
     assert.equal(await page.locator('#report-host').textContent(), url);
   }
   assert.deepEqual(requests.map(({ method, input }) => ({ method, input })), [
-    { method: 'POST', input: { url: 'https://first.example/a?version=2' } },
-    { method: 'POST', input: { url: 'https://second.example/another' } }
+    { method: 'POST', input: { url: 'https://first.example/a?version=2', strategy: 'mobile' } },
+    { method: 'POST', input: { url: 'https://second.example/another', strategy: 'mobile' } }
   ]);
   assert.ok(requests.every((request) => request.headers['content-type'] === 'application/json'));
+  assert.ok(requests.every((request) => request.headers.accept === 'application/x-ndjson'));
+  assert.equal(await page.locator('#scan-form input[type="checkbox"]').count(), 0);
   assert.deepEqual(errors, []);
 });
 

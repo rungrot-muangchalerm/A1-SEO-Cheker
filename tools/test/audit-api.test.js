@@ -25,7 +25,8 @@ test('POST returns data for this request only; no stored-report GET exists', asy
   const origin = await startApi(t);
   for (const version of [1, 2]) {
     const response = await fetch(origin + '/api/audits', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: 'https://example.com/' })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: 'https://example.com/', discover: false, crawl: false, render: false, lighthouse: false })
     });
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('cache-control'), 'no-store');
@@ -54,4 +55,45 @@ test('invalid input and failures do not create example reports', async (t) => {
   assert.equal(failure.schemaVersion, '1.0');
   const failed = await auditService.create({ url: 'file:///etc/passwd' });
   assert.deepEqual(failed, { ok: false, code: 'INVALID_URL' });
+});
+
+test('URL-only POST runs discovery, crawl, JavaScript and Lighthouse through one JSON or NDJSON request without storing a job', async t => {
+  const { start } = require('./helpers/development-site');
+  const { lhr, stubLighthouse } = require('./helpers/lighthouse');
+  const site = await start(t);
+  const engine = stubLighthouse(t, [0, 1].map(() => lhr({ requestedUrl: site.origin + '/', finalUrl: site.origin + '/' })));
+  const origin = await startApi(t);
+  for (const accept of ['application/json', 'application/x-ndjson']) {
+    const response = await fetch(origin + '/api/audits', { method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: accept }, body: JSON.stringify({ url: site.origin + '/' }) });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    let report;
+    if (accept === 'application/json') {
+      assert.match(response.headers.get('content-type'), /^application\/json/);
+      report = await response.json();
+    } else {
+      assert.match(response.headers.get('content-type'), /^application\/x-ndjson/);
+      const frames = (await response.text()).trim().split('\n').map(line => JSON.parse(line));
+      assert.ok(frames.some(frame => frame.type === 'progress'));
+      assert.equal(frames.filter(frame => frame.type === 'report').length, 1);
+      assert.equal(frames.at(-1).type, 'report');
+      report = frames.at(-1).data;
+    }
+    assert.equal(report.scope.type, 'same-origin-crawl');
+    assert.equal(report.pages.length, 4);
+    assert.ok(report.discovery.urls.some(entry => entry.url === site.origin + '/sitemap-only'));
+    assert.ok(report.crawl.stats.attemptedPages >= 4);
+    assert.ok(report.pages.every(page => page.html && page.metadata && page.checks.length && page.render));
+    assert.ok(report.pages.every(page => page.render.reason !== 'not-requested'));
+    assert.equal(report.lighthouse.categories.length, 4);
+    assert.equal(report.lighthouse.reason, undefined);
+    assert.ok(report.lighthouse.agentic);
+    assert.ok(Array.isArray(report.issues) && Array.isArray(report.notChecked));
+    assert.equal(report.auditId, undefined);
+    assert.equal(report.history, undefined);
+  }
+  assert.equal(engine.calls.length, 2);
+  assert.ok(engine.calls.every(call => call.url === site.origin + '/'));
+  assert.equal((await fetch(origin + '/api/audits/history')).status, 404);
 });

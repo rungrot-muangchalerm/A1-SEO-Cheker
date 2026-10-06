@@ -52,8 +52,12 @@ and data modules. Do not add audit history or persistence.
   is created.
 
 - `POST /api/audits` accepts JSON `{ "url": "https://example.com/" }`.
-- Optional `crawl: true` follows same-origin links from every fetched HTML page
-  plus the initial sitemap discovery. The separate crawl checkbox enables this.
+  Discovery, crawling, JavaScript comparison and local Lighthouse (including Agentic)
+  are enabled by default at the HTTP boundary. `strategy` defaults to `mobile`.
+  Explicit boolean flags remain available to API clients for focused scopes; the UI
+  sends only URL/device mode and has no audit-selection checkboxes.
+- Crawling follows same-origin links from every fetched HTML page
+  plus the initial sitemap discovery unless the API client sends `crawl: false`.
   It checks robots.txt for SEOChecker before the initial URL and each redirect,
   refusing unknown/disallowed rules; Googlebot findings remain separate.
   Default limits are 5,000 page attempts including failures/root, one request at a time,
@@ -79,9 +83,9 @@ and data modules. Do not add audit history or persistence.
   the stream. Backpressure pauses writes and disconnect aborts waiting/work.
   Browser decoding supports split UTF-8/JSON chunks, a 512 Mi-character frame cap,
   and rejects missing/duplicate terminal reports instead of displaying partial data.
-- Optional `discover: true` also finds same-origin URL candidates from the initial
-  page's links, robots.txt sitemap declarations and `/sitemap.xml`. The checkbox
-  enables this explicitly; ordinary single-page requests do not fetch sitemaps.
+- Discovery finds same-origin URL candidates from the initial
+  page's links, robots.txt sitemap declarations and `/sitemap.xml` by default.
+  Explicit `crawl: false, discover: false` requests skip sitemap discovery.
   `discovery` records URLs and their sources, sitemap HTTP/XML evidence and skipped
   candidates. Found URLs are not added to fetched/analyzed page counts. Discovery
   alone does not crawl pages. Nested sitemap indexes retain parent file evidence.
@@ -165,7 +169,8 @@ and data modules. Do not add audit history or persistence.
   HTTP header names and matching robots.txt lines, never assumed repository filenames.
   Starting a new round aborts the previous fetch with AbortController. Manual cancel
   and leaving/reloading the page also abort in-flight requests; API disconnect handling
-  stops backend work. Refresh starts with empty URL, filters, tables and details.
+  stops backend work. Reload is ordinary browser behavior, not a custom F5 feature;
+  the application does not implement saved-report restoration or a keyboard hook.
   Reports exist only in page-local JS memory. pagehide and persisted pageshow clear
   result DOM and references, so Back cannot restore a report. No audit data is written
   to local/session storage, IndexedDB, cookies, service workers or Cache Storage.
@@ -202,7 +207,7 @@ needed for this personal checker. Follow the [root README](../../README.md) for
 safe `.env` setup. Use a different port for the checker and the development site.
 
 Node.js 22.19.0 or newer is required by local Lighthouse.
-The optional JavaScript checkbox runs a real Playwright/Chromium before/after
+JavaScript comparison runs a real Playwright/Chromium before/after
 comparison for at most two fetched pages with executable content. Initial HTML
 and checks remain untouched; rendered DOM and metadata have separate proof.
 Protected same-origin GET resources support ordinary scripts, redirected module

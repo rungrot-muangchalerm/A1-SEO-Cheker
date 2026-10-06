@@ -6,7 +6,7 @@ const sitemapService = require('../../app/service/sitemap.service');
 const discoveryService = require('../../app/service/discovery.service');
 const auditService = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, good } = require('./helpers/frontend');
+const { frontend, scan, good, setAuditOptions } = require('./helpers/frontend');
 
 const ns = 'http://www.sitemaps.org/schemas/sitemap/0.9';
 const map = (urls) => '<urlset xmlns="' + ns + '">' + urls.map((url) => '<url><loc>' + url + '</loc></url>').join('') + '</urlset>';
@@ -93,7 +93,7 @@ test('sitemap failures remain unavailable and private redirects are blocked by p
   assert.equal(result.data.notChecked.filter((entry) => entry.id === 'sitemap-discovery').length, 2);
 });
 
-test('checkbox runs actual discovery API flow and shows found URLs separately from analyzed pages; refresh clears it', async (t) => {
+test('API discovery shows found URLs separately from analyzed pages without a checkbox; refresh clears it', async (t) => {
   const transport = stubTransport(t, [
     { html: good + '<a href="/linked">Next</a>' },
     { html: 'Sitemap: https://site.example/custom.xml' },
@@ -101,7 +101,7 @@ test('checkbox runs actual discovery API flow and shows found URLs separately fr
     { status: 404 }
   ]);
   const { page: browserPage, errors } = await frontend(t);
-  await browserPage.locator('#discover-pages').check();
+  setAuditOptions(browserPage, { discover: true });
   await scan(browserPage, 'https://site.example/');
   assert.ok(transport.calls.some((entry) => entry.url === 'https://site.example/custom.xml'));
   assert.equal(await browserPage.locator('#summary-pages').textContent(), '1');
@@ -111,7 +111,7 @@ test('checkbox runs actual discovery API flow and shows found URLs separately fr
   assert.equal(await browserPage.locator('#page-rows tr').count(), 1);
   await browserPage.reload();
   await browserPage.waitForFunction(() => document.querySelector('header svg'));
-  assert.equal(await browserPage.locator('#discover-pages').isChecked(), false);
+  assert.equal(await browserPage.locator('#discover-pages').count(), 0);
   assert.equal(await browserPage.locator('#discovery-list').textContent(), '');
   assert.equal(await browserPage.locator('#discovery-section').isVisible(), false);
   assert.deepEqual(errors, []);

@@ -510,7 +510,6 @@
       byId('website-url').value = '';
       byId('website-url').setCustomValidity('');
     }
-    byId('lighthouse-options').hidden = !byId('lighthouse-enabled').checked;
   }
 
   function readAuditStream(response, onProgress) {
@@ -538,10 +537,6 @@
     return consume().then(undefined, (error) => reader.cancel().then(() => { throw error; }, () => { throw error; }))
       .finally(() => reader.releaseLock());
   }
-
-  byId('lighthouse-enabled').addEventListener('change', () => {
-    byId('lighthouse-options').hidden = !byId('lighthouse-enabled').checked;
-  });
 
   byId('export-button').addEventListener('click', () => {
     if (!state.report || state.busy) return;
@@ -614,10 +609,8 @@
     byId("report").setAttribute("aria-busy", "true");
     fetch("/api/audits", {
       credentials: "include", method: "POST", cache: "no-store", signal: controller.signal,
-      headers: { "Content-Type": "application/json", Accept: byId('crawl-pages').checked ? 'application/x-ndjson' : 'application/json' },
-      body: JSON.stringify({ url: url.href, ...(byId('discover-pages').checked ? { discover: true } : {}),
-        ...(byId('crawl-pages').checked ? { crawl: true } : {}), ...(byId('render-pages').checked ? { render: true } : {}),
-        ...(byId('lighthouse-enabled').checked ? { lighthouse: true, strategy: byId('strategy-desktop').checked ? 'desktop' : 'mobile' } : {}) })
+      headers: { "Content-Type": "application/json", Accept: 'application/x-ndjson' },
+      body: JSON.stringify({ url: url.href, strategy: byId('strategy-desktop').checked ? 'desktop' : 'mobile' })
     }).then((response) => {
       const body = (response.headers.get('content-type') || '').split(';')[0] === 'application/x-ndjson' ?
         readAuditStream(response, (progress) => {

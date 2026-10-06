@@ -8,7 +8,7 @@ const audit = require('../../app/service/audit.service');
 const discovery = require('../../app/service/discovery.service');
 const sitemap = require('../../app/service/sitemap.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 const base = 'https://site.example';
 const markup = (name, links = '') => '<title>' + name + '</title><meta name="description" content="' + name + '">' + links;
@@ -80,7 +80,7 @@ test('live progress accepts more than 200 skipped URLs and keeps the actual repo
   clock(t);
   stubTransport(t, [{ html: 'User-agent: SEOChecker\nDisallow: /p-' }, { html: markup('Root', anchors(250)) }, { status: 404 }]);
   const { page, errors } = await frontend(t);
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   await scan(page, base + '/');
   assert.equal(await page.locator('#summary-pages').textContent(), '1');
   assert.ok((await page.locator('#skipped-count').textContent()).includes('250'));

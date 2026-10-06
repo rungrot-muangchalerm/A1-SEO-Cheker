@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 const { base, stubLighthouse } = require('./helpers/lighthouse');
 const markup = (title, content = '') => '<title>' + title + '</title><meta name="description" content="' + title + '">' + content;
 
@@ -20,7 +20,7 @@ test('multi-page crawl runs one Lighthouse URL, never averages pages, and UI cal
   stubTransport(t, responses);
   stubLighthouse(t);
   const { page, errors } = await frontend(t);
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   await scan(page, base, { lighthouse: true });
   assert.equal(await page.locator('#summary-pages').textContent(), '2');
   assert.ok((await page.locator('#audit-heading').textContent()).includes('URL ที่ตรวจ'));

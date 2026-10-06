@@ -8,6 +8,7 @@ const seoService = require('../../../app/service/seo.service');
 const model = require('../../../app/model/audit.model');
 
 const root = path.resolve(__dirname, '../../..');
+const auditOptions = new WeakMap();
 const good = fs.readFileSync(path.join(__dirname, '../fixtures/seo-good.html'), 'utf8');
 const bad = fs.readFileSync(path.join(__dirname, '../fixtures/seo-bad.html'), 'utf8');
 
@@ -23,7 +24,7 @@ function report(url, source = good, options = {}) {
   return model.createReport(page, new Date().toISOString());
 }
 
-async function frontend(t, viewport = { width: 1280, height: 900 }) {
+async function frontend(t, viewport = { width: 1280, height: 900 }, options = {}) {
   const app = express();
   app.set('view engine', 'ejs');
   app.set('views', path.join(root, 'views'));
@@ -60,18 +61,29 @@ async function frontend(t, viewport = { width: 1280, height: 900 }) {
     });
   });
   const origin = 'http://127.0.0.1:' + server.address().port;
+  // Focused fixtures use explicit API scopes; fullAudit exercises the untouched browser request.
+  if (!options.fullAudit) {
+    auditOptions.set(page, { discover: false, crawl: false, render: false, lighthouse: false });
+    await page.route(origin + '/api/audits', route => {
+      if (route.request().method() !== 'POST') return route.continue();
+      return route.continue({ postData: JSON.stringify({ ...route.request().postDataJSON(), ...auditOptions.get(page) }) });
+    });
+  }
   await page.goto(origin);
   await page.waitForFunction(() => window.bootstrap && document.querySelector('header svg'));
-  // Legacy workflow fixtures opt out of the new default; Lighthouse has separate real-engine coverage.
-  await page.locator('#lighthouse-enabled').uncheck();
   return { page, browser, context, origin, errors };
 }
 
 async function scan(page, url, options = {}) {
-  await page.locator('#lighthouse-enabled').setChecked(options.lighthouse === true);
+  if (auditOptions.has(page)) setAuditOptions(page, { ...options, lighthouse: options.lighthouse === true });
   await page.locator('#website-url').fill(url);
   await page.locator('#scan-button').click();
   await page.waitForFunction(() => document.getElementById('report').getAttribute('aria-busy') === 'false');
 }
 
-module.exports = { frontend, scan, report, good, bad };
+function setAuditOptions(page, options) {
+  if (!auditOptions.has(page)) throw new Error('Full audit requests must not be overridden by fixture options');
+  auditOptions.set(page, { ...auditOptions.get(page), ...options });
+}
+
+module.exports = { frontend, scan, report, good, bad, setAuditOptions };

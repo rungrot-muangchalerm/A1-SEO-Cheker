@@ -99,7 +99,7 @@ test('HTTP client disconnect aborts its audit without sending a later report', a
     method: 'POST', agent: false, headers: { 'Content-Type': 'application/json' }
   }, () => { responses += 1; });
   client.on('error', () => {});
-  client.end('{"url":"https://public.example/"}');
+  client.end(JSON.stringify({ url: 'https://public.example/', discover: false, crawl: false, render: false, lighthouse: false }));
   await started.promise;
   client.destroy();
   await cancelled.promise;
@@ -119,7 +119,7 @@ test('normal completion removes the response close listener', async (t) => {
   response.set = () => response;
   response.status = () => response;
   response.json = () => { response.writableEnded = true; return response; };
-  await auditController.create({ body: { url: 'https://public.example/' } }, response);
+  await auditController.create({ body: { url: 'https://public.example/', discover: false, crawl: false, render: false, lighthouse: false } }, response);
   assert.equal(response.writableEnded, true);
   assert.equal(response.listenerCount('close'), 0);
 });

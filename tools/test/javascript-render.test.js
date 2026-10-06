@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const audit = require('../../app/service/audit.service');
 const renderer = require('../../app/service/render.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, report, good } = require('./helpers/frontend');
+const { frontend, scan, report, good, setAuditOptions } = require('./helpers/frontend');
 
 const base = 'https://site.example/';
 const document = (scripts = '', title = 'Initial') => '<!doctype html><html><head><title>' + title +
@@ -136,13 +136,13 @@ test('new round executes changed current JS without carrying cookies/browser sto
   assert.equal(second.pages[0].render.before.title, 'Initial');
 });
 
-test('actual API opt-in displays escaped before/after fields and DOM proof on desktop/mobile; refresh clears checkbox and rendered results', async (t) => {
+test('API-rendered results display escaped before/after fields and DOM proof on desktop/mobile without a checkbox; refresh clears results', async (t) => {
   const source = document('<script>document.title="Rendered browser title";document.querySelector("#content").textContent=' +
     '"<img src=x onerror=globalThis.__renderXss=true>";</script>');
   stubTransport(t, networkResponses(source));
   const { page, errors } = await frontend(t);
-  assert.equal(await page.locator('#render-pages').isChecked(), false);
-  await page.locator('#render-pages').check();
+  assert.equal(await page.locator('#render-pages').count(), 0);
+  setAuditOptions(page, { render: true });
   await scan(page, base);
   await page.locator('#pages-tab').click();
   await page.locator('#page-rows [data-page-url]').click();
@@ -165,7 +165,7 @@ test('actual API opt-in displays escaped before/after fields and DOM proof on de
   await comparison.locator('summary').first().click();
   assert.ok((await comparison.locator('pre').textContent()).includes('document.title='));
   await page.reload();
-  assert.equal(await page.locator('#render-pages').isChecked(), false);
+  assert.equal(await page.locator('#render-pages').count(), 0);
   assert.equal(await page.locator('[data-render-comparison]').count(), 0);
   assert.equal(await page.locator('#detail-content').textContent(), '');
   assert.equal(await page.locator('#website-url').inputValue(), '');

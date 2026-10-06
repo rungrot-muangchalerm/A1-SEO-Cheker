@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, report } = require('./helpers/frontend');
+const { frontend, scan, report, setAuditOptions } = require('./helpers/frontend');
 
 const progress = { origin: 'https://site.example', currentUrl: 'https://site.example/child',
   discovered: 2, fetched: 1, analyzed: 1, skipped: 0, skippedEntries: [] };
@@ -11,7 +11,7 @@ test('browser displays live actual counts while the report/export remains unavai
   stubTransport(t, [{ status: 404 }, { html: '<title>Root</title><a href="/child">Child</a>' },
     { status: 404 }, { html: '<title>Child</title>', delay: 1200 }]);
   const { page, errors } = await frontend(t);
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   await page.locator('#website-url').fill('https://site.example/');
   await page.locator('#scan-button').click();
   await page.locator('#crawl-progress').waitFor({ state: 'visible' });
@@ -61,7 +61,7 @@ test('an error after live progress clears the partial UI and never substitutes a
     return { ok: false, code: 'INTERNAL_ERROR' };
   });
   const { page, errors } = await frontend(t);
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   await scan(page, 'https://site.example/');
   assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'failed');
   assert.equal(await page.locator('#report').isVisible(), false);

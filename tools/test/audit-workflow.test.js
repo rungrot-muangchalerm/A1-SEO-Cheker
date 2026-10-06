@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const ExcelJS = require('exceljs');
-const { frontend, scan, good } = require('./helpers/frontend');
+const { frontend, scan, good, setAuditOptions } = require('./helpers/frontend');
 const { stubTransport } = require('./helpers/transport');
 const { base, stubLighthouse } = require('./helpers/lighthouse');
 
@@ -38,7 +38,7 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
     return outcome;
   });
   const { page, errors } = await frontend(t);
-  await page.locator('#crawl-pages').check();
+  setAuditOptions(page, { crawl: true });
   const event = page.waitForResponse(response => response.url().endsWith('/api/audits'));
   await scan(page, base, { lighthouse: true });
   const response = await event;
@@ -92,7 +92,7 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   assert.equal((await page.locator('#detail-content details code').allTextContents())[1], child);
   await page.locator('#issue-drawer [data-bs-dismiss="offcanvas"]').click();
   await page.locator('#issue-drawer.show').waitFor({ state: 'hidden' });
-  await page.locator('#crawl-pages').uncheck();
+  setAuditOptions(page, { crawl: false });
   await scan(page, base + 'fresh');
   assert.equal(transport.calls.length, 7);
   assert.equal(await page.locator('#summary-pages').textContent(), '1');

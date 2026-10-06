@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const os = require('node:os');
 const website = require('../../app/data/website.data');
-const { frontend, scan, good } = require('./helpers/frontend');
+const { frontend, scan, good, setAuditOptions } = require('./helpers/frontend');
 const { stubTransport } = require('./helpers/transport');
 const { base, lhr, stubLighthouse } = require('./helpers/lighthouse');
 
@@ -33,12 +33,12 @@ test('real transport failures replace earlier success honestly and keep desktop/
     }
   }
   assert.equal(transport.connections[2].destroyed, true);
-  await page.locator('#discover-pages').check();
+  setAuditOptions(page, { discover: true });
   await scan(page, base + 'maps');
   assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'partial');
   assert.equal(await page.locator('#summary-pages').textContent(), '1');
   assert.ok((await page.locator('#not-checked-list').textContent()).includes('SITEMAP_INVALID_XML'));
-  await page.locator('#discover-pages').uncheck();
+  setAuditOptions(page, { discover: false });
   await scan(page, base, { lighthouse: true });
   assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'partial');
   assert.equal(await page.locator('#report').isVisible(), true);

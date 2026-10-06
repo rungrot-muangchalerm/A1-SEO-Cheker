@@ -63,7 +63,7 @@ test('device controls post the chosen mode, metadata is escaped on mobile/deskto
   const engine = stubLighthouse(t, [lhr({ userAgent: agent, configSettings: { formFactor: 'desktop', throttlingMethod: 'provided' } })]);
   stubTransport(t, [{ html: good }, { status: 404 }]);
   const { page, errors } = await frontend(t);
-  await page.locator('#lighthouse-enabled').check();
+
   await page.locator('label[for="strategy-desktop"]').click();
   await scan(page, base, { lighthouse: true });
   assert.equal(engine.calls[0].strategy, 'desktop');
@@ -80,7 +80,7 @@ test('device controls post the chosen mode, metadata is escaped on mobile/deskto
   }
   await page.reload();
   assert.equal(await page.locator('#strategy-mobile').isChecked(), true);
-  assert.equal(await page.locator('#lighthouse-enabled').isChecked(), true);
+  assert.equal(await page.locator('#lighthouse-enabled').count(), 0);
   assert.equal(await metadata.textContent(), '');
   assert.equal(await page.locator('#lighthouse-options').isVisible(), true);
   assert.deepEqual(errors, []);
