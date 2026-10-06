@@ -122,6 +122,6 @@ try {
 
 ## File Naming Convention
 
-- Controller: `*.controller.js` (e.g., `demo.controller.js`)
-- Routes: `*.routes.js` (e.g., `user.routes.js`, `api.routes.js`)
-- Service: `*.service.js` (e.g., `demo.service.js`)
+- Controller: `*.controller.js` (e.g., `audit.controller.js`)
+- Routes: `*.routes.js` (e.g., `audit.routes.js`, `api.routes.js`)
+- Service: `*.service.js` (e.g., `audit.service.js`)

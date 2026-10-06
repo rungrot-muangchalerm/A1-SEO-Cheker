@@ -219,6 +219,12 @@ Lighthouse ในเครื่องขอหมวด `agentic-browsing` จ�
 
 `npm test` ผ่าน 285 ข้อ ไม่มีข้อที่ล้มเหลวหรือถูกข้าม ทดสอบ workflow localhost จริงทั้ง crawl 4 หน้า การเปลี่ยน DOM ด้วย JavaScript คะแนน Lighthouse/Agentic และส่งออก JSON/XLSX ตรวจหน้าจอ 320/1440 px แล้วไม่มี overflow หรือ browser error ภาพที่ใช้ตรวจเป็น fixture และลบแล้ว ขอบเขตเดิมยังคงอยู่: JavaScript สูงสุด 2 หน้าที่เข้าเงื่อนไข และ Lighthouse/Agentic ตรวจ URL ที่ใส่ 1 URL ไม่ใช่ทุกหน้าในเว็บไซต์
 
+## ลบโค้ดตัวอย่าง
+
+- [x] chore: ลบ demo ที่ไม่ใช้ใน SEO Checker
+
+ตรวจสอบแล้ว: ลบ `demo.controller.js`, `demo.service.js` และ `api/user/user.routes.js` พร้อมถอด mount `/api/user` ออกจาก API router ปรับชื่อไฟล์ในเอกสารให้ตรงกับ audit ที่ใช้จริง เส้น demo เดิมตอบ JSON 404 ทั้งใน regression test และการลองเส้นเดิมบน localhost:3000 โดย regression test ยืนยันว่าไม่มี module demo ถูกโหลด ยังคง fixtures/helpers ที่ใช้ทดสอบไว้ ไม่เปลี่ยนเงื่อนไขการตรวจหรือ dependencies `npm test` ผ่าน 286 ข้อ ไม่มีข้อที่ล้มเหลวหรือถูกข้าม
+
 ## งานเพิ่มหลังเวอร์ชันแรก
 
 - [ ] เชื่อม Search Console ของเจ้าของเว็บไซต์เพื่อดูสถานะ index ที่ Google รู้จัก

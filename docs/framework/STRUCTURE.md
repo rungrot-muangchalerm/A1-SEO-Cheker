@@ -6,7 +6,7 @@ project-root/
 │  ├─ config/
 │  │  └─ mysqli.config.js    # MySQL pool (mysql2)
 │  ├─ controller/
-│  │  └─ user.controller.js
+│  │  └─ audit.controller.js
 │  ├─ data/
 │  ├─ middleware/
 │  │  └─ jwt.middleware.js   # JWT verify, authenticate, role, revoke
@@ -14,8 +14,8 @@ project-root/
 │  └─ routes/
 │     ├─ api/
 │     │  ├─ api.routes.js
-│     │  └─ user/
-│     │     └─ user.routes.js
+│     │  └─ audit/
+│     │     └─ audit.routes.js
 │     ├─ frontend/
 │     │  └─ frontend.routes.js
 │     └─ router.js

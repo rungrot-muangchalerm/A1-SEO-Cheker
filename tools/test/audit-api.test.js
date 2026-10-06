@@ -97,3 +97,15 @@ test('URL-only POST runs discovery, crawl, JavaScript and Lighthouse through one
   assert.ok(engine.calls.every(call => call.url === site.origin + '/'));
   assert.equal((await fetch(origin + '/api/audits/history')).status, 404);
 });
+
+test('removed framework demo routes return JSON 404 and no demo modules are loaded', async t => {
+  const origin = await startApi(t);
+  for (const [method, path] of [['GET', '/api/user/get-demo'], ['POST', '/api/user/get-demo'], ['GET', '/api/user']]) {
+    const response = await fetch(origin + path, { method });
+    assert.equal(response.status, 404);
+    assert.match(response.headers.get('content-type'), /^application\/json/);
+    assert.deepEqual(await response.json(), { error: 'Not Found', path });
+  }
+  const loaded = Object.keys(require.cache);
+  assert.ok(!loaded.some(file => /[\\/]demo\.(controller|service)\.js$|[\\/]user[\\/]user\.routes\.js$/.test(file)));
+});
