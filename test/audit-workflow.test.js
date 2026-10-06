@@ -1,16 +1,18 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const ExcelJS = require('exceljs');
 const { frontend, scan, good } = require('./helpers/frontend');
 const { stubTransport } = require('./helpers/transport');
 const { base, key, jsonResponse } = require('./helpers/pagespeed');
 
-async function download(page, selector) {
+async function download(page, selector, binary = false) {
   const event = page.waitForEvent('download');
   await page.locator(selector).click();
   const stream = await (await event).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
-  return Buffer.concat(chunks).toString('utf8');
+  const data = Buffer.concat(chunks);
+  return binary ? data : data.toString('utf8');
 }
 
 test('complete browser/API workflow crawls, analyzes, opens factual evidence, exports both formats and replaces the round', async t => {
@@ -65,13 +67,25 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   await page.locator('#issue-drawer [data-bs-dismiss="offcanvas"]').click();
   await page.locator('#issue-drawer.show').waitFor({ state: 'hidden' });
   await page.locator('#issue-search').fill('internal-link-target');
-  const csv = await download(page, '#export-button');
-  assert.ok(csv.includes('"internal-link-target",'));
-  assert.ok(csv.includes('"' + broken.found.replace(/"/g, '""') + '"'));
-  assert.ok(!csv.includes('"duplicate-title",'));
+  const filtered = JSON.parse(await download(page, '#export-button'));
+  assert.ok(filtered.issues.some(issue => issue.ruleId === 'internal-link-target' && issue.found === broken.found));
+  assert.ok(filtered.issues.every(issue => issue.ruleId !== 'duplicate-title'));
   const json = JSON.parse(await download(page, '#export-json-button'));
   delete json.export;
   assert.deepEqual(json, result);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await download(page, '#export-xlsx-button', true));
+  assert.equal(workbook.getWorksheet('Pages').rowCount, result.pages.length + 1);
+  assert.equal(workbook.getWorksheet('Issues').rowCount, result.issues.length + 1);
+  assert.equal(workbook.getWorksheet('Scores').rowCount, result.lighthouse.categories.length + 1);
+  for (const [index, category] of result.lighthouse.categories.entries()) {
+    const row = workbook.getWorksheet('Scores').getRow(index + 2);
+    assert.equal(row.getCell(1).value, category.id);
+    assert.equal(row.getCell(3).value, category.score);
+    assert.equal(row.getCell(4).value, category.displayScore);
+    assert.equal(row.getCell(7).value, result.lighthouse.provider);
+  }
+  assert.deepEqual(JSON.parse(workbook.getWorksheet('Evidence').getCell('G2').value), result.issues[0].evidence[0]);
   await page.locator('#pages-tab').click();
   assert.equal(await page.locator('#page-rows tr').count(), 3);
   await page.locator('[data-page-url="' + base + 'child"]').click();

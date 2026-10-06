@@ -23,7 +23,7 @@ no location. `sourceTruncated` marks shortened snippets. Absence observations co
 and counts, never invented replacement markup. Robots line numbers are 1-based
 positions in the fetched robots.txt. Filesystem paths are not inferred from URLs.
 The detail panel displays document URLs, locations, header names and robots lines.
-At most 50 evidence entries are previewed; copying or CSV includes the full evidence
+At most 50 evidence entries are previewed; copying or JSON includes the full evidence
 returned by the API, including any disclosed parser truncation.
 
 Passing one rule is not a ranking score, an indexing confirmation, or proof that
@@ -61,7 +61,7 @@ The UI offers individual and grouped views. Filters select individual members
 first, then recompute visible group counts, severity breakdowns and unique URLs.
 The summary continues to describe the entire round; the table footer names the
 filtered subset. Group details link to every matching issue and related URL;
-only fetched HTML URLs get page-detail buttons. CSV always exports the same
+only fetched HTML URLs get page-detail buttons. Filtered JSON always exports the same
 filtered individual issues and full evidence, not synthetic group rows.
 
 ## JavaScript Comparison
@@ -134,10 +134,20 @@ an executable HTML document. Even a zero-issue report is downloadable; no report
 means no export. Generation uses a browser Blob only on an explicit click, never
 a backend file/job/download URL. Refresh/new round clears the source report.
 JSON adds an `export` metadata object (format, scope, export time) to a shallow
-copy, never to the current report. CSV appends format/schema, request URL, round
-start/completion/export times and selected filters to every exported issue row.
+copy, never to the current report. Filtered JSON keeps schema, request URL, round
+start/completion times, context summary/coverage, selected issues and recalculated
+issue groups. Its `export.scope` is `filtered-issues`, with selection metadata in
+`export.filters`; the full report continues to use `entire-round`.
 Filenames use the UTC completion timestamp and a page-local round sequence, not
-the inspected URL or a stored job ID. CSV includes UTF-8 BOM for Thai spreadsheets.
+the inspected URL or a stored job ID. CSV is no longer generated.
+
+Each scope also has a browser-only ExcelJS XLSX projection for manual Google Sheets
+import. JSON remains authoritative for complete fetched HTML and rendered snapshots;
+XLSX contains Summary, Issues, Issue URLs and Evidence, plus Pages, Scores,
+Not Checked, Discovered and Skipped for whole-round exports. Every cell is literal;
+formula prefixes are neutralized only in XLSX, not the JSON or in-memory report.
+Long values are split into ordered JSON chunks in Long Text, not silently truncated.
+Writer failure, missing library or size limits preserve the JSON export option.
 
 ## PageSpeed Insights
 
@@ -274,7 +284,7 @@ no eval/graph processor is run, and parser exceptions never expose raw messages.
 not checked even if syntax is valid. Absence is count zero, not a mandatory failure.
 Block IDs include their 1-based script index, preserved when adding crawl page URLs
 so two blocks on one page cannot select each other's evidence. HTML evidence is
-always escaped in the checker; CSV remains manual and current-round only.
+always escaped in the checker; JSON/XLSX remain manual and current-round only.
 
 `pages[].metadata.openGraph` is information for link sharing, not an SEO score or
 mandatory ranking checklist. It records observed ordered `meta[property="og:..."]`

@@ -70,6 +70,9 @@
           <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" id="export-json-button" disabled>
             <i data-lucide="file-down" width="16" height="16" aria-hidden="true"></i>&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604; JSON
           </button>
+          <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" id="export-xlsx-button" disabled>
+            <i data-lucide="sheet" width="16" height="16" aria-hidden="true"></i>Google Sheets (.xlsx)
+          </button>
         </div>
       </div>
       <div class="row row-cols-2 row-cols-lg-4 g-3 border-bottom border-info-subtle pb-4">
@@ -130,10 +133,15 @@
       <section class="tab-pane show active" id="issues-pane" role="tabpanel" aria-labelledby="issues-tab" tabindex="0">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
           <h2 class="h5 mb-0">&#3611;&#3633;&#3597;&#3627;&#3634;&#3607;&#3637;&#3656;&#3614;&#3610; <span class="small fw-normal" id="issue-count"></span></h2>
-          <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" type="button" id="export-button" disabled>
-            <i data-lucide="file-down" width="16" height="16" aria-hidden="true"></i>
-            &#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604; CSV
-          </button>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" type="button" id="export-button" disabled>
+              <i data-lucide="file-down" width="16" height="16" aria-hidden="true"></i>
+              &#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604; JSON
+            </button>
+            <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" type="button" id="export-issues-xlsx-button" aria-label="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634; XLSX" title="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634; XLSX" data-bs-toggle="tooltip" disabled>
+              <i data-lucide="sheet" width="16" height="16" aria-hidden="true"></i>XLSX
+            </button>
+          </div>
         </div>
         <div class="btn-group btn-group-sm mb-3" role="group" aria-label="&#3617;&#3640;&#3617;&#3617;&#3629;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;">
           <input type="radio" class="btn-check" name="issue-view" id="issue-view-list" value="list" autocomplete="off" checked>
@@ -275,4 +283,6 @@
 </aside>
 
 <script src="https://cdn.jsdelivr.net/npm/lucide@1.51.0/dist/umd/lucide.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" integrity="sha384-Pqp51FUN2/qzfxZxBCtF0stpc9ONI6MYZpVqmo8m20SoaQCzf+arZvACkLkirlPz" crossorigin="anonymous" defer></script>
+<script src="/assets/js/report-export.js" defer></script>
 <script src="/assets/js/app.js" defer></script>

@@ -134,9 +134,8 @@ test('browser opens the exact failed block, escapes script evidence, exports it 
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
-  const csv = Buffer.concat(chunks).toString('utf8');
-  assert.ok(csv.includes('jsonld-syntax'));
-  assert.ok(csv.includes('second'));
+  const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  assert.ok(exported.issues.some(issue => issue.ruleId === 'jsonld-syntax' && JSON.stringify(issue.evidence).includes('second')));
   await browserPage.reload();
   assert.equal(await browserPage.locator('#website-url').inputValue(), '');
   assert.equal(await browserPage.locator('#detail-content').textContent(), '');

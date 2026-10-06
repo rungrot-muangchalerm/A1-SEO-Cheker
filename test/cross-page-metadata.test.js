@@ -89,7 +89,7 @@ test('actual crawl report includes cross-page checks in issue summaries and late
   assert.equal(first.issues.length, 2);
 });
 
-test('browser opens every grouped URL and actual evidence; CSV exports the whole duplicate group', async (t) => {
+test('browser opens every grouped URL and actual evidence; JSON exports the whole duplicate group', async (t) => {
   clock(t);
   stubTransport(t, responses());
   const { page: browserPage, errors } = await frontend(t);
@@ -111,9 +111,9 @@ test('browser opens every grouped URL and actual evidence; CSV exports the whole
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
-  const csv = Buffer.concat(chunks).toString('utf8');
-  assert.ok(csv.includes('duplicate-description'));
-  assert.ok(!csv.includes('duplicate-title'));
-  for (const path of ['/a', '/b', '/c']) assert.ok(csv.includes('https://site.example' + path));
+  const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  assert.equal(exported.issues.length, 1);
+  assert.equal(exported.issues[0].ruleId, 'duplicate-description');
+  assert.deepEqual(exported.issues[0].urls, ['/a', '/b', '/c'].map(path => 'https://site.example' + path));
   assert.deepEqual(errors, [], stacks.join('\n'));
 });

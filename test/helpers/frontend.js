@@ -47,7 +47,8 @@ async function frontend(t, viewport = { width: 1280, height: 900 }) {
   const assets = [
     ['bootstrap@5.3.8/dist/css/bootstrap.min.css', 'bootstrap/dist/css/bootstrap.min.css', 'text/css'],
     ['bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js', 'bootstrap/dist/js/bootstrap.bundle.min.js', 'application/javascript'],
-    ['lucide@1.51.0/dist/umd/lucide.min.js', 'lucide/dist/umd/lucide.min.js', 'application/javascript']
+    ['lucide@1.51.0/dist/umd/lucide.min.js', 'lucide/dist/umd/lucide.min.js', 'application/javascript'],
+    ['exceljs@4.4.0/dist/exceljs.min.js', 'exceljs/dist/exceljs.min.js', 'application/javascript']
   ];
   // Offline CDN fixtures use the exact npm versions; application URLs remain CDN URLs.
   await page.route('https://cdn.jsdelivr.net/**', (route) => {

@@ -25,7 +25,7 @@
     CRAWL_BYTE_LIMIT: '\u0e16\u0e36\u0e07\u0e02\u0e19\u0e32\u0e14 HTML \u0e23\u0e27\u0e21\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14'
   };
 
-  const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false, round: 0, controller: null };
+  const state = { origin: null, page: 1, selectedIssue: null, report: null, busy: false, exporting: false, round: 0, controller: null };
   const downloadUrls = new Set();
   const byId = (id) => document.getElementById(id);
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -125,6 +125,7 @@
     if (grouped) byId('issue-result-status').textContent += ' \u00b7 ' + groups.length + ' \u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17 \u00b7 ' +
       new Set(visible.flatMap((issue) => issue.urls)).size + ' URL';
     byId("export-button").disabled = visible.length === 0;
+    byId('export-issues-xlsx-button').disabled = visible.length === 0 || state.exporting;
   }
 
   function visibleIssueGroups(issues) {
@@ -169,6 +170,7 @@
   function renderSummary() {
     if (!state.report) return;
     byId('export-json-button').disabled = false;
+    byId('export-xlsx-button').disabled = state.exporting;
     const summary = state.report.summary;
     byId("summary-pages").textContent = summary.pages;
     ["critical", "warning", "review"].forEach((level) => {
@@ -403,11 +405,15 @@
     return copied ? Promise.resolve() : Promise.reject(new Error('Clipboard unavailable'));
   }
 
-  function csvCell(value) {
-    let text = typeof value === 'object' ? JSON.stringify(value) : String(value ?? '');
-    // Spreadsheet-facing export: neutralize formula prefixes without mutating the report.
-    if (/^(?:[\u0000-\u0020]*[=+@\-\uff1d\uff0b\uff0d\uff20]|[\t\r\n])/.test(text)) text = "'" + text;
-    return '"' + text.replace(/"/g, '""') + '"';
+  function createExport(scope) {
+    const metadata = { format: 'seo-checker-json', scope, exportedAt: new Date().toISOString() };
+    if (scope === 'entire-round') return { ...state.report, export: metadata };
+    const issues = filteredIssues();
+    metadata.filters = { severity: byId('severity-filter').value, category: byId('category-filter').value,
+      query: byId('issue-search').value, view: byId('issue-view-groups').checked ? 'groups' : 'list' };
+    return { schemaVersion: state.report.schemaVersion, status: state.report.status, requestedUrl: state.report.requestedUrl,
+      startedAt: state.report.startedAt, completedAt: state.report.completedAt, scope: state.report.scope,
+      coverage: state.report.coverage, summary: state.report.summary, issues, issueGroups: visibleIssueGroups(issues), export: metadata };
   }
 
   function downloadBlob(content, type, filename) {
@@ -436,6 +442,7 @@
     state.origin = null;
     state.selectedIssue = null;
     state.busy = false;
+    state.exporting = false;
     state.page = 1;
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
@@ -462,7 +469,7 @@
     byId('crawl-limit').hidden = true;
     byId('progress-limit').hidden = true;
     ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
-    ['export-button', 'export-json-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
+    ['export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
     byId('scan-icon').classList.remove('d-none');
     byId('scan-button').disabled = false;
     byId('scan-button-label').textContent = '\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c';
@@ -515,22 +522,45 @@
 
   byId('export-button').addEventListener('click', () => {
     if (!state.report || state.busy) return;
-    const issues = filteredIssues();
-    if (!issues.length) return;
-    const metadata = { reportFormat: 'seo-checker-issues-csv', schemaVersion: state.report.schemaVersion,
-      reportRequestedUrl: state.report.requestedUrl, reportStartedAt: state.report.startedAt, reportCompletedAt: state.report.completedAt,
-      exportedAt: new Date().toISOString(), filterSeverity: byId('severity-filter').value, filterCategory: byId('category-filter').value,
-      filterQuery: byId('issue-search').value, issueView: byId('issue-view-groups').checked ? 'groups' : 'list' };
-    const fields = ['ruleId', 'ruleVersion', 'outcome', 'severity', 'category', 'title', 'urls', 'found', 'impact', 'steps', 'evidence', 'references', ...Object.keys(metadata)];
-    const csv = [fields.map(csvCell).join(','), ...issues.map((issue) => fields.map((field) => csvCell(Object.hasOwn(metadata, field) ? metadata[field] : issue[field])).join(','))].join('\r\n');
-    downloadBlob(['\ufeff', csv, '\r\n'], 'text/csv;charset=utf-8', downloadFilename('issues') + '.csv');
+    const report = createExport('filtered-issues');
+    if (!report.issues.length) return;
+    downloadBlob([JSON.stringify(report, null, 2), '\n'], 'application/json;charset=utf-8', downloadFilename('issues') + '.json');
   });
 
   byId('export-json-button').addEventListener('click', () => {
     if (!state.report || state.busy) return;
-    const report = { ...state.report, export: { format: 'seo-checker-json', scope: 'entire-round', exportedAt: new Date().toISOString() } };
+    const report = createExport('entire-round');
     downloadBlob([JSON.stringify(report, null, 2), '\n'], 'application/json;charset=utf-8', downloadFilename('report') + '.json');
   });
+
+  for (const [id, scope] of [['export-xlsx-button', 'entire-round'], ['export-issues-xlsx-button', 'filtered-issues']]) {
+    byId(id).addEventListener('click', () => {
+      if (!state.report || state.busy || state.exporting) return;
+      const report = createExport(scope);
+      if (scope === 'filtered-issues' && !report.issues.length) return;
+      const round = state.round;
+      const filename = downloadFilename(scope === 'entire-round' ? 'report' : 'issues') + '.xlsx';
+      state.exporting = true;
+      byId('export-xlsx-button').disabled = true;
+      byId('export-issues-xlsx-button').disabled = true;
+      byId('app-message').textContent = '\u0e01\u0e33\u0e25\u0e31\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07 XLSX';
+      Promise.resolve().then(() => window.SEOReportExport.createWorkbook(report, window.ExcelJS).xlsx.writeBuffer()).then(buffer => {
+        if (round !== state.round || state.busy || !state.report) return;
+        downloadBlob([buffer], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', filename);
+        byId('app-message').textContent = '';
+      }).then(undefined, error => {
+        if (round !== state.round) return;
+        byId('app-message').textContent = error?.message === 'SPREADSHEET_TOO_LARGE' ?
+          '\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e0d\u0e48\u0e40\u0e01\u0e34\u0e19\u0e44\u0e1b\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a XLSX \u0e01\u0e23\u0e38\u0e13\u0e32\u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14 JSON' :
+          '\u0e2a\u0e23\u0e49\u0e32\u0e07 XLSX \u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e22\u0e31\u0e07\u0e14\u0e32\u0e27\u0e19\u0e4c\u0e42\u0e2b\u0e25\u0e14 JSON \u0e44\u0e14\u0e49';
+      }).finally(() => {
+        if (round !== state.round || !state.report || state.busy) return;
+        state.exporting = false;
+        byId('export-xlsx-button').disabled = false;
+        byId('export-issues-xlsx-button').disabled = filteredIssues().length === 0;
+      });
+    });
+  }
 
   byId("scan-form").addEventListener("submit", (event) => {
     event.preventDefault();

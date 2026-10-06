@@ -58,7 +58,7 @@ test('zero-issue rounds still export JSON; exported HTML is inert text and never
   assert.deepEqual(errors, []);
 });
 
-test('CSV includes round times/schema/filters and filenames separate rounds even when a fixture reuses the same timestamp', async (t) => {
+test('filtered JSON includes round times/schema/filters and filenames separate rounds even when a fixture reuses the same timestamp', async (t) => {
   const first = report('https://fixture.example/first', bad);
   const second = report('https://fixture.example/second', bad);
   second.completedAt = first.completedAt;
@@ -66,20 +66,26 @@ test('CSV includes round times/schema/filters and filenames separate rounds even
   await page.route('**/api/audits', route => route.fulfill({ json: route.request().postDataJSON().url === first.requestedUrl ? first : second }));
   await scan(page, first.requestedUrl);
   await page.locator('#issue-search').fill('image-alt');
-  const csv = await readDownload(page, '#export-button');
-  for (const value of ['reportFormat', 'schemaVersion', 'reportStartedAt', 'reportCompletedAt', 'exportedAt', 'filterQuery',
-    first.startedAt, first.completedAt, 'seo-checker-issues-csv', 'image-alt']) assert.ok(csv.text.includes('"' + value + '"'));
+  const issuesJson = await readDownload(page, '#export-button');
+  const exported = JSON.parse(issuesJson.text);
+  assert.equal(exported.schemaVersion, first.schemaVersion);
+  assert.equal(exported.startedAt, first.startedAt);
+  assert.equal(exported.completedAt, first.completedAt);
+  assert.equal(exported.export.format, 'seo-checker-json');
+  assert.equal(exported.export.scope, 'filtered-issues');
+  assert.equal(exported.export.filters.query, 'image-alt');
+  assert.ok(Number.isFinite(Date.parse(exported.export.exportedAt)));
   const firstJson = await readDownload(page, '#export-json-button');
   await scan(page, second.requestedUrl);
   const secondJson = await readDownload(page, '#export-json-button');
   assert.notEqual(firstJson.filename, secondJson.filename);
   assert.match(firstJson.filename, /^seo-report-\d{4}-\d{2}-\d{2}T[\w-]+-round-\d+\.json$/);
-  assert.match(csv.filename, /^seo-issues-\d{4}-\d{2}-\d{2}T[\w-]+-round-\d+\.csv$/);
-  assert.ok(!csv.filename.includes('fixture.example'));
+  assert.match(issuesJson.filename, /^seo-issues-\d{4}-\d{2}-\d{2}T[\w-]+-round-\d+\.json$/);
+  assert.ok(!issuesJson.filename.includes('fixture.example'));
   assert.deepEqual(errors, []);
 });
 
-test('CSV/JSON create browser Blobs only on explicit clicks, make no export API request and revoke object URLs after use or pagehide', async (t) => {
+test('both JSON scopes create browser Blobs only on explicit clicks, make no export API request and revoke object URLs after use or pagehide', async (t) => {
   const { page, errors } = await frontend(t);
   let requests = 0;
   await page.route('**/api/audits', route => { ++requests; return route.fulfill({ json: report(base, bad) }); });
@@ -93,7 +99,7 @@ test('CSV/JSON create browser Blobs only on explicit clicks, make no export API 
   assert.equal(await page.evaluate(() => globalThis.blobs.length), 0);
   await readDownload(page, '#export-button');
   await readDownload(page, '#export-json-button');
-  assert.deepEqual(await page.evaluate(() => globalThis.blobs.map(entry => entry.type)), ['text/csv;charset=utf-8', 'application/json;charset=utf-8']);
+  assert.deepEqual(await page.evaluate(() => globalThis.blobs.map(entry => entry.type)), ['application/json;charset=utf-8', 'application/json;charset=utf-8']);
   await page.waitForFunction(() => globalThis.blobs.every(entry => globalThis.revoked.includes(entry.url)));
   await readDownload(page, '#export-json-button');
   await page.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
@@ -102,16 +108,17 @@ test('CSV/JSON create browser Blobs only on explicit clicks, make no export API 
   assert.deepEqual(errors, []);
 });
 
-test('both downloads stay disabled before/during/after failed audits, and successful rounds never download automatically', async (t) => {
+test('all JSON/XLSX downloads stay disabled before/during/after failed audits, and successful rounds never download automatically', async (t) => {
   stubTransport(t, [{ html: bad, delay: 500 }, { status: 404 }, { networkError: true }]);
   const { page, errors } = await frontend(t);
   let downloads = 0;
   page.on('download', () => ++downloads);
-  for (const id of ['export-button', 'export-json-button']) assert.equal(await page.locator('#' + id).isDisabled(), true);
+  const ids = ['export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button'];
+  for (const id of ids) assert.equal(await page.locator('#' + id).isDisabled(), true);
   await page.locator('#website-url').fill(base);
   await page.locator('#scan-button').click();
   await page.waitForFunction(() => document.getElementById('report').getAttribute('aria-busy') === 'true');
-  for (const id of ['export-button', 'export-json-button']) {
+  for (const id of ids) {
     assert.equal(await page.locator('#' + id).isDisabled(), true);
     await page.locator('#' + id).evaluate(element => element.click());
   }
@@ -120,7 +127,7 @@ test('both downloads stay disabled before/during/after failed audits, and succes
   assert.equal(downloads, 0);
   await scan(page, base);
   assert.equal(await page.locator('#scan-status').getAttribute('data-state'), 'failed');
-  for (const id of ['export-button', 'export-json-button']) assert.equal(await page.locator('#' + id).isDisabled(), true);
+  for (const id of ids) assert.equal(await page.locator('#' + id).isDisabled(), true);
   assert.equal(downloads, 0);
   await page.reload();
   assert.equal(await page.locator('#export-json-button').isDisabled(), true);

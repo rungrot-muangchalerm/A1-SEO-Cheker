@@ -143,7 +143,7 @@ test('response lookup strips fragments and default ports but preserves query-spe
   assert.equal(index.get('https://outside.example/').available, false);
 });
 
-test('browser displays actual target status and source evidence; grouped sources and CSV use the same report', async (t) => {
+test('browser displays actual target status and source evidence; grouped sources and JSON use the same report', async (t) => {
   clock(t);
   stubTransport(t, [{ status: 404 }, { html: markup('Root', '/', '<a href="/source">Source</a><a href="/json">Missing</a>') },
     { status: 404 }, { html: markup('Source', '/source', '<a href="/json">Missing again</a>') },
@@ -166,10 +166,10 @@ test('browser displays actual target status and source evidence; grouped sources
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
-  const csv = Buffer.concat(chunks).toString('utf8');
-  assert.ok(csv.includes('internal-link-target'));
-  assert.ok(csv.includes('https://site.example/source'));
-  assert.ok(csv.includes('https://site.example/json'));
-  assert.ok(csv.includes('404'));
+  const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  const issue = exported.issues.find(entry => entry.ruleId === 'internal-link-target');
+  assert.ok(issue.urls.includes('https://site.example/source'));
+  assert.equal(issue.details.target, 'https://site.example/json');
+  assert.equal(issue.details.httpStatus, 404);
   assert.deepEqual(errors, []);
 });

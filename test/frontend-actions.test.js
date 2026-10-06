@@ -11,7 +11,7 @@ async function downloadText(page) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-test('issue filters and CSV export use the same current report evidence and steps', async (t) => {
+test('issue filters and JSON export use the same current report evidence and steps', async (t) => {
   const { page, errors } = await frontend(t);
   const result = report('https://fixture.example/bad', bad, { status: 404 });
   await page.route('**/api/audits', (route) => route.fulfill({ json: result }));
@@ -25,14 +25,12 @@ test('issue filters and CSV export use the same current report evidence and step
   await page.locator('#category-filter').selectOption('images');
   await page.locator('#issue-search').fill('IMAGE-ALT');
   assert.equal(await page.locator('#issue-rows tr').count(), 1);
-  const csv = await downloadText(page);
+  const exported = JSON.parse(await downloadText(page));
   const issue = result.issues.find((item) => item.ruleId === 'image-alt');
-  assert.ok(csv.startsWith('\ufeff"ruleId","ruleVersion","outcome"'));
-  for (const value of [issue.found, issue.steps[0], JSON.stringify(issue.evidence)]) {
-    assert.ok(csv.includes(value.replace(/"/g, '""')));
-  }
-  assert.ok(csv.includes('"image-alt"'));
-  assert.equal(csv.includes('"http-status"'), false);
+  assert.deepEqual(exported.issues, [issue]);
+  assert.equal(exported.export.scope, 'filtered-issues');
+  assert.deepEqual(exported.export.filters, { severity: 'warning', category: 'images', query: 'IMAGE-ALT', view: 'list' });
+  assert.deepEqual(exported.issueGroups.flatMap(group => group.issueIds), [issue.id]);
   await page.locator('#issue-search').fill('missing-from-this-report');
   assert.equal(await page.locator('#issue-rows tr').count(), 0);
   assert.equal(await page.locator('#export-button').isDisabled(), true);
@@ -41,7 +39,7 @@ test('issue filters and CSV export use the same current report evidence and step
   assert.deepEqual(errors, []);
 });
 
-test('CSV quotes separators, quotes and line breaks and neutralizes spreadsheet formulas', async (t) => {
+test('JSON preserves separators, quotes, newlines and formula-like source text without modifying the report', async (t) => {
   const { page, errors } = await frontend(t);
   const title = '=HYPERLINK("https://untrusted.example", "label"),\nnext';
   const result = report('https://fixture.example/bad', bad);
@@ -51,10 +49,10 @@ test('CSV quotes separators, quotes and line breaks and neutralizes spreadsheet 
   await page.route('**/api/audits', (route) => route.fulfill({ json: result }));
   await scan(page, result.requestedUrl);
   await page.locator('#issue-search').fill('HYPERLINK');
-  const csv = await downloadText(page);
-  assert.ok(csv.includes('"\'=' + title.slice(1).replace(/"/g, '""') + '"'));
-  assert.ok(csv.includes('"\'\t@SUM(1+1)"'));
-  assert.ok(csv.includes('"\'\uff1d1+1"'));
+  const exported = JSON.parse(await downloadText(page));
+  assert.equal(exported.issues[0].title, title);
+  assert.equal(exported.issues[0].found, '\t@SUM(1+1)');
+  assert.equal(exported.issues[0].impact, '\uff1d1+1');
   assert.equal(await page.locator('#issue-rows .fw-medium').textContent(), title);
   assert.deepEqual(errors, []);
 });

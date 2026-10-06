@@ -144,16 +144,20 @@ and data modules. Do not add audit history or persistence.
   Scope, real coverage counts, completion time, and unavailable checks remain visible
   even when no issues were found. Starting another round clears the prior details.
   Issue/page filters operate on API data. Copy buttons copy actual evidence or
-  numbered advice; they do not invent replacement markup. CSV contains only filtered
+  numbered advice; they do not invent replacement markup. Filtered JSON contains only selected
   issues and their evidence/advice, created in a Blob on an explicit button click.
   Individual and grouped issue views use that same issue list. Groups use rule
   identity, count individual findings separately from unique affected URLs, and
   show mixed severities without hiding lower-priority members. Filters recompute
   group membership/counts before display/export. Group details lead to individual
   evidence and every related URL; unread/non-HTML resources have no fake page view.
-  CSV quotes all fields and prefixes risky spreadsheet cells with an apostrophe;
-  the in-memory report stays unchanged. Spreadsheet programs differ, especially
-  after re-saving CSV; see [OWASP's CSV injection guidance](https://owasp.org/www-community/attacks/CSV_Injection).
+  JSON preserves original nested evidence and source values without spreadsheet escaping.
+  A browser-only ExcelJS projection exports paired XLSX workbooks for either scope.
+  Its cells are literal values; dangerous formula prefixes receive an apostrophe,
+  XML control characters are escaped and long cells are split into reconstructable
+  JSON chunks. No automatic downloads, uploads, backend export endpoints or files exist.
+  Old asynchronous XLSX completion is ignored after replacement, refresh or pagehide.
+  See [Google Sheets export](GOOGLE-SHEETS.md) for table scope and import steps.
   A monotonically increasing request round guards success, failure and finalization.
   An obsolete response cannot replace the current report or stop its loading state,
   including consecutive requests for the same URL.

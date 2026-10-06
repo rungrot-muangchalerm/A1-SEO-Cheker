@@ -73,7 +73,7 @@ test('group completeness follows member proof; affected unread resources do not 
   assert.equal(empty.summary.warning, 0);
 });
 
-test('grouped UI filters members before counting; details and CSV retain individual evidence rather than a misleading grouped row', async (t) => {
+test('grouped UI filters members before counting; details and JSON retain individual evidence rather than a misleading grouped row', async (t) => {
   const result = await fixture(t);
   const { page, errors } = await frontend(t);
   await page.route('**/api/audits', (route) => route.fulfill({ json: result }));
@@ -108,10 +108,12 @@ test('grouped UI filters members before counting; details and CSV retain individ
   const stream = await (await downloaded).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
-  const csv = Buffer.concat(chunks).toString('utf8');
-  assert.equal((csv.match(/^"jsonld-syntax",/gm) || []).length, 2);
-  assert.ok(csv.includes('{broken}') && csv.includes('{another broken}'));
-  assert.ok(!csv.includes('issue-group:') && !csv.includes('"review"'));
+  const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  assert.equal(exported.issues.filter(issue => issue.ruleId === 'jsonld-syntax').length, 2);
+  assert.ok(exported.issues.every(issue => issue.severity === 'warning'));
+  const evidence = JSON.stringify(exported.issues.map(issue => issue.evidence));
+  assert.ok(evidence.includes('{broken}') && evidence.includes('{another broken}'));
+  assert.deepEqual(exported.issueGroups[0].issueIds, exported.issues.map(issue => issue.id));
   await page.locator('#severity-filter').selectOption('review');
   assert.equal(await syntax.locator('[data-group-count]').textContent(), '1');
   assert.ok((await page.locator('#issue-result-status').textContent()).includes('1 URL'));

@@ -162,6 +162,20 @@ PageSpeed ขอ Performance, Accessibility, Best Practices และ SEO อย
 
 `npm audit --omit=dev` รอบนี้พบ critical ใน dependency เดิม proxy-addr 2.0.7 (GHSA-jqcg-44mw-7w3h, patched 2.0.8) จึงไม่อ้างว่าปลอดช่องโหว่ โค้ด checker ไม่เปิด trust proxy และผูก server เฉพาะ loopback; ยังไม่ได้เปลี่ยน dependencies ในงานแก้ขอบเขต crawl นี้
 
+## ส่งออก JSON และ Google Sheets
+
+- [x] feat: เปลี่ยน CSV เป็น JSON และเพิ่ม XLSX สำหรับ Google Sheets
+
+ตรวจสอบแล้ว: `npm test` ผ่าน 268 ข้อ และชุดส่งออก/API workflow เฉพาะหลังเพิ่ม SRI ผ่าน 15 ข้อ
+
+JSON ของปัญหาที่กรองเก็บโครงสร้างและหลักฐานต้นฉบับแทน CSV; JSON ทั้งรอบยังเก็บ HTML/DOM ฉบับเต็ม มีปุ่ม XLSX คู่กันสำหรับทั้งสองขอบเขต สร้างใน browser เฉพาะเมื่อกดดาวน์โหลด ไม่มี API ส่งออก ไฟล์รายงานที่ backend หรือการอัปโหลด Google อัตโนมัติ
+
+ทดสอบสร้างและอ่าน workbook กลับ รวมตัวกรอง URL หลักฐาน คะแนนจริงจาก provider fixture (รวม 0) ข้อความที่เหมือนสูตร XML controls และข้อความ Unicode ยาว ตรวจลิมิตแถว/เซลล์ library โหลดไม่ได้ writer ล้มเหลว รอยต่อรอบเก่า pagehide และการคืน Blob URL โดย JSON ต้นฉบับไม่ถูกแก้
+
+ทดลอง localhost:3000 กับ example.com ผ่าน API/CDN จริงแล้ว โหลด ExcelJS 4.4.0 พร้อม SRI ตรงกับไฟล์จริง JSON/XLSX อ่านกลับตรงกับรายงาน มือถือ 320 px และ desktop 1440 px ไม่ล้น F5 ล้างข้อมูล และไม่มี browser error ไม่เขียนไฟล์หรือ screenshot ของรายงานจริง ส่วน screenshot จาก fixture ถูกลบหลังตรวจ ขั้นตอนนำเข้า Google Sheets อยู่ใน docs/project/GOOGLE-SHEETS.md; ยังไม่ได้อัปโหลดในบัญชี Google จริง
+
+`npm audit` พบ 6 warnings: moderate 2 (ExcelJS/uuid, GHSA-w5hq-g745-h8pq) เพิ่มจาก dependency สำหรับ XLSX; high 3 (nodemon/chokidar/braces) และ critical 1 (proxy-addr) เป็นของเดิม ยังไม่ได้แก้ dependencies ในงานนี้ และไม่อ้างว่า SRI แก้ช่องโหว่ของ library
+
 ## งานเพิ่มหลังเวอร์ชันแรก
 
 - [ ] เชื่อม Search Console ของเจ้าของเว็บไซต์เพื่อดูสถานะ index ที่ Google รู้จัก

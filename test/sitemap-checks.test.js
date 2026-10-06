@@ -175,7 +175,7 @@ test('changing sitemap loc and noindex bytes changes the current report without 
   assert.equal(findings(first)[0].details.target, base + '/hidden');
 });
 
-test('browser shows parsed loc proof as text, with real HTTP and manual CSV; unfetched resources do not have dead page buttons', async (t) => {
+test('browser shows parsed loc proof as text, with real HTTP and manual JSON; unfetched resources do not have dead page buttons', async (t) => {
   clock(t);
   const target = base + '/missing?x=&lt;img src=x onerror=&quot;globalThis.__sitemapXss=true&quot;&gt;';
   stubTransport(t, [{ status: 404 }, { html: markup('Root', '/') }, xml(map([target])),
@@ -200,11 +200,10 @@ test('browser shows parsed loc proof as text, with real HTTP and manual CSV; unf
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
-  const csv = Buffer.concat(chunks).toString('utf8');
-  assert.ok(csv.includes('sitemap-url-target'));
-  assert.ok(csv.includes('parsed-xml-value'));
-  assert.ok(csv.includes(base + '/sitemap.xml'));
-  assert.ok(csv.includes('404'));
+  const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  const issue = exported.issues.find(entry => entry.ruleId === 'sitemap-url-target');
+  assert.equal(issue.details.httpStatus, 404);
+  assert.ok(issue.evidence.some(entry => entry.sourceFormat === 'parsed-xml-value' && entry.sourceUrl === base + '/sitemap.xml'));
   await browserPage.reload();
   assert.equal(await browserPage.locator('#website-url').inputValue(), '');
   assert.equal(await browserPage.locator('#detail-content').textContent(), '');
