@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+require('./helpers/small-crawl-budgets').configure();
 const timers = require('node:timers/promises');
 const html = require('../app/service/html.service');
 const sitemap = require('../app/service/sitemap.service');

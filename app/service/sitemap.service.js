@@ -3,6 +3,7 @@ const { SaxesParser } = require('saxes');
 const website = require('../data/website.data');
 
 const namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';
+const maxEntries = Math.max(1000, require('../config/crawl.config').discovery.maxUrls);
 
 function element(node, inherited = {}) {
   const name = Object.keys(node).find((key) => key !== ':@');
@@ -48,7 +49,7 @@ module.exports = {
         ![namespace, ''].includes(root.namespace)) throw new website.WebsiteError('SITEMAP_INVALID_ROOT');
     const tag = root.name === 'urlset' ? 'url' : 'sitemap';
     const nodes = root.children.map((node) => element(node, root.bindings)).filter((node) => node?.name === tag && node.namespace === root.namespace);
-    const entries = nodes.slice(0, 1000).map((node, index) => {
+    const entries = nodes.slice(0, maxEntries).map((node, index) => {
       const locations = node.children.map((child) => element(child, node.bindings)).filter((child) => child?.name === 'loc' && child.namespace === root.namespace);
       const loc = locations[0];
       const textOnly = loc && loc.children.every((child) => Object.hasOwn(child, '#text'));

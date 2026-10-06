@@ -1,7 +1,8 @@
 const website = require('../data/website.data');
 const sitemapService = require('./sitemap.service');
 
-const limits = Object.freeze({ maxUrls: 200, maxSitemaps: 5, maxSitemapCandidates: 200, maxSkipped: 200, timeoutMs: 10000 });
+const limits = require('../config/crawl.config').discovery;
+const urlIndexes = new WeakMap();
 
 function skip(collection, entry) {
   if (collection.skipped.length < limits.maxSkipped) collection.skipped.push(entry);
@@ -12,12 +13,19 @@ function add(collection, value, evidence) {
   let url;
   try { url = website.parseUrl(value); } catch { skip(collection, { value, reason: 'invalid-url', ...evidence }); return; }
   if (url.origin !== collection.origin) { skip(collection, { url: url.href, reason: 'outside-origin', ...evidence }); return; }
-  const existing = collection.urls.find((entry) => entry.url === url.href);
+  let index = urlIndexes.get(collection);
+  if (!index) {
+    index = new Map(collection.urls.map((entry) => [entry.url, entry]));
+    urlIndexes.set(collection, index);
+  }
+  const existing = index.get(url.href);
   if (existing) { if (existing.sources.length < 5) existing.sources.push(evidence); return; }
   if (collection.urls.length >= limits.maxUrls) {
     collection.limitReached = true; skip(collection, { url: url.href, reason: 'url-limit', ...evidence }); return;
   }
-  collection.urls.push({ url: url.href, sources: [evidence] });
+  const entry = { url: url.href, sources: [evidence] };
+  collection.urls.push(entry);
+  index.set(url.href, entry);
 }
 
 function extend(collection, page, includePage = true, includeCanonical = false) {

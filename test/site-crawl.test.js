@@ -25,7 +25,7 @@ test('bounded crawl actually fetches links discovered on later pages, preserves 
     'https://site.example/sitemap.xml', 'https://site.example/allowed', 'https://site.example/next?v=1', 'https://site.example/next?v=2']);
   assert.deepEqual(report.pages.map((entry) => entry.metadata.title), ['Root', 'Allowed', 'One', 'Missing']);
   assert.equal(report.scope.type, 'same-origin-crawl');
-  assert.equal(report.scope.maxPages, 20);
+  assert.equal(report.scope.maxPages, 5000);
   assert.equal(report.coverage.discovered, 5);
   assert.equal(report.coverage.fetched, 4);
   assert.equal(report.coverage.analyzed, 4);

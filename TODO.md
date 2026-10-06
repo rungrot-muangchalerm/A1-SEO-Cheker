@@ -152,6 +152,16 @@ PageSpeed ขอ Performance, Accessibility, Best Practices และ SEO อย
 
 ชุดรวมก่อนหน้าพบ renderer ค้างตอนยกเลิก และระยะห่าง socket คลาดเคลื่อน จึงแก้การปิด browser/CDP กับการจับเวลา request หลัง DNS พร้อม regression test โดยไม่ลดเกณฑ์เดิม ชุดรวมล่าสุดผ่านครบ คะแนน Google จริงยังไม่ได้ยืนยันเพราะผู้ใช้ยังไม่มี key; โค้ดและขั้นตอนตั้งค่าพร้อมแล้ว ส่วนงานหลังเวอร์ชันแรกยังไม่อยู่ในขอบเขตนี้
 
+## ปรับการตรวจทั้งเว็บไซต์
+
+- [x] fixbug: ไล่ตรวจเว็บไซต์เกิน 20 URL และปรับขอบเขตผ่าน env
+
+ตรวจสอบแล้ว: `npm test` ผ่าน 260 ข้อ รวม fixture 74 URL ที่ไม่หยุดตามเพดานเดิม 20 URL / 60 requests / 60 วินาที, 351 หน้าที่รวม sitemap-only และปัญหาหลัง target 200, sitemap 1,500 entries, live progress ที่ข้ามเกิน 200 URL และการตั้งลิมิตผ่าน env โดย browser เพิ่มขอบเขตเองไม่ได้ ชุดเดิมยังทดสอบเพดานเล็ก การยกเลิก SSRF และการล้างข้อมูลครบ
+
+ทดลอง villapoolvilla.com จริงพบ 114 URL ไล่หมดคิว อ่าน HTML 54 หน้า ใช้ 58 requests และ HTML 7,550,664 bytes ไม่ชนลิมิต ข้าม 60 URL เพราะ robots บล็อก 58, ปลายทางอ่านแล้ว 1 และไม่ใช่ HTML 1 ไม่ได้บันทึกรายงานไว้ ตรวจ API ของ localhost:3000 แล้วได้ maxPages 5000 / timeout 3600000 และหน้าเว็บที่ใช้ API/CDN จริงแสดงผล ดาวน์โหลดได้ มือถือ 320 px ไม่ล้น F5 ล้างข้อมูล และไม่มี browser error
+
+`npm audit --omit=dev` รอบนี้พบ critical ใน dependency เดิม proxy-addr 2.0.7 (GHSA-jqcg-44mw-7w3h, patched 2.0.8) จึงไม่อ้างว่าปลอดช่องโหว่ โค้ด checker ไม่เปิด trust proxy และผูก server เฉพาะ loopback; ยังไม่ได้เปลี่ยน dependencies ในงานแก้ขอบเขต crawl นี้
+
 ## งานเพิ่มหลังเวอร์ชันแรก
 
 - [ ] เชื่อม Search Console ของเจ้าของเว็บไซต์เพื่อดูสถานะ index ที่ Google รู้จัก

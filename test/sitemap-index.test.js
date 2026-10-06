@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const zlib = require('node:zlib');
+require('./helpers/small-crawl-budgets').configure();
 const website = require('../app/data/website.data');
 const html = require('../app/service/html.service');
 const maps = require('../app/service/sitemap.service');

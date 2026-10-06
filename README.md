@@ -43,7 +43,7 @@ checker ไม่เรียก MySQL/JWT ของ framework จึงไม�
 
 - HTML เริ่มต้น: HTTP, title/description, canonical, robots meta/header, รูปที่ไม่มี alt, robots.txt, JSON-LD และ OG สำหรับการแชร์
 - เลือกค้นหา URL หรือ crawl ใน origin เดียว: ลิงก์/sitemap ซ้อน ปัญหาซ้ำ ลิงก์เสีย canonical เป้าหมาย และ URL ใน sitemap พร้อมหลักฐาน
-- crawl จำกัด 20 URL ที่ลองตรวจ มีลิมิต request/เวลา/bytes และเคารพ robots ของ SEOChecker ไม่รับลิมิตจาก browser เพื่อเพิ่มขอบเขตเอง
+- crawl ไล่ URL ที่ค้นพบต่อจากทุกหน้าและ sitemap จนหมดคิว ค่าเริ่มต้นรองรับ 5,000 URL ที่ลองตรวจใน 1 ชั่วโมง และเคารพ robots ของ SEOChecker
 - JavaScript เป็นตัวเลือก ใช้ Chromium เปรียบเทียบก่อน/หลังสำหรับไม่เกิน 2 หน้า ไม่ได้จำลอง Googlebot และไม่ยืนยันสถานะ index
 - PageSpeed เป็นตัวเลือก ส่ง URL ไป Google ขอ Performance, Accessibility, Best Practices และ SEO เลือก mobile/desktop ได้ คะแนนเป็นของ URL เดียว ไม่เฉลี่ยทั้งเว็บไซต์
 - ไม่มี key จะไม่เรียก PageSpeed และแสดงว่ายังไม่ได้ตั้งค่า ดู [ตั้งค่า PageSpeed](docs/project/PAGESPEED.md) ซึ่งยังต้องยืนยันสิทธิ์/quota/คะแนนด้วย key จริง
@@ -53,6 +53,28 @@ checker ไม่เรียก MySQL/JWT ของ framework จึงไม�
 CSV ส่งออกปัญหาตามตัวกรอง JSON รวมรายงานทั้งรอบเป็นข้อความ พร้อมเวลา/schema และชื่อไฟล์แยกรอบ
 ทั้งสองอย่างสร้าง Blob เฉพาะตอนกดปุ่ม ไม่สร้างไฟล์อัตโนมัติหลังตรวจ
 JSON/หลักฐานอาจมีเนื้อหา HTML หรือ query จากเว็บที่ตรวจ ควรเก็บไฟล์ดาวน์โหลดในเครื่องอย่างเหมาะสม
+
+## ขอบเขตการไล่ตรวจ
+
+ไม่มีเพดานเดิม 20 URL / 60 วินาทีแล้ว เว็บที่ค้นพบ 74 URL จะถูกไล่ตรวจต่อจนหมดคิว
+URL ที่ถูก robots บล็อก อ่านไม่ได้ ไม่ใช่ HTML หรือ redirect ไปหน้าที่อ่านแล้วจะมีเหตุผลแยก ไม่ถูกนับเป็น HTML ที่ตรวจสำเร็จ
+คำขอทั้งหมดเว้นช่วงอย่างน้อย 500 ms และเคารพ crawl-delay ที่นานกว่านั้น ปุ่มยกเลิก/F5/ปิดแท็บยุติงานและล้างข้อมูลรอบนั้น
+
+ปรับเพดานป้องกัน URL วนและ RAM เต็มได้ใน `.env` แล้ว restart server ไม่ต้องมี VPS หรือบันทึกประวัติ:
+
+| ตัวแปร | ค่าเริ่มต้น | ช่วงที่รองรับ |
+|---|---:|---:|
+| `CRAWL_MAX_PAGES` | 5000 URL ที่ลองตรวจ | 1-10000 |
+| `CRAWL_TIMEOUT_MS` | 3600000 ms (1 ชั่วโมง) | 1000-86400000 |
+| `CRAWL_MAX_REQUESTS` | 40000 คำขอ รวม robots/sitemap/redirect | 1-100000 |
+| `CRAWL_MAX_HTML_MB` | 128 MiB ของ HTML ที่เก็บใน RAM | 2-256 |
+| `DISCOVERY_MAX_URLS` | 10000 URL ที่ค้นพบ | 1-10000 |
+| `DISCOVERY_MAX_SITEMAPS` | 100 ไฟล์ sitemap รวม index | 1-1000 |
+| `DISCOVERY_TIMEOUT_MS` | 300000 ms (5 นาที) | 1000-3600000 |
+
+ลิมิตกำหนดที่ backend เท่านั้น browser เปลี่ยนเองไม่ได้ เมื่อชนลิมิตจะยังรายงานหน้าที่ตรวจแล้วและ URL ที่เหลือพร้อมเหตุผล
+การไล่ครบ URL ที่ค้นพบไม่ยืนยันว่าค้นพบทุกหน้าของโดเมน เช่น หน้าที่ไม่มีลิงก์/sitemap หน้า login หรือ URL อีก origin
+ข้อจำกัด JavaScript 2 หน้าและ PageSpeed 1 URL ยังแยกจากการตรวจ HTML ทั้งเว็บ
 
 ## Browser Renderer
 

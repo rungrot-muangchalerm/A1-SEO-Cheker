@@ -206,7 +206,8 @@ Known redirect aliases reuse observed terminal responses without another request
 Targets blocked by robots, outside scope, failed before headers, or beyond crawl
 limits remain not checked. URL fragments are removed and queries remain distinct.
 `internal-link-coverage` discloses examined/retained targets and invalid/omitted
-references. Limits are 200 targets and 200 source evidence entries per target;
+references. Target limits follow the discovery URL budget (10,000 by default),
+with 200 source evidence entries per target;
 all related source page URLs are retained even when snippets are truncated.
 HTTP availability does not establish content quality, indexing or anchor validity.
 
@@ -247,7 +248,7 @@ the checker's port/credentials/length policy. Such exclusions are not SEO errors
 Missing/unread sitemap files do not become mandatory-file issues.
 
 `sitemap-url-coverage` describes only parsed urlsets/observed targets, with a
-200-target and 50-total-evidence-per-target cap, omitted/invalid/restricted entry
+configured discovery target budget and 50-total-evidence-per-target cap, omitted/invalid/restricted entry
 counts and truncated/unread file coverage. All related sitemap file URLs remain
 in `details.sitemapFiles` even when repeated loc proof is capped. `summary.affected`
 counts distinct affected URLs, including actually observed non-HTML resources and
@@ -292,6 +293,12 @@ time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` inc
 crawl and discovery limits. Even an exhausted discovered queue does not establish
 complete domain coverage or Google's index state. Robots responses are shared only
 inside that request, then released; blocked/unknown rules prevent automated fetching.
+Default crawl budgets are 5,000 page attempts, 40,000 request attempts, one hour
+and 128 MiB of retained HTML. Discovery allows 10,000 URLs, 100 sitemap files
+and five minutes. All are validated server environment settings; request bodies
+cannot override them. A failed page attempt does not end the crawl unless a
+round-wide budget is exhausted. Internal-link and sitemap target checks use the
+configured discovery URL budget, so targets beyond 200 are not silently omitted.
 
 ## Live Response
 

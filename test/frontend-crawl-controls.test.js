@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const os = require('node:os');
 const path = require('node:path');
 const timers = require('node:timers/promises');
+require('./helpers/small-crawl-budgets').configure();
 const audit = require('../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
 const { frontend, scan, report } = require('./helpers/frontend');

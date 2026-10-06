@@ -27,7 +27,8 @@ and data modules. Do not add audit history or persistence.
   parsed values displayed as text, not guessed source lines. Missing/blocked/
   unread maps or targets stay unavailable; noindex/redirect intent needs review.
   Syntactically valid URLs excluded by fetch policy are not called malformed SEO
-  URLs. Caps are 200 targets and 50 evidence entries per target, with omitted work
+  URLs. Target caps follow the discovery URL budget (10,000 by default), with
+  50 evidence entries per target and omitted work
   disclosed. Affected URLs and fetched HTML page counts remain separate.
 
 - Canonical comparison is enabled by bounded crawling. Canonical-only internal
@@ -55,13 +56,16 @@ and data modules. Do not add audit history or persistence.
   plus the initial sitemap discovery. The separate crawl checkbox enables this.
   It checks robots.txt for SEOChecker before the initial URL and each redirect,
   refusing unknown/disallowed rules; Googlebot findings remain separate.
-  Limits are 20 page attempts including failures/root, one request at a time,
+  Default limits are 5,000 page attempts including failures/root, one request at a time,
   at least 500 ms between all sockets (robots, sitemap and redirects included),
-  60 total request attempts, 60 seconds, and 8 MiB of retained HTML. A greater
+  40,000 total request attempts, one hour, and 128 MiB of retained HTML. A greater
   SEOChecker crawl-delay is honored, never clamped down. The current round alone
   shares robots responses; no cache survives the request. Child failures/skips
   retain reasons without inventing HTTP status or page content. Scope, real counts,
   skipped URLs and stop reason describe bounded coverage, not the entire domain.
+  The growing URL queue is drained, including later-page links and sitemap-only
+  candidates; this is not a 20-page sample. Validated server-only environment
+  settings in `app/config/crawl.config.js` configure these budgets (see root README).
   A Thai limit notice shows the actual bound and successfully read count. Limit
   skips remain separate from blocked, failed or duplicate destinations. Cancellation
   during DNS, robots, pacing, sitemap or child requests releases sockets/listeners
@@ -73,7 +77,7 @@ and data modules. Do not add audit history or persistence.
   reconnect or resume routes. JSON clients keep ordinary HTTP responses. Failures
   before streaming preserve their HTTP status; after headers, an error frame ends
   the stream. Backpressure pauses writes and disconnect aborts waiting/work.
-  Browser decoding supports split UTF-8/JSON chunks, a 64 Mi-character frame cap,
+  Browser decoding supports split UTF-8/JSON chunks, a 512 Mi-character frame cap,
   and rejects missing/duplicate terminal reports instead of displaying partial data.
 - Optional `discover: true` also finds same-origin URL candidates from the initial
   page's links, robots.txt sitemap declarations and `/sitemap.xml`. The checkbox
@@ -81,8 +85,8 @@ and data modules. Do not add audit history or persistence.
   `discovery` records URLs and their sources, sitemap HTTP/XML evidence and skipped
   candidates. Found URLs are not added to fetched/analyzed page counts. Discovery
   alone does not crawl pages. Nested sitemap indexes retain parent file evidence.
-  Limits: 200 candidates, 5 sitemap files including index children, 200 detailed
-  skips, 1,000 XML entries per file, depth 20, and a 10-second discovery deadline;
+  Default limits: 10,000 candidates, 100 sitemap files including index children,
+  10,000 detailed skips, 10,000 XML entries per file, depth 20, and a five-minute discovery deadline;
   sitemap transport is at most 5 seconds and 512 KiB per file.
   Scope uses the final requested page's exact origin (scheme, host and port), not
   a hostname substring. Follow-up robots/sitemap requests check that origin before
@@ -91,7 +95,7 @@ and data modules. Do not add audit history or persistence.
   The explicitly requested initial URL can redirect to establish the final origin.
   URL identity uses the native URL parser, removes fragments, and normalizes hosts,
   default ports and dot segments. Query values/order, path case and trailing slashes
-  stay intact. Sitemap references are deduplicated before entering a 200-item queue;
+  stay intact. Sitemap references are deduplicated before entering a 1,000-item queue;
   ancestor cycles and redirect aliases do not cause repeated traversal.
   Saxes strictly validates XML/namespaces/entities before Fast XML Parser extracts
   data. Real DTDs and non-UTF-8 declarations are rejected, not harmless comments.

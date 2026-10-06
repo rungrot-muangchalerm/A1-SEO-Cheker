@@ -34,7 +34,7 @@ test('initial explicit URL may redirect; follow-up scope is the final origin, no
   assert.deepEqual(result.data.discovery.urls.map((entry) => entry.url), ['https://www.site.example/start', 'https://www.site.example/inside']);
   assert.ok(result.data.discovery.skipped.some((entry) => entry.reason === 'outside-origin' && entry.kind === 'sitemap'));
   assert.equal(result.data.discovery.sitemaps[0].reason, 'OUTSIDE_SCOPE');
-  assert.equal(result.data.discovery.limits.maxUrls, 200);
+  assert.equal(result.data.discovery.limits.maxUrls, 10000);
   assert.ok(transport.calls.every((entry, i) => i === 0 || new URL(entry.url).origin === 'https://www.site.example'));
   assert.ok(!transport.resolvers.includes('attacker.example'));
 });

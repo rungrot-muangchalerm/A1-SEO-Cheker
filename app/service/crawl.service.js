@@ -5,8 +5,7 @@ const html = require('./html.service');
 const seo = require('./seo.service');
 const discoveryService = require('./discovery.service');
 
-const limits = Object.freeze({ maxPages: 20, maxConcurrency: 1, minIntervalMs: 500,
-  timeoutMs: 60000, maxRequests: 60, maxHtmlBytes: 8 * 1024 * 1024 });
+const limits = require('../config/crawl.config').crawl;
 const stopCodes = new Set(['CRAWL_DEADLINE', 'CRAWL_REQUEST_LIMIT', 'CRAWL_BYTE_LIMIT']);
 
 module.exports = {
@@ -88,7 +87,7 @@ module.exports = {
           limitReached: true, linkExtractionComplete: false, limits: discoveryService.limits };
         discoveryService.extend(discovery, root, true, true);
       }
-      // The array grows as fetched documents contribute links; URL identity and all budgets stay bounded.
+      // Drain the growing queue, including links found beyond the starting page and sitemap.
       for (const entry of discovery.urls) {
         if (options.signal?.aborted) throw new website.WebsiteError('CANCELLED');
         if (seen.has(entry.url)) continue;

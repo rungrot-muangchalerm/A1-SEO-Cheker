@@ -2,7 +2,7 @@ const { createHash } = require('node:crypto');
 const website = require('../data/website.data');
 const responses = require('../model/response.model');
 
-const limits = Object.freeze({ maxTargets: 200, maxEvidencePerTarget: 200 });
+const limits = Object.freeze({ maxTargets: require('../config/crawl.config').discovery.maxUrls, maxEvidencePerTarget: 200 });
 const reference = 'https://developers.google.com/crawling/docs/troubleshooting/http-status-codes';
 
 function check(pages, target, sources, outcome, reason, result, evidenceOmitted = 0) {

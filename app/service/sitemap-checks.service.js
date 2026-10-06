@@ -3,7 +3,7 @@ const responses = require('../model/response.model');
 const html = require('./html.service');
 const robots = require('./robots-directives.service');
 
-const limits = Object.freeze({ maxTargets: 200, maxEvidencePerTarget: 50 });
+const limits = Object.freeze({ maxTargets: require('../config/crawl.config').discovery.maxUrls, maxEvidencePerTarget: 50 });
 const reference = 'https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap';
 
 function check(url, ruleId, title, outcome, complete, reason, found, evidence, details) {

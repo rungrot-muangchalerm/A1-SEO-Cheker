@@ -49,7 +49,7 @@ test('crawl follows canonical-only candidates, preserving queries, redirect evid
   assert.deepEqual(transport.calls.map((entry) => entry.url), [base + '/robots.txt', base + '/', base + '/sitemap.xml', base + '/alias?q=1', base + '/main?q=1']);
   assert.equal(report.pages.length, 2);
   assert.equal(report.crawl.stats.requests, 5);
-  assert.equal(report.crawl.limits.maxPages, 20);
+  assert.equal(report.crawl.limits.maxPages, 5000);
   assert.ok(report.discovery.urls.find((entry) => entry.url === base + '/alias?q=1').sources.some((entry) => entry.kind === 'html-canonical'));
   const source = checks(report)[0];
   assert.equal(source.details.httpStatus, 200);
