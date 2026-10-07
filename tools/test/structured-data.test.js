@@ -95,8 +95,8 @@ test('actual changed JSON bytes create different current findings and issue coun
     { html: markup(script('{"name":"x",}')) }, { status: 404 }]);
   const first = (await audit.create({ url: base })).data;
   const second = (await audit.create({ url: base })).data;
-  assert.equal(first.issues.length, 0);
-  assert.equal(second.issues.length, 1);
+  assert.deepEqual(first.issues.map(entry => entry.ruleId), ['open-graph']);
+  assert.equal(second.issues.length, 2);
   assert.equal(second.summary.warning, 1);
   assert.equal(second.issues[0].ruleId, 'jsonld-syntax');
   assert.equal(rules(first)[0].outcome, 'pass');

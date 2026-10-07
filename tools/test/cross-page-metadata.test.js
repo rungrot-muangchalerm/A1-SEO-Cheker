@@ -8,7 +8,9 @@ const { stubTransport } = require('./helpers/transport');
 const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 const markup = (title, description, path, links = '') => '<title>' + title + '</title><meta name="description" content="' + description +
-  '"><link rel="canonical" href="' + path + '">' + links;
+  '"><link rel="canonical" href="' + path + '"><meta property="og:title" content="' + title +
+  '"><meta property="og:type" content="website"><meta property="og:image" content="https://site.example/image.jpg">' +
+  '<meta property="og:url" content="' + new URL(path, 'https://site.example').href + '"><meta property="og:description" content="' + description + '">' + links;
 function page(path, title, description, status = 200) {
   const data = { finalUrl: 'https://site.example' + path, html: markup(title, description, path), status };
   data.metadata = html.parse(data);
@@ -69,6 +71,58 @@ test('long metadata comparison is exact while finding previews remain bounded an
   assert.ok(checks.every((entry) => entry.evidence.every((evidence) => evidence.sourceTruncated)));
 });
 
+test('copied titles on home and password routes expose different H1, reuse extent and observed noindex without inventing penalties', () => {
+  const root = page('/', 'Brand homepage', 'Shared description');
+  const password = page('/reset-password', 'Brand homepage', 'Shared description');
+  root.html += '<h1>Browse villas</h1>';
+  password.html += '<h1>Change your password</h1><meta name="robots" content="noindex">';
+  for (const item of [root, password]) item.metadata = html.parse(item);
+  const title = cross.analyze([root, password])[0];
+  assert.equal(title.outcome, 'review');
+  assert.equal(title.ruleVersion, '1.1');
+  assert.equal(title.details.reuse.allEligiblePages, true);
+  assert.equal(title.details.reuse.distinctObservedH1, 2);
+  assert.equal(title.details.reuse.noindexPages, 1);
+  assert.equal(title.details.reuse.sharedDeclaredCanonical, null);
+  assert.equal(title.details.reuse.contentEquivalenceValidated, false);
+  assert.equal(title.details.reuse.googleCanonicalValidated, false);
+  const context = title.details.reuse.pages.find(entry => entry.url.endsWith('reset-password'));
+  assert.deepEqual(context.h1, ['Change your password']);
+  assert.equal(context.noindex, true);
+  assert.ok(context.evidence.some(entry => entry.source.includes('noindex') && entry.location));
+});
+
+test('query-space variants sharing a canonical keep exact URLs and suggest reviewing duplicate routing before retitling', () => {
+  const a = page('/villa?slug=Vela', 'Vela', 'Vela details');
+  const b = page('/villa?slug=Vela%20', 'Vela', 'Vela details');
+  b.html = markup('Vela', 'Vela details', a.finalUrl);
+  b.metadata = html.parse(b);
+  const issue = cross.analyze([a, b])[0];
+  assert.equal(issue.details.reuse.sharedDeclaredCanonical, a.finalUrl);
+  assert.deepEqual(issue.urls, [a.finalUrl, b.finalUrl]);
+  assert.ok(issue.steps.some(step => step.includes('canonical')));
+  b.metadata.truncated.push('canonical');
+  const incomplete = cross.analyze([a, b])[0];
+  assert.equal(incomplete.details.reuse.sharedDeclaredCanonical, null);
+  assert.equal(incomplete.details.reuse.pages[1].canonicalComplete, false);
+});
+
+test('reuse context is bounded, heading identity is not based on previews, and incomplete directives do not imply noindex absence', () => {
+  const pages = Array.from({ length: 55 }, (_value, index) => {
+    const item = page('/' + index, 'Shared title', 'Shared description');
+    item.html += '<h1>' + 'x'.repeat(600) + index + '</h1>';
+    item.metadata = html.parse(item);
+    return item;
+  });
+  pages[0].metadata.truncated.push('meta', 'headings');
+  const title = cross.analyze(pages)[0];
+  assert.equal(title.details.reuse.pages.length, 50);
+  assert.equal(title.details.reuse.pagesOmitted, 5);
+  assert.equal(title.details.reuse.distinctObservedH1, 54);
+  assert.equal(title.details.reuse.pages[0].noindexComplete, false);
+  assert.equal(title.details.reuse.pages[0].h1PreviewTruncated, true);
+});
+
 test('actual crawl report includes cross-page checks in issue summaries and later changed HTML removes the duplicates', async (t) => {
   clock(t);
   const changed = responses();
@@ -80,7 +134,7 @@ test('actual crawl report includes cross-page checks in issue summaries and late
   assert.equal(first.summary.affected, 3);
   assert.equal(first.issues.length, 2);
   assert.equal(first.siteChecks.length, 8);
-  assert.equal(first.summary.checks.pass + first.summary.checks.review, 39);
+  assert.equal(first.summary.checks.pass + first.summary.checks.review, 43);
   assert.ok(first.issues.every((entry) => entry.ruleId.startsWith('duplicate-')));
   const second = (await audit.create({ url: 'https://site.example/', crawl: true })).data;
   assert.equal(second.issues.length, 0);

@@ -27,7 +27,7 @@ test('every real check has stable identity, context, action and authoritative re
       for (const reference of entry.references) {
         const url = new URL(reference.url);
         assert.equal(url.protocol, 'https:');
-        assert.ok(['developers.google.com', 'www.w3.org'].includes(url.hostname));
+        assert.ok(['developers.google.com', 'www.w3.org', 'ogp.me'].includes(url.hostname));
         assert.ok(reference.title);
       }
     }

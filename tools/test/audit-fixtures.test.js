@@ -62,13 +62,13 @@ test('real HTTP fixture content and headers produce passing and problematic API 
   assert.equal(passing.pages[0].metadata.links[0].url, 'https://fixture.example/registration?session=2');
   assert.equal(passing.pages[0].analysisStatus, 'complete');
   assert.deepEqual(passing.issues, []);
-  assert.equal(passing.summary.checks.pass, 8);
+  assert.equal(passing.summary.checks.pass, 9);
   fixture.html = bad;
   fixture.status = 404;
   fixture.headers = { 'X-Robots-Tag': ['otherbot: index', 'googlebot: nofollow'] };
   const failing = await audit('https://fixture.example/bad');
   assert.equal(failing.pages[0].status, 404);
-  assert.deepEqual(failing.summary.checks, { pass: 0, fail: 5, review: 3, notChecked: 0 });
+  assert.deepEqual(failing.summary.checks, { pass: 0, fail: 5, review: 3, notChecked: 1 });
   assert.equal(failing.summary.critical, 1);
   assert.equal(failing.summary.warning, 4);
   assert.equal(failing.summary.review, 3);

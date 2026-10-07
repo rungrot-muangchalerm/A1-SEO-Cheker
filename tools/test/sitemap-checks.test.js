@@ -62,7 +62,7 @@ test('actual crawl checks URL entries from nested indexes with real HTTP, redire
   assert.ok(hidden.evidence.some((entry) => entry.name === 'googlebot' && entry.location.startLine && entry.sourceUrl.endsWith('/hidden')));
   assert.equal(report.pages.length, 3);
   assert.equal(report.summary.warning, 1);
-  assert.equal(report.summary.affected, 3);
+  assert.equal(report.summary.affected, 5);
   assert.ok(!report.pages.some((entry) => entry.finalUrl === missing.details.target));
   assert.equal(report.siteChecks.find((entry) => entry.ruleId === 'sitemap-url-coverage').outcome, 'pass');
 });
@@ -171,7 +171,8 @@ test('changing sitemap loc and noindex bytes changes the current report without 
   assert.equal(findings(first).length, 1);
   assert.equal(findings(first)[0].details.targetNoindex, true);
   assert.equal(findings(second).length, 0);
-  assert.equal(second.issues.length, 0);
+  assert.ok(second.issues.every(entry => entry.ruleId === 'open-graph'));
+  assert.equal(second.issues.length, 2);
   assert.equal(findings(first)[0].details.target, base + '/hidden');
 });
 
@@ -193,7 +194,7 @@ test('browser shows parsed loc proof as text, with real HTTP and manual JSON; un
   assert.equal(await browserPage.locator('#detail-content img').count(), 0);
   assert.equal(await browserPage.evaluate(() => globalThis.__sitemapXss), undefined);
   assert.equal(await browserPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  assert.ok((await browserPage.locator('#affected-summary').textContent()).includes('1 URL'));
+  assert.ok((await browserPage.locator('#affected-summary').textContent()).includes('2 URL'));
   await browserPage.locator('#issue-drawer .btn-close').click();
   await browserPage.locator('#issue-drawer').waitFor({ state: 'hidden' });
   const [download] = await Promise.all([browserPage.waitForEvent('download'), browserPage.locator('#export-button').click()]);

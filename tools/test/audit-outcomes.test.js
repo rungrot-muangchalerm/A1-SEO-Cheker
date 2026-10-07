@@ -11,14 +11,16 @@ function report(source, robots = { status: 'absent', httpStatus: 404, googlebotA
   return model.createReport(page, new Date().toISOString());
 }
 
-const valid = '<title>Useful page</title><meta name="description" content="Useful description"><link rel="canonical" href="https://site.example/"><img src="x" alt="">';
+const valid = '<title>Useful page</title><meta name="description" content="Useful description"><link rel="canonical" href="https://site.example/">' +
+  '<meta property="og:title" content="Useful page"><meta property="og:type" content="website"><meta property="og:image" content="https://site.example/image.jpg">' +
+  '<meta property="og:url" content="https://site.example/"><meta property="og:description" content="Useful share description"><img src="x" alt="">';
 
 test('all initial-page rules can pass without claiming rendered, Lighthouse or site-wide coverage', () => {
   const result = report(valid);
   assert.deepEqual(result.issues, []);
   assert.equal(result.pages[0].analysisStatus, 'complete');
   assert.equal(result.status, 'partial');
-  assert.deepEqual(result.summary.checks, { pass: 8, fail: 0, review: 0, notChecked: 0 });
+  assert.deepEqual(result.summary.checks, { pass: 9, fail: 0, review: 0, notChecked: 0 });
   assert.deepEqual(result.notChecked.map((entry) => entry.id), ['javascript-render', 'lighthouse', 'site-crawl', 'canonical-target']);
   assert.equal(result.scope.maxPages, 1);
   assert.equal(result.lighthouse.status, 'not-checked');
@@ -27,7 +29,7 @@ test('all initial-page rules can pass without claiming rendered, Lighthouse or s
 test('failed, review and unavailable outcomes are separate and counters match actual issues', () => {
   const result = report('', { status: 'not-checked', reason: 'TIMEOUT' }, 404);
   assert.equal(result.pages[0].analysisStatus, 'partial');
-  assert.deepEqual(result.summary.checks, { pass: 3, fail: 3, review: 1, notChecked: 1 });
+  assert.deepEqual(result.summary.checks, { pass: 3, fail: 3, review: 1, notChecked: 2 });
   assert.equal(result.issues.length, 4);
   assert.equal(result.summary.critical, 1);
   assert.equal(result.summary.warning, 2);

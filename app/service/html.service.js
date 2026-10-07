@@ -44,15 +44,18 @@ module.exports = {
       const bytes = Buffer.byteLength(content);
       const contentComplete = bytes <= structuredData.limits.maxScriptBytes && jsonBytes + bytes <= structuredData.limits.maxTotalBytes;
       if (contentComplete) jsonBytes += bytes;
-      return { index: index + 1, bytes, content: contentComplete ? content : null, contentComplete,
+      return {
+        index: index + 1, bytes, content: contentComplete ? content : null, contentComplete,
         ...(!contentComplete ? { reason: bytes > structuredData.limits.maxScriptBytes ? 'jsonld-script-size' : 'jsonld-total-size' } : {}),
-        ...source(element, 'script[type="application/ld+json"]') };
+        ...source(element, 'script[type="application/ld+json"]')
+      };
     });
     const limited = (nodes, callback) => nodes.slice(0, maxElements).toArray().map(callback);
     const meta = limited(metaNodes, (element) => ({
       name: ($(element).attr('name') || '').trim().toLowerCase(),
       property: ($(element).attr('property') || '').trim().toLowerCase(),
       content: $(element).attr('content') ?? '',
+      ...((($(element).attr('property') || '').trim().toLowerCase().startsWith('og:')) ? { inHead: $(element).parents('head').length > 0 } : {}),
       ...source(element, 'meta')
     }));
     const titles = limited(titleNodes, (element) => ({ value: text($(element).text()), ...source(element, 'head > title') }));
@@ -87,13 +90,19 @@ module.exports = {
       title: titles[0]?.value || '', titles,
       description: descriptions[0]?.content.trim() || '', descriptions,
       lang: $('html').attr('lang') || '', baseUrl, meta, canonical: canonical.slice(0, maxElements), linkHeaderError, counts,
-      jsonLd: { count: jsonLdNodes.length, scripts: jsonScripts, bytes: jsonBytes,
-        complete: jsonLdNodes.length === jsonScripts.length && jsonScripts.every((entry) => entry.contentComplete) },
-      openGraph: { scope: 'initial-html-sharing-metadata', observedCount: openGraphEntries.length,
+      jsonLd: {
+        count: jsonLdNodes.length, scripts: jsonScripts, bytes: jsonBytes,
+        complete: jsonLdNodes.length === jsonScripts.length && jsonScripts.every((entry) => entry.contentComplete)
+      },
+      openGraph: {
+        scope: 'initial-html-sharing-metadata', observedCount: openGraphEntries.length,
         complete: metaNodes.length <= maxElements && openGraphEntries.length <= 100, limit: 100,
-        entries: openGraphEntries.slice(0, 100).map((entry) => ({ ...entry, sourceUrl: page.finalUrl, sourceFormat: 'serialized-html',
+        entries: openGraphEntries.slice(0, 100).map((entry) => ({
+          ...entry, sourceUrl: page.finalUrl, sourceFormat: 'serialized-html',
           ...(['og:url', 'og:image', 'og:image:url', 'og:image:secure_url', 'og:video', 'og:video:url', 'og:video:secure_url',
-            'og:audio', 'og:audio:url', 'og:audio:secure_url'].includes(entry.property) ? { resolvedUrl: resolveUrl(entry.content, baseUrl) } : {}) })) },
+            'og:audio', 'og:audio:url', 'og:audio:secure_url'].includes(entry.property) ? { resolvedUrl: resolveUrl(entry.content, baseUrl) } : {})
+        }))
+      },
       truncated: Object.keys(counts).filter((key) => counts[key] > maxElements),
       headings: limited(headingNodes, (element) => ({
         level: Number(element.tagName.slice(1)), value: text($(element).text()), ...source(element, element.tagName)

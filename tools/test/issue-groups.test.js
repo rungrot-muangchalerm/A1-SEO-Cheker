@@ -31,8 +31,9 @@ async function fixture(t) {
 test('real page rules group by identity with mixed severities, unique URLs and counts equal to the actual issue summary', async (t) => {
   const result = await fixture(t);
   assert.equal(result.pages.length, 2);
-  assert.equal(result.issues.length, 5);
-  assert.equal(result.issueGroups.length, 2);
+  assert.equal(result.issues.length, 7);
+  assert.equal(result.issueGroups.length, 3);
+  assert.equal(result.issueGroups.find(group => group.ruleId === 'open-graph').count, 2);
   const syntax = result.issueGroups.find((group) => group.ruleId === 'jsonld-syntax');
   assert.equal(syntax.count, 3);
   assert.deepEqual(syntax.severityCounts, { critical: 0, warning: 2, review: 1 });
@@ -81,9 +82,9 @@ test('grouped UI filters members before counting; details and JSON retain indivi
   assert.equal(await page.locator('#issue-rows tr').count(), result.issues.length);
   await page.locator('label[for="issue-view-groups"]').click();
   assert.equal(await page.locator('[data-issue-group]').count(), result.issueGroups.length);
-  assert.ok((await page.locator('#issue-result-status').textContent()).includes('5'));
+  assert.ok((await page.locator('#issue-result-status').textContent()).includes('7'));
   assert.equal(await page.locator('#summary-warning').textContent(), '4');
-  assert.equal(await page.locator('#summary-review').textContent(), '1');
+  assert.equal(await page.locator('#summary-review').textContent(), '3');
   const syntax = page.locator('[data-issue-group="jsonld-syntax"]');
   assert.equal(await syntax.locator('[data-group-count]').textContent(), '3');
   assert.equal(await syntax.locator('[data-group-severity]').count(), 2);
@@ -121,7 +122,7 @@ test('grouped UI filters members before counting; details and JSON retain indivi
   assert.equal(await page.locator('#issue-rows tr').count(), 0);
   assert.equal(await page.locator('#export-button').isDisabled(), true);
   await page.locator('#reset-filters').click();
-  assert.equal(await page.locator('[data-issue-group]').count(), 2);
+  assert.equal(await page.locator('[data-issue-group]').count(), 3);
   assert.deepEqual(errors, []);
 });
 

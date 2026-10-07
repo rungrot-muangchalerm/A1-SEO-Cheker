@@ -243,6 +243,18 @@ Lighthouse ในเครื่องขอหมวด `agentic-browsing` จ�
 
 ตรวจสอบแล้ว: `npm test` ผ่าน 299 ข้อ รวมกรณีใหม่ 10 ข้อสำหรับคำแนะนำ สถานะ หลักฐาน ขอบเขต JSON/XLSX และ refresh ตรวจ screenshot fixture ที่ desktop 1280 px/mobile 320 px แล้วไม่มี overflow และลบภาพหลังตรวจ Restart PM2 แล้วทดสอบ API ของ localhost:9999 กับ fixture localhost จริงได้คำแนะนำทั้งสองไฟล์และหลักฐาน 404 โดยไม่รวมใน issue counters ไม่ได้ crawl เว็บไซต์สาธารณะจริงในรอบนี้
 
+## ตรวจ Metadata ตามบริบท
+
+- [x] feat: ตรวจ Open Graph และเพิ่มบริบทข้อความซ้ำระหว่างหน้า
+
+เพิ่มกฎ `open-graph` หมวด sharing ในทุกหน้าที่วิเคราะห์ HTML แจ้ง tag หลักที่ขาด ค่าว่าง ตำแหน่งนอก head, URL ที่ไม่ใช่ HTTP/HTTPS แบบเต็มหรือมี credentials, หลายค่าใน tag หลัก และ og:url ที่ต่างจาก canonical ที่อ่านได้แน่นอน ทั้งหมดเป็นคำแนะนำให้พิจารณา ไม่สรุปว่า index/อันดับเสีย description เป็นข้อมูลเสริม รูปหลายรายการใช้ได้ และไม่บังคับข้อความเท่ากับ title/meta description ไม่ยิงคำขอเพิ่มหรือโหลดรูปเพื่อยืนยัน preview
+
+เพิ่ม `details.reuse` ในกลุ่ม title/description ซ้ำ บอกสัดส่วนใช้ซ้ำในหน้าที่เข้าเงื่อนไข H1 ที่ต่างกัน canonical และ noindex ของแต่ละหน้า พร้อมหลักฐานและวิธีตรวจ route/layout เช่นหน้าเปลี่ยนรหัสผ่าน แยกกรณีประกาศ canonical ร่วมกันก่อนแนะนำแก้ข้อความ ไม่เปลี่ยน query หรือเหมาว่าเนื้อหาทั้งหน้าซ้ำกัน ข้อมูลใหม่อยู่ใน UI, JSON ทั้งสองขอบเขต และ Details ของ Issues ใน XLSX; บริบทสูงสุด 50 หน้าและแจ้งส่วนที่ไม่ครบ
+
+ตรวจสอบแล้ว: `npm test` ผ่าน 309 ข้อ ไม่มีข้อที่ล้มเหลวหรือถูกข้าม รวมกรณี OG ขาด/ว่าง/URL ผิด/หลายค่า/นอก head/ข้อมูลไม่ครบ และ title ซ้ำระหว่างหน้าแรกกับหน้าเปลี่ยนรหัสผ่าน รวมถึง query ต่างกันที่ประกาศ canonical เดียวกัน ทดสอบ native localhost ผ่าน API/UI แล้ว JSON/XLSX เก็บบริบทตรงกัน screenshot desktop 1280 px/mobile 320 px ไม่ล้นและหลักฐาน HTML ไม่ทำงาน ลบภาพ fixture หลังตรวจแล้ว
+
+Restart PM2 และลอง `POST /api/audits` บน localhost:9999 ด้วย URL localhost จริงโดยไม่ปิดค่าเริ่มต้น ได้ HTML 2 หน้า, title ซ้ำพร้อม H1 ต่างกัน/noindex, OG ที่ขาดทั้งสองหน้า, Lighthouse สำเร็จครบ 4 หมวด และ Agentic 7 รายการ ไม่ได้ crawl villapoolvilla.com หรืออัปโหลดเข้า Google Sheets จริงในรอบนี้ ไม่รับประกัน preview/index/อันดับ และไม่บันทึกรายงานที่ backend
+
 ## งานเพิ่มหลังเวอร์ชันแรก
 
 - [ ] เชื่อม Search Console ของเจ้าของเว็บไซต์เพื่อดูสถานะ index ที่ Google รู้จัก

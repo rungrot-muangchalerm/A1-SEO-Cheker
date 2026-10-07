@@ -32,11 +32,11 @@ test('bounded crawl actually fetches links discovered on later pages, preserves 
   assert.deepEqual(report.coverage.skipped, [{ url: 'https://site.example/blocked', reason: 'ROBOTS_BLOCKED' }]);
   assert.equal(report.summary.pages, 4);
   assert.equal(report.summary.critical, 1);
-  assert.equal(report.summary.review, 4);
-  assert.equal(report.summary.affected, 3);
-  assert.equal(report.pages.flatMap((page) => page.checks).length, 32);
+  assert.equal(report.summary.review, 7);
+  assert.equal(report.summary.affected, 4);
+  assert.equal(report.pages.flatMap((page) => page.checks).length, 36);
   assert.equal(report.summary.warning, 1);
-  assert.equal(report.summary.checks.pass + report.summary.checks.fail + report.summary.checks.review, 39);
+  assert.equal(report.summary.checks.pass + report.summary.checks.fail + report.summary.checks.review, 42);
   assert.equal(new Set(report.issues.map((entry) => entry.id)).size, report.issues.length);
   assert.equal(report.pages[1].robots.crawlerAllowed, true);
   assert.equal(report.pages[1].robots.googlebotAllowed, false);

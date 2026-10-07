@@ -40,7 +40,8 @@ test('real Chromium executes inline JS and compares initial title/description/ca
   assert.ok(Number.isFinite(Date.parse(page.render.completedAt)));
   assert.equal(page.render.stats.requests, 1);
   assert.equal(transport.calls.length, 3);
-  assert.equal(result.data.issues.length, 0);
+  assert.deepEqual(result.data.issues.map(entry => entry.ruleId), ['open-graph']);
+  assert.equal(result.data.issues[0].details.scope, 'initial-html-sharing-metadata');
   assert.deepEqual(page.render.indexing, { status: 'not-checked', reason: 'not-search-engine-observation' });
   assert.ok(!result.data.notChecked.some((entry) => entry.id === 'javascript-render'));
   assert.deepEqual(result.data.lighthouse.categories, []);

@@ -20,7 +20,7 @@ Every check includes:
 - `evidence`: actual markup, response facts, robots matching lines, or observations
   describing the scope of an absence check. `sourceUrl` locates the source document.
   A canonical/image entry's `url` is its resolved target, not the source document.
-- `references`: labeled HTTPS links to primary Google or W3C documentation.
+- `references`: labeled HTTPS links to primary Google, W3C or Open Graph documentation.
 
 HTML snippets are serialized by the HTML parser, not byte-for-byte excerpts.
 `sourceFormat: serialized-html` identifies this. HTML `location` is reported by
@@ -375,7 +375,34 @@ At most 100 entries are retained; the original 5,000-meta-node parser cap also
 applies. `complete: false` discloses missing observation coverage in `notChecked`.
 The page detail view shows values/source as escaped text, previews at most 1,024
 characters per value with a shortening notice and retains bounded source evidence.
-Missing, empty, repeated or unresolved fields never create SEO issues or scores.
+Each analyzed page now has an `open-graph` check in category `sharing`. Missing
+core properties (`og:title`, `og:type`, `og:image`/`og:image:url`, `og:url`), empty
+core/description fields, properties outside head, non-absolute/non-HTTP/credential
+URLs and different core title/type/URL values produce a conditional `review`, not
+an indexing failure. Missing `og:description` is explicitly optional advice.
+Repeated images and structured properties remain legal; matching repeated core
+values do not cause a finding. Text need not equal title or meta description.
+An observed og:url disagreement with a single unqualified valid canonical is a
+review of intent, not proof that either URL is wrong. No canonical target or media
+fetch is added. Non-2xx pages are not checked for missing sharing metadata.
+Incomplete extraction can retain proven bad fields but cannot infer absence.
+`details.findings` contains property/code/message; existing evidence/actions flow
+through individual/grouped issues, full/filtered JSON and Issues/Details in XLSX.
+No Lighthouse score is changed and social preview/image accessibility is unverified.
+
+Duplicate title/description rules are version 1.1. Exact normalized matching and
+value-based IDs are unchanged. `details.reuse` adds matched/eligible counts, whether
+every eligible page in this round reused the value, distinct complete nonempty H1
+sets, a shared declared canonical when every declaration is unambiguous, and
+observed Googlebot noindex counts. These are context, not semantic content equality,
+Google-selected canonical or a penalty diagnosis. URL queries are never rewritten
+or merged by this rule. Empty/non-2xx/ambiguous metadata exclusions remain disclosed.
+At most 50 page contexts, five H1 previews of 512 characters and ten canonical
+targets per page are retained, with omission/truncation flags and source evidence.
+H1 comparison uses full normalized values, not previews. Incomplete headings,
+qualified/incomplete canonical and incomplete directives cannot establish absence
+or a shared canonical. Findings and steps distinguish different page purposes from
+intentional aliases/noindex, including template reuse on password-reset pages.
 
 `crawl.limits`, `crawl.stats` and `crawl.stopReason` disclose page-attempt, request,
 time, concurrency, pacing and retained-HTML budgets. `coverage.limitReached` includes

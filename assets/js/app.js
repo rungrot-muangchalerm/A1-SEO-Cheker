@@ -10,7 +10,7 @@
   };
   const categories = {
     index: "\u0e01\u0e32\u0e23\u0e40\u0e02\u0e49\u0e32 index", onpage: "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1a\u0e19\u0e2b\u0e19\u0e49\u0e32", links: "\u0e25\u0e34\u0e07\u0e01\u0e4c\u0e20\u0e32\u0e22\u0e43\u0e19",
-    sitemap: "Sitemap", images: "\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e", render: "JavaScript"
+    sitemap: "Sitemap", images: "\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e", render: "JavaScript", sharing: "Open Graph"
   };
   const skipReasons = {
     ROBOTS_BLOCKED: 'robots.txt \u0e44\u0e21\u0e48\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 SEOChecker',
@@ -132,10 +132,12 @@
     const byIssueId = new Map(issues.map((issue) => [issue.id, issue]));
     return (state.report?.issueGroups || []).map((group) => {
       const members = group.issueIds.map((id) => byIssueId.get(id)).filter(Boolean);
-      return { ...group, count: members.length, issueIds: members.map((issue) => issue.id),
+      return {
+        ...group, count: members.length, issueIds: members.map((issue) => issue.id),
         urls: [...new Set(members.flatMap((issue) => issue.urls))].sort(),
         severityCounts: Object.fromEntries(['critical', 'warning', 'review'].map((level) => [level, members.filter((issue) => issue.severity === level).length])),
-        complete: members.every((issue) => issue.complete !== false) };
+        complete: members.every((issue) => issue.complete !== false)
+      };
     }).filter((group) => group.count);
   }
 
@@ -189,9 +191,11 @@
     byId("report-result").dataset.result = report.issues.length ? "issues" : "none";
     const lighthouse = report.lighthouse;
     const scoreProvider = 'Lighthouse (\u0e43\u0e19\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07)';
-    const scoreMessages = { 'not-requested': '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e23\u0e27\u0e08',
+    const scoreMessages = {
+      'not-requested': '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e23\u0e27\u0e08',
       BROWSER_UNAVAILABLE: 'Lighthouse: \u0e40\u0e1b\u0e34\u0e14 Chromium \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49',
-      LIGHTHOUSE_TIMEOUT: 'Lighthouse: \u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32\u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14' };
+      LIGHTHOUSE_TIMEOUT: 'Lighthouse: \u0e43\u0e0a\u0e49\u0e40\u0e27\u0e25\u0e32\u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14'
+    };
     byId('lighthouse-status').textContent = lighthouse?.status === 'completed' ? scoreProvider : lighthouse?.status === 'partial' ?
       scoreProvider + ': \u0e1c\u0e25\u0e15\u0e23\u0e27\u0e08\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19 (' + (lighthouse.reason || 'score-unavailable') + ')' :
       (scoreMessages[lighthouse?.reason] || scoreProvider + ': \u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e04\u0e30\u0e41\u0e19\u0e19\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (' + (lighthouse?.reason || 'unavailable') + ')');
@@ -218,15 +222,17 @@
     byId('agentic-status').hidden = !lighthouse?.provider;
     byId('agentic-status').textContent = agentic?.total > 0 ?
       'Agentic Browsing: ' + agentic.passed + '/' + agentic.total + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1c\u0e48\u0e32\u0e19' +
-        (agentic.status === 'partial' ? ' (\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') :
+      (agentic.status === 'partial' ? ' (\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') :
       'Agentic Browsing: \u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 (' + (lighthouse?.agentic?.reason || 'not-requested') + ')';
     byId('agentic-counts').textContent = agentic?.audits ?
       '\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19 ' + agentic.failed + ' \u00b7 \u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49 ' + agentic.notChecked +
       ' \u00b7 \u0e44\u0e21\u0e48\u0e40\u0e02\u0e49\u0e32\u0e02\u0e48\u0e32\u0e22/\u0e15\u0e23\u0e27\u0e08\u0e40\u0e2d\u0e07 ' + agentic.excluded +
       ' \u00b7 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a ' + agentic.informational : '';
-    const agenticLabels = { pass: ['success', '\u0e1c\u0e48\u0e32\u0e19'], fail: ['danger', '\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19'],
+    const agenticLabels = {
+      pass: ['success', '\u0e1c\u0e48\u0e32\u0e19'], fail: ['danger', '\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19'],
       'not-checked': ['warning', '\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49'], 'not-applicable': ['secondary', '\u0e44\u0e21\u0e48\u0e40\u0e02\u0e49\u0e32\u0e02\u0e48\u0e32\u0e22'],
-      manual: ['secondary', '\u0e15\u0e49\u0e2d\u0e07\u0e15\u0e23\u0e27\u0e08\u0e40\u0e2d\u0e07'], informational: ['info', '\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a'] };
+      manual: ['secondary', '\u0e15\u0e49\u0e2d\u0e07\u0e15\u0e23\u0e27\u0e08\u0e40\u0e2d\u0e07'], informational: ['info', '\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a']
+    };
     replaceContent(byId('agentic-audits'), (agentic?.audits || []).map(audit => {
       const [color, label] = agenticLabels[audit.status] || agenticLabels['not-checked'];
       return '<details class="border-top border-info-subtle py-2" data-agentic-audit="' + escapeHtml(audit.id) + '"><summary class="small text-break">' +
@@ -293,6 +299,16 @@
       '<div class="d-flex align-items-center flex-wrap gap-2 mb-4">' + badge(issue.severity) +
       '<span class="small">' + escapeHtml(issue.ruleId) + '</span></div>' +
       '<section class="mb-4"><h3 class="h6">\u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48\u0e1e\u0e1a</h3><p class="small text-break mb-0">' + escapeHtml(issue.found) + '</p></section>' +
+      (issue.details?.reuse ? '<section class="mb-4" data-metadata-reuse><h3 class="h6">\u0e40\u0e17\u0e35\u0e22\u0e1a\u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e43\u0e0a\u0e49\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e0b\u0e49\u0e33</h3>' +
+        issue.details.reuse.pages.map(entry => '<details class="border-bottom border-info-subtle py-2 small"><summary class="text-break">' +
+          escapeHtml(entry.url) + '</summary><dl class="mt-2 mb-0"><dt>H1</dt><dd class="text-break">' + escapeHtml(entry.h1.join(' | ') || '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e1a H1') +
+          (!entry.h1Complete || entry.h1PreviewTruncated ? ' (\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') + '</dd><dt>Canonical</dt><dd class="text-break">' +
+          escapeHtml(entry.canonicalTargets.join(' | ') || '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e1a canonical \u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e40\u0e1b\u0e47\u0e19 URL \u0e44\u0e14\u0e49') +
+          (!entry.canonicalComplete || entry.canonicalTargetsOmitted ? ' (\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a)' : '') + '</dd><dt>Noindex</dt><dd>' +
+          (entry.noindex ? '\u0e1e\u0e1a' : entry.noindexComplete ? '\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e43\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e14\u0e49' : '\u0e22\u0e31\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49') + '</dd></dl>' +
+          (entry.evidence.length ? '<details><summary>HTML / HTTP header</summary>' + entry.evidence.map(item =>
+            '<pre class="bg-dark text-light p-3 rounded-1 small overflow-auto mt-2"><code>' + escapeHtml(item.source) + '</code></pre>').join('') + '</details>' : '') + '</details>').join('') +
+        (issue.details.reuse.pagesOmitted ? '<p class="small mt-2">\u0e41\u0e2a\u0e14\u0e07 50 \u0e08\u0e32\u0e01 ' + issue.urls.length + ' \u0e2b\u0e19\u0e49\u0e32</p>' : '') + '</section>' : '') +
       '<section class="mb-4"><h3 class="h6">\u0e1c\u0e25\u0e01\u0e23\u0e30\u0e17\u0e1a</h3><p class="small mb-0">' + escapeHtml(issue.impact) + '</p></section>' +
       '<section class="mb-4"><div class="d-flex align-items-center justify-content-between mb-2"><h3 class="h6 mb-0">\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49</h3>' +
       '<button type="button" class="btn btn-sm btn-outline-success" data-copy-kind="steps" aria-label="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49" title="\u0e04\u0e31\u0e14\u0e25\u0e2d\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49" data-bs-toggle="tooltip">' + icon('copy', 16) + '</button></div><ol class="small ps-3 mb-0">' +
@@ -430,12 +446,16 @@
     const metadata = { format: 'seo-checker-json', scope, exportedAt: new Date().toISOString() };
     if (scope === 'entire-round') return { ...state.report, export: metadata };
     const issues = filteredIssues();
-    metadata.filters = { severity: byId('severity-filter').value, category: byId('category-filter').value,
-      query: byId('issue-search').value, view: byId('issue-view-groups').checked ? 'groups' : 'list' };
-    return { schemaVersion: state.report.schemaVersion, status: state.report.status, requestedUrl: state.report.requestedUrl,
+    metadata.filters = {
+      severity: byId('severity-filter').value, category: byId('category-filter').value,
+      query: byId('issue-search').value, view: byId('issue-view-groups').checked ? 'groups' : 'list'
+    };
+    return {
+      schemaVersion: state.report.schemaVersion, status: state.report.status, requestedUrl: state.report.requestedUrl,
       startedAt: state.report.startedAt, completedAt: state.report.completedAt, scope: state.report.scope,
       coverage: state.report.coverage, summary: state.report.summary, siteFiles: state.report.siteFiles || [],
-      issues, issueGroups: visibleIssueGroups(issues), export: metadata };
+      issues, issueGroups: visibleIssueGroups(issues), export: metadata
+    };
   }
 
   function downloadBlob(content, type, filename) {
@@ -618,7 +638,7 @@
         readAuditStream(response, (progress) => {
           if (round !== state.round) return;
           if (!['discovered', 'fetched', 'analyzed', 'skipped'].every((key) => Number.isSafeInteger(progress[key]) && progress[key] >= 0) ||
-              !Array.isArray(progress.skippedEntries) || progress.skippedEntries.length > 10000) throw new Error('Invalid progress');
+            !Array.isArray(progress.skippedEntries) || progress.skippedEntries.length > 10000) throw new Error('Invalid progress');
           byId('crawl-progress').hidden = false;
           byId('progress-counts').textContent = '\u0e1e\u0e1a ' + progress.discovered + ' URL \u00b7 \u0e2d\u0e48\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 ' + progress.fetched +
             ' \u00b7 \u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c ' + progress.analyzed + ' \u00b7 \u0e02\u0e49\u0e32\u0e21 ' + progress.skipped;
@@ -630,15 +650,15 @@
             escapeHtml(entry.url) + ' &middot; ' + escapeHtml(skipReason(entry.reason)) + '</li>').join(''));
         }) : response.json();
       return body.then((data) => {
-      if (!response.ok || data.status === "failed") {
-        throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
-      }
-      if (data.schemaVersion !== "1.0" || !["partial", "completed"].includes(data.status) || !Array.isArray(data.pages) ||
+        if (!response.ok || data.status === "failed") {
+          throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
+        }
+        if (data.schemaVersion !== "1.0" || !["partial", "completed"].includes(data.status) || !Array.isArray(data.pages) ||
           !data.pages.length || !Array.isArray(data.issues) || !Array.isArray(data.notChecked) ||
           data.siteFiles !== undefined && !Array.isArray(data.siteFiles)) {
-        throw new Error("Invalid report");
-      }
-      return data;
+          throw new Error("Invalid report");
+        }
+        return data;
       });
     }).then((data) => {
       if (round !== state.round) return;
