@@ -225,6 +225,14 @@ Lighthouse ในเครื่องขอหมวด `agentic-browsing` จ�
 
 ตรวจสอบแล้ว: ลบ `demo.controller.js`, `demo.service.js` และ `api/user/user.routes.js` พร้อมถอด mount `/api/user` ออกจาก API router ปรับชื่อไฟล์ในเอกสารให้ตรงกับ audit ที่ใช้จริง เส้น demo เดิมตอบ JSON 404 ทั้งใน regression test และการลองเส้นเดิมบน localhost:3000 โดย regression test ยืนยันว่าไม่มี module demo ถูกโหลด ยังคง fixtures/helpers ที่ใช้ทดสอบไว้ ไม่เปลี่ยนเงื่อนไขการตรวจหรือ dependencies `npm test` ผ่าน 286 ข้อ ไม่มีข้อที่ล้มเหลวหรือถูกข้าม
 
+## รันเบื้องหลังใน Windows
+
+- [x] chore: ตั้ง PM2 ให้ SEO Checker รันเบื้องหลัง
+
+เพิ่ม `ecosystem.config.js` กับคำสั่ง npm สำหรับ start/restart/stop/status/logs ใช้หนึ่งโปรเซสแบบ fork ปิด watch/LiveReload และรักษา `.env` เดิม เริ่มเว็บผ่าน PM2 บน `http://localhost:9999` แล้ว พร้อมบันทึกรายการด้วย `pm2 save` ยังไม่ได้ตั้ง Windows Service หรือ Task Scheduler จึงไม่เปิดอัตโนมัติหลังบูต/login
+
+ตรวจสอบแล้ว: syntax config ผ่าน ชุด PM2/API เฉพาะผ่าน 7 ข้อ และ npm pack แบบ dry-run รวม config ไว้ ทดสอบ API ของโปรเซส PM2 กับ fixture localhost จริงได้ HTML 4 หน้า, JavaScript สำเร็จ, Lighthouse 13.5.0 ครบ 4 คะแนน และ Agentic 7 รายการ หลัง restart หน้าเว็บตอบ 200, URL ไม่ถูกต้องตอบ JSON 400 และ demo เดิมตอบ 404 โปรเซสยังฟังเฉพาะ `127.0.0.1` และ error log ว่าง ไม่เขียนรายงาน SEO ลงไฟล์ ไม่ได้รันชุดทดสอบทั้งหมดในรอบนี้
+
 ## งานเพิ่มหลังเวอร์ชันแรก
 
 - [ ] เชื่อม Search Console ของเจ้าของเว็บไซต์เพื่อดูสถานะ index ที่ Google รู้จัก

@@ -39,6 +39,36 @@ npm start
 checker ไม่เรียก MySQL/JWT ของ framework จึงไม่ต้องสร้าง database หรือระบบ login เพื่อเริ่มตรวจ
 ต้องเข้าถึง Bootstrap/Lucide CDN ได้เพื่อใช้หน้าจอครบ
 
+## รันเบื้องหลังด้วย PM2 บน Windows
+
+ติดตั้ง PM2 แบบ global ครั้งเดียวด้วย `npm.cmd install --global pm2` แล้วเรียกจากโฟลเดอร์โปรเจกต์:
+
+```powershell
+npm.cmd run pm2:start
+pm2.cmd save
+```
+
+`ecosystem.config.js` เปิดโปรเซสชื่อ `seo-checker` เพียงหนึ่งตัวในโหมด fork ใช้ `index.js` และ working directory ของโปรเจกต์
+ปิด watch/LiveReload และใช้ `NODE_ENV=production`; PM2 เปิดโปรเซสใหม่หลัง crash โดยเว้น 3 วินาที
+ใช้ `PORT` และค่าตรวจเว็บจาก `.env` เดิม ไม่เขียนทับ `.env` และยังรับคำขอเฉพาะ localhost
+ห้ามเปิด nodemon หรือ `npm start` ซ้อนบนพอร์ตเดียวกัน
+
+```powershell
+npm.cmd run pm2:status
+npm.cmd run pm2:restart
+npm.cmd run pm2:stop
+npm.cmd run pm2:logs
+```
+
+หลังแก้ `.env` หรือโค้ดให้ restart เอง; การ restart จะยุติรอบตรวจที่กำลังทำ ไม่กู้ผลเดิม
+เมื่อเปลี่ยน config ให้ restart แล้วสั่ง `pm2.cmd save` อีกครั้ง รายการที่บันทึกเก็บใน profile ของบัญชี Windows ที่รัน PM2 ไม่ใช่รายงาน SEO
+PM2 มี console logs สำหรับดูการเริ่ม/ข้อผิดพลาดของโปรเซส แต่ checker ยังไม่มีประวัติหรือไฟล์รายงานที่ backend
+
+ปิด terminal ได้โดยเว็บยังทำงาน แต่เครื่องต้องเปิดและไม่เข้า Sleep
+รอบนี้ยังไม่ได้ติดตั้ง Windows Service หรือ Task Scheduler สำหรับเริ่มหลังบูต/login
+`pm2 save` บันทึกรายการโปรเซสเท่านั้น ไม่ทำให้ Windows เปิด PM2 อัตโนมัติ; ใช้ `pm2.cmd resurrect` เรียกคืนรายการด้วยตนเอง
+ดู [PM2 configuration](https://pm2.keymetrics.io/docs/usage/application-declaration/) และ [startup](https://pm2.keymetrics.io/docs/usage/startup/)
+
 ## ขอบเขตที่ตรวจ
 
 - HTML เริ่มต้น: HTTP, title/description, canonical, robots meta/header, รูปที่ไม่มี alt, robots.txt, JSON-LD และ OG สำหรับการแชร์
