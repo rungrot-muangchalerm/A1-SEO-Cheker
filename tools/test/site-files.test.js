@@ -5,7 +5,7 @@ const siteFiles = require('../../app/service/site-files.service');
 const audit = require('../../app/service/audit.service');
 const robots = require('../../app/service/robots.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, bad } = require('./helpers/frontend');
+const { frontend, scan, bad, clickExport } = require('./helpers/frontend');
 
 const origin = 'https://site.example';
 const page = (status = 404, extra = {}) => ({ finalUrl: origin + '/folder/', robots: {
@@ -18,7 +18,7 @@ const xml = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><l
 
 async function download(browserPage, selector) {
   const event = browserPage.waitForEvent('download');
-  await browserPage.locator(selector).click();
+  await clickExport(browserPage, selector);
   const stream = await (await event).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

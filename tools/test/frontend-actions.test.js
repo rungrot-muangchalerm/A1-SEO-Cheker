@@ -1,10 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { frontend, scan, report, good, bad } = require('./helpers/frontend');
+const { frontend, scan, report, good, bad, clickExport } = require('./helpers/frontend');
 
 async function downloadText(page) {
   const downloaded = page.waitForEvent('download');
-  await page.locator('#export-button').click();
+  await clickExport(page, '#export-button');
   const stream = await (await downloaded).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

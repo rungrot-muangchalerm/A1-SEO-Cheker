@@ -126,6 +126,7 @@
       new Set(visible.flatMap((issue) => issue.urls)).size + ' URL';
     byId("export-button").disabled = visible.length === 0;
     byId('export-issues-xlsx-button').disabled = visible.length === 0 || state.exporting;
+    byId('export-issue-count').textContent = '(' + visible.length + ')';
   }
 
   function visibleIssueGroups(issues) {
@@ -171,6 +172,7 @@
 
   function renderSummary() {
     if (!state.report) return;
+    byId('export-menu-button').disabled = false;
     byId('export-json-button').disabled = false;
     byId('export-xlsx-button').disabled = state.exporting;
     const summary = state.report.summary;
@@ -514,7 +516,9 @@
     byId('crawl-limit').hidden = true;
     byId('progress-limit').hidden = true;
     ['issue-empty', 'page-empty', 'reset-filters', 'scan-spinner', 'cancel-button'].forEach((id) => byId(id).classList.add('d-none'));
-    ['export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
+    bootstrap.Dropdown.getInstance(byId('export-menu-button'))?.hide();
+    byId('export-issue-count').textContent = '';
+    ['export-menu-button', 'export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button', 'pages-prev', 'pages-next'].forEach((id) => { byId(id).disabled = true; });
     byId('scan-icon').classList.remove('d-none');
     byId('scan-button').disabled = false;
     byId('scan-button-label').textContent = '\u0e15\u0e23\u0e27\u0e08\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c';

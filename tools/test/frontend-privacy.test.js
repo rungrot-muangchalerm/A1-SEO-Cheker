@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { frontend, scan, report, bad } = require('./helpers/frontend');
+const { frontend, scan, report, bad, clickExport } = require('./helpers/frontend');
 
 async function assertEmpty(page) {
   assert.equal(await page.locator('#website-url').inputValue(), '');
@@ -101,11 +101,11 @@ test('manual download object URLs are released and leaving the page revokes pend
     URL.revokeObjectURL = (url) => { globalThis.revokedUrls.push(url); revoke(url); };
   });
   const downloaded = page.waitForEvent('download');
-  await page.locator('#export-button').click();
+  await clickExport(page, '#export-button');
   await downloaded;
   await page.waitForFunction(() => globalThis.revokedUrls.includes(globalThis.createdUrls[0]));
   const next = page.waitForEvent('download');
-  await page.locator('#export-button').click();
+  await clickExport(page, '#export-button');
   await next;
   await page.evaluate(() => dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })));
   assert.equal(await page.evaluate(() => globalThis.createdUrls.every((url) => globalThis.revokedUrls.includes(url))), true);

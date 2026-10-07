@@ -5,7 +5,7 @@ const html = require('../../app/service/html.service');
 const structured = require('../../app/service/structured-data.service');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, clickExport } = require('./helpers/frontend');
 
 const base = 'https://site.example/';
 const script = (value, type = 'application/ld+json') => '<script type="' + type + '">' + value + '</script>';
@@ -130,7 +130,7 @@ test('browser opens the exact failed block, escapes script evidence, exports it 
   assert.equal(await browserPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   await browserPage.locator('#issue-drawer .btn-close').click();
   await browserPage.locator('#issue-drawer').waitFor({ state: 'hidden' });
-  const [download] = await Promise.all([browserPage.waitForEvent('download'), browserPage.locator('#export-button').click()]);
+  const [download] = await Promise.all([browserPage.waitForEvent('download'), clickExport(browserPage, '#export-button')]);
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

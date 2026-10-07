@@ -51,12 +51,28 @@
         <h2 class="h5 mb-0" id="overview-heading">&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;&#3585;&#3634;&#3619;&#3605;&#3619;&#3623;&#3592;</h2>
         <div class="d-flex align-items-center flex-wrap gap-2">
           <span class="small text-success-emphasis text-break" id="report-host"></span>
-          <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" id="export-json-button" disabled>
-            <i data-lucide="file-down" width="16" height="16" aria-hidden="true"></i>&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604; JSON
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" id="export-xlsx-button" disabled>
-            <i data-lucide="sheet" width="16" height="16" aria-hidden="true"></i>Google Sheets (.xlsx)
-          </button>
+          <div class="dropdown" id="export-controls">
+            <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle d-inline-flex align-items-center gap-2" id="export-menu-button" data-bs-toggle="dropdown" aria-expanded="false" disabled>
+              <i data-lucide="download" width="16" height="16" aria-hidden="true"></i>&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end bg-success-subtle border-success-subtle" id="export-menu" aria-labelledby="export-menu-button">
+              <li><h3 class="dropdown-header text-success-emphasis">&#3619;&#3634;&#3618;&#3591;&#3634;&#3609;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</h3></li>
+              <li><button type="button" class="dropdown-item small d-flex align-items-center gap-2" id="export-json-button" aria-label="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3619;&#3634;&#3618;&#3591;&#3634;&#3609;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604; JSON" disabled>
+                <i data-lucide="file-json" width="16" height="16" aria-hidden="true"></i>JSON
+              </button></li>
+              <li><button type="button" class="dropdown-item small d-flex align-items-center gap-2" id="export-xlsx-button" aria-label="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3619;&#3634;&#3618;&#3591;&#3634;&#3609;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604; XLSX" disabled>
+                <i data-lucide="sheet" width="16" height="16" aria-hidden="true"></i>XLSX (Google Sheets)
+              </button></li>
+              <li><hr class="dropdown-divider border-success-subtle"></li>
+              <li><h3 class="dropdown-header text-success-emphasis">&#3611;&#3633;&#3597;&#3627;&#3634;&#3605;&#3634;&#3617;&#3605;&#3633;&#3623;&#3585;&#3619;&#3629;&#3591; <span id="export-issue-count"></span></h3></li>
+              <li><button type="button" class="dropdown-item small d-flex align-items-center gap-2" id="export-button" aria-label="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634;&#3605;&#3634;&#3617;&#3605;&#3633;&#3623;&#3585;&#3619;&#3629;&#3591; JSON" disabled>
+                <i data-lucide="file-json" width="16" height="16" aria-hidden="true"></i>JSON
+              </button></li>
+              <li><button type="button" class="dropdown-item small d-flex align-items-center gap-2" id="export-issues-xlsx-button" aria-label="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634;&#3605;&#3634;&#3617;&#3605;&#3633;&#3623;&#3585;&#3619;&#3629;&#3591; XLSX" disabled>
+                <i data-lucide="sheet" width="16" height="16" aria-hidden="true"></i>XLSX (Google Sheets)
+              </button></li>
+            </ul>
+          </div>
         </div>
       </div>
       <div class="row row-cols-2 row-cols-lg-4 g-3 border-bottom border-info-subtle pb-4">
@@ -122,15 +138,6 @@
       <section class="tab-pane show active" id="issues-pane" role="tabpanel" aria-labelledby="issues-tab" tabindex="0">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
           <h2 class="h5 mb-0">&#3611;&#3633;&#3597;&#3627;&#3634;&#3607;&#3637;&#3656;&#3614;&#3610; <span class="small fw-normal" id="issue-count"></span></h2>
-          <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" type="button" id="export-button" disabled>
-              <i data-lucide="file-down" width="16" height="16" aria-hidden="true"></i>
-              &#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604; JSON
-            </button>
-            <button class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-2" type="button" id="export-issues-xlsx-button" aria-label="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634; XLSX" title="&#3604;&#3634;&#3623;&#3609;&#3660;&#3650;&#3627;&#3621;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634; XLSX" data-bs-toggle="tooltip" disabled>
-              <i data-lucide="sheet" width="16" height="16" aria-hidden="true"></i>XLSX
-            </button>
-          </div>
         </div>
         <div class="btn-group btn-group-sm mb-3" role="group" aria-label="&#3617;&#3640;&#3617;&#3617;&#3629;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;">
           <input type="radio" class="btn-check" name="issue-view" id="issue-view-list" value="list" autocomplete="off" checked>

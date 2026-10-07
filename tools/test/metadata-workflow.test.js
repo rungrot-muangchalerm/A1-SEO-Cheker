@@ -4,7 +4,7 @@ const path = require('node:path');
 const os = require('node:os');
 const ExcelJS = require('exceljs');
 const development = require('./helpers/development-site');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, clickExport } = require('./helpers/frontend');
 
 const document = (password = false) => '<!doctype html><html lang="en"><head><title>Villa Brand</title>' +
   '<meta name="description" content="' + (password ? 'Change account password' : 'Choose a villa') + '">' +
@@ -15,7 +15,7 @@ const document = (password = false) => '<!doctype html><html lang="en"><head><ti
 
 async function download(page, selector) {
   const event = page.waitForEvent('download');
-  await page.locator(selector).click();
+  await clickExport(page, selector);
   const stream = await (await event).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

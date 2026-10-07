@@ -1,13 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const ExcelJS = require('exceljs');
-const { frontend, scan, good, setAuditOptions } = require('./helpers/frontend');
+const { frontend, scan, good, setAuditOptions, clickExport } = require('./helpers/frontend');
 const { stubTransport } = require('./helpers/transport');
 const { base, stubLighthouse } = require('./helpers/lighthouse');
 
 async function download(page, selector, binary = false) {
   const event = page.waitForEvent('download');
-  await page.locator(selector).click();
+  await clickExport(page, selector);
   const stream = await (await event).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

@@ -5,7 +5,7 @@ const html = require('../../app/service/html.service');
 const cross = require('../../app/service/cross-page.service');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions, clickExport } = require('./helpers/frontend');
 
 const markup = (title, description, path, links = '') => '<title>' + title + '</title><meta name="description" content="' + description +
   '"><link rel="canonical" href="' + path + '"><meta property="og:title" content="' + title +
@@ -161,7 +161,7 @@ test('browser opens every grouped URL and actual evidence; JSON exports the whol
   await browserPage.locator('#issue-drawer .btn-close').click();
   await browserPage.locator('#issue-drawer').waitFor({ state: 'hidden' });
   await browserPage.locator('#issue-search').fill('duplicate-description');
-  const [download] = await Promise.all([browserPage.waitForEvent('download'), browserPage.locator('#export-button').click()]);
+  const [download] = await Promise.all([browserPage.waitForEvent('download'), clickExport(browserPage, '#export-button')]);
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

@@ -6,7 +6,7 @@ const os = require('node:os');
 const audit = require('../../app/service/audit.service');
 const model = require('../../app/model/audit.model');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, report, good } = require('./helpers/frontend');
+const { frontend, scan, report, good, clickExport } = require('./helpers/frontend');
 
 const base = 'https://site.example/';
 const script = (value) => '<script type="application/ld+json">' + value + '</script>';
@@ -105,7 +105,7 @@ test('grouped UI filters members before counting; details and JSON retain indivi
   await page.locator('#issue-drawer .btn-close').click();
   await page.locator('#issue-drawer').waitFor({ state: 'hidden' });
   const downloaded = page.waitForEvent('download');
-  await page.locator('#export-button').click();
+  await clickExport(page, '#export-button');
   const stream = await (await downloaded).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

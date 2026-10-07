@@ -8,7 +8,7 @@ const html = require('../../app/service/html.service');
 const links = require('../../app/service/internal-links.service');
 const responseModel = require('../../app/model/response.model');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions, clickExport } = require('./helpers/frontend');
 
 function clock(t) {
   let now = 1000;
@@ -162,7 +162,7 @@ test('browser displays actual target status and source evidence; grouped sources
   assert.ok((await page.locator('#detail-content').textContent()).includes('Source'));
   await page.locator('#issue-drawer .btn-close').click();
   await page.locator('#issue-drawer').waitFor({ state: 'hidden' });
-  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export-button').click()]);
+  const [download] = await Promise.all([page.waitForEvent('download'), clickExport(page, '#export-button')]);
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

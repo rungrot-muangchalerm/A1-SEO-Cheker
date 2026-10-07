@@ -5,7 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const ExcelJS = require('exceljs');
 const { createWorkbook, limits } = require('../../assets/js/report-export');
-const { frontend, scan, report, bad, good } = require('./helpers/frontend');
+const { frontend, scan, report, bad, good, clickExport } = require('./helpers/frontend');
 
 function exported(source, scope = 'entire-round') {
   return { ...source, export: { format: 'seo-checker-json', scope, exportedAt: new Date().toISOString() } };
@@ -13,7 +13,7 @@ function exported(source, scope = 'entire-round') {
 
 async function downloaded(page, selector) {
   const event = page.waitForEvent('download');
-  await page.locator(selector).click();
+  await clickExport(page, selector);
   const item = await event;
   const stream = await item.createReadStream();
   const chunks = [];
@@ -179,7 +179,7 @@ test('browser downloads JSON and real XLSX for the same filtered findings, witho
   await page.reload();
   await page.waitForFunction(() => document.querySelector('header svg'));
   assert.equal(await page.locator('#report').isVisible(), false);
-  for (const id of ['export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button']) assert.equal(await page.locator('#' + id).isDisabled(), true);
+  for (const id of ['export-menu-button', 'export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button']) assert.equal(await page.locator('#' + id).isDisabled(), true);
   assert.equal(downloads, 3);
   assert.deepEqual(errors, []);
 });
@@ -206,11 +206,11 @@ test('missing writer and generation failures keep JSON available, show no raw pr
   await page.route('**/api/audits', route => route.fulfill({ json: source }));
   await scan(page, source.requestedUrl);
   await page.evaluate(() => { window.ExcelJS = undefined; });
-  await page.locator('#export-xlsx-button').click();
+  await clickExport(page, '#export-xlsx-button');
   await page.waitForFunction(() => !document.querySelector('#export-xlsx-button').disabled);
   assert.ok((await page.locator('#app-message').textContent()).includes('JSON'));
   await page.evaluate(() => { window.SEOReportExport.createWorkbook = () => { throw new Error('PRIVATE_MARKER'); }; });
-  await page.locator('#export-xlsx-button').click();
+  await clickExport(page, '#export-xlsx-button');
   await page.waitForFunction(() => !document.querySelector('#export-xlsx-button').disabled);
   assert.ok(!(await page.locator('#app-message').textContent()).includes('PRIVATE_MARKER'));
   assert.equal(downloads, 0);
@@ -228,7 +228,7 @@ test('pending XLSX from an older round cannot download or re-enable controls aft
   await page.evaluate(() => {
     window.SEOReportExport.createWorkbook = () => ({ xlsx: { writeBuffer: () => new Promise(resolve => { window.finishExport = () => resolve(new Uint8Array([80, 75])); }) } });
   });
-  await page.locator('#export-xlsx-button').click();
+  await clickExport(page, '#export-xlsx-button');
   await page.waitForFunction(() => typeof window.finishExport === 'function');
   assert.equal(await page.locator('#export-xlsx-button').isDisabled(), true);
   await scan(page, second.requestedUrl);
@@ -237,7 +237,7 @@ test('pending XLSX from an older round cannot download or re-enable controls aft
   assert.equal(downloads, 0);
   assert.equal(await page.locator('#report-host').textContent(), second.requestedUrl);
   assert.equal(await page.locator('#export-xlsx-button').isDisabled(), false);
-  await page.locator('#export-xlsx-button').click();
+  await clickExport(page, '#export-xlsx-button');
   await page.evaluate(() => { dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })); window.finishExport(); });
   await page.waitForTimeout(100);
   assert.equal(downloads, 0);

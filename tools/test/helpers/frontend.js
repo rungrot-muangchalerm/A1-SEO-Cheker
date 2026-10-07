@@ -86,4 +86,9 @@ function setAuditOptions(page, options) {
   auditOptions.set(page, { ...auditOptions.get(page), ...options });
 }
 
-module.exports = { frontend, scan, report, good, bad, setAuditOptions };
+async function clickExport(page, selector) {
+  if (!await page.locator('#export-menu').isVisible()) await page.locator('#export-menu-button').click();
+  await page.locator(selector).click();
+}
+
+module.exports = { frontend, scan, report, good, bad, setAuditOptions, clickExport };

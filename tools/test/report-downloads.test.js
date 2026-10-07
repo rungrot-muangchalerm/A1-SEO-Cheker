@@ -5,12 +5,12 @@ const path = require('node:path');
 const os = require('node:os');
 const { randomUUID } = require('node:crypto');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, good, bad, report } = require('./helpers/frontend');
+const { frontend, scan, good, bad, report, clickExport } = require('./helpers/frontend');
 const { base, stubLighthouse } = require('./helpers/lighthouse');
 
 async function readDownload(page, selector) {
   const event = page.waitForEvent('download');
-  await page.locator(selector).click();
+  await clickExport(page, selector);
   const download = await event;
   const stream = await download.createReadStream();
   const chunks = [];
@@ -121,7 +121,7 @@ test('all JSON/XLSX downloads stay disabled before/during/after failed audits, a
   const { page, errors } = await frontend(t);
   let downloads = 0;
   page.on('download', () => ++downloads);
-  const ids = ['export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button'];
+  const ids = ['export-menu-button', 'export-button', 'export-json-button', 'export-xlsx-button', 'export-issues-xlsx-button'];
   for (const id of ids) assert.equal(await page.locator('#' + id).isDisabled(), true);
   await page.locator('#website-url').fill(base);
   await page.locator('#scan-button').click();
@@ -148,7 +148,7 @@ test('new audit replaces export contents and F5 clears the report while an expli
   await page.route('**/api/audits', route => route.fulfill({ json: route.request().postDataJSON().url === first.requestedUrl ? first : second }));
   await scan(page, first.requestedUrl);
   const event = page.waitForEvent('download');
-  await page.locator('#export-json-button').click();
+  await clickExport(page, '#export-json-button');
   const downloaded = await event;
   const destination = path.join(os.tmpdir(), 'seo-checker-saved-fixture-' + randomUUID() + '.json');
   await downloaded.saveAs(destination);

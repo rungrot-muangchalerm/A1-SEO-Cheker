@@ -12,12 +12,12 @@ const website = require('../../app/data/website.data');
 const lighthouse = require('../../app/service/lighthouse.service');
 const result = require('../../app/service/lighthouse-result.service');
 const { start, document: markup } = require('./helpers/development-site');
-const { frontend, scan } = require('./helpers/frontend');
+const { frontend, scan, clickExport } = require('./helpers/frontend');
 const { lhr } = require('./helpers/lighthouse');
 
 async function download(page, selector) {
   const event = page.waitForEvent('download');
-  await page.locator(selector).click();
+  await clickExport(page, selector);
   const stream = await (await event).createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);

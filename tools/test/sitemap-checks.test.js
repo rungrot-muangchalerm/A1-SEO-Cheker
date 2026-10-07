@@ -7,7 +7,7 @@ const sitemap = require('../../app/service/sitemap.service');
 const checksService = require('../../app/service/sitemap-checks.service');
 const audit = require('../../app/service/audit.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions, clickExport } = require('./helpers/frontend');
 
 const base = 'https://site.example';
 const ns = 'http://www.sitemaps.org/schemas/sitemap/0.9';
@@ -197,7 +197,7 @@ test('browser shows parsed loc proof as text, with real HTTP and manual JSON; un
   assert.ok((await browserPage.locator('#affected-summary').textContent()).includes('2 URL'));
   await browserPage.locator('#issue-drawer .btn-close').click();
   await browserPage.locator('#issue-drawer').waitFor({ state: 'hidden' });
-  const [download] = await Promise.all([browserPage.waitForEvent('download'), browserPage.locator('#export-button').click()]);
+  const [download] = await Promise.all([browserPage.waitForEvent('download'), clickExport(browserPage, '#export-button')]);
   const stream = await download.createReadStream();
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
