@@ -25,12 +25,14 @@ module.exports = {
         const crawl = await crawlService.run(body.url, options);
         options.signal?.throwIfAborted();
         const siteChecks = [...crossPageService.analyze(crawl.pages), ...internalLinksService.analyze(crawl),
-          ...canonicalService.analyze(crawl), ...sitemapChecksService.analyze(crawl)];
+        ...canonicalService.analyze(crawl), ...sitemapChecksService.analyze(crawl)];
         if (body.render === true) await renderService.run(crawl.pages, options);
         const lighthouse = body.lighthouse === true ? await lighthouseService.run(crawl.page.requestedUrl, { ...options, strategy: body.strategy }) : undefined;
         options.signal?.throwIfAborted();
-        return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks, lighthouse,
-          siteFilesService.analyze(crawl.page, crawl.discovery)) };
+        return {
+          ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks, lighthouse,
+            siteFilesService.analyze(crawl.page, crawl.discovery))
+        };
       }
       const page = await websiteData.fetchPage(body.url, options);
       options.signal?.throwIfAborted();
@@ -43,8 +45,10 @@ module.exports = {
       if (body.render === true) await renderService.run([page], options);
       const lighthouse = body.lighthouse === true ? await lighthouseService.run(page.requestedUrl, { ...options, strategy: body.strategy }) : undefined;
       options.signal?.throwIfAborted();
-      return { ok: true, data: auditModel.createReport(page, startedAt, discovery, undefined, [], lighthouse,
-        siteFilesService.analyze(page, discovery)) };
+      return {
+        ok: true, data: auditModel.createReport(page, startedAt, discovery, undefined, [], lighthouse,
+          siteFilesService.analyze(page, discovery))
+      };
     } catch (error) {
       return { ok: false, code: error instanceof websiteData.WebsiteError ? error.code : 'INTERNAL_ERROR' };
     }

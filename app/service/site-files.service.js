@@ -3,18 +3,22 @@ const robotsReference = 'https://developers.google.com/search/docs/crawling-inde
 const sitemapReference = 'https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview';
 
 function file(id, label, status, found, evidence, recommendation, steps, reference, reason) {
-  return { id, label, status, statusLabel: statusLabels[status], scope: 'checked-locations', found,
+  return {
+    id, label, status, statusLabel: statusLabels[status], scope: 'checked-locations', found,
     recommendation, steps, evidence: evidence.slice(0, 50), evidenceOmitted: Math.max(0, evidence.length - 50),
-    references: [{ title: 'Google Search Central', url: reference }], ...(reason ? { reason } : {}) };
+    references: [{ title: 'Google Search Central', url: reference }], ...(reason ? { reason } : {})
+  };
 }
 
 module.exports = {
   analyze: (page, discovery) => {
     const robots = page.robots;
-    const robotsEvidence = robots ? [{ kind: Number.isInteger(robots.httpStatus) ? 'response' : 'observation', sourceUrl: robots.url,
+    const robotsEvidence = robots ? [{
+      kind: Number.isInteger(robots.httpStatus) ? 'response' : 'observation', sourceUrl: robots.url,
       finalUrl: robots.finalUrl || null, httpStatus: robots.httpStatus ?? null,
       contentType: robots.contentType || null, bodyFormat: robots.bodyFormat || null,
-      ...(robots.reason ? { reason: robots.reason } : {}) }] : [];
+      ...(robots.reason ? { reason: robots.reason } : {})
+    }] : [];
     let robotsFile;
     if (robots?.status === 'checked' && robots.bodyFormat !== 'html') {
       robotsFile = file('robots-file', 'robots.txt', 'found', '\u0e2d\u0e48\u0e32\u0e19 robots.txt \u0e44\u0e14\u0e49 \u00b7 HTTP ' + robots.httpStatus,
@@ -37,11 +41,13 @@ module.exports = {
     }
 
     const sitemaps = discovery?.sitemaps || [];
-    const sitemapEvidence = sitemaps.map(entry => ({ kind: Number.isInteger(entry.httpStatus) ? 'response' : 'observation', sourceUrl: entry.url,
+    const sitemapEvidence = sitemaps.map(entry => ({
+      kind: Number.isInteger(entry.httpStatus) ? 'response' : 'observation', sourceUrl: entry.url,
       finalUrl: entry.finalUrl || null, httpStatus: entry.httpStatus ?? null,
       ...(entry.contentType ? { contentType: entry.contentType } : {}),
       ...(entry.type ? { type: entry.type, namespaceVerified: entry.namespaceVerified } : {}),
-      ...(entry.reason ? { reason: entry.reason } : {}) }));
+      ...(entry.reason ? { reason: entry.reason } : {})
+    }));
     const found = sitemaps.filter(entry => entry.status === 'checked' && ['urlset', 'sitemapindex'].includes(entry.type));
     const invalid = sitemaps.filter(entry => ['SITEMAP_INVALID_XML', 'SITEMAP_INVALID_ROOT', 'SITEMAP_DTD_UNSUPPORTED',
       'SITEMAP_ENCODING'].includes(entry.reason) || entry.reason === 'UNSUPPORTED_TYPE' && entry.httpStatus >= 200 && entry.httpStatus < 300);

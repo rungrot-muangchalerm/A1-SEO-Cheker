@@ -18,8 +18,10 @@ function declarations(metadata, options = {}) {
 }
 
 function evidence(page, entries) {
-  return entries.map((entry) => ({ ...entry, sourceUrl: page.finalUrl,
-    ...(entry.kind === 'html' ? { sourceFormat: 'serialized-html' } : {}) }));
+  return entries.map((entry) => ({
+    ...entry, sourceUrl: page.finalUrl,
+    ...(entry.kind === 'html' ? { sourceFormat: 'serialized-html' } : {})
+  }));
 }
 
 module.exports = {
@@ -32,10 +34,12 @@ module.exports = {
       const declared = declarations(page.metadata, crawl);
       const facts = [];
       const entries = evidence(page, page.metadata.canonical);
-      const details = { declaredTargets: page.metadata.canonical.map((entry) => entry.url || entry.value),
+      const details = {
+        declaredTargets: page.metadata.canonical.map((entry) => entry.url || entry.value),
         target: declared.target || null, responseUrl: null, httpStatus: null, lastHttpStatus: null, redirects: [],
         selfReferential: declared.target === page.finalUrl, targetNoindex: null, targetCanonicalTargets: [],
-        contentComparison: 'not-performed', scope: 'observed-responses-and-initial-html', facts };
+        contentComparison: 'not-performed', scope: 'observed-responses-and-initial-html', facts
+      };
       let outcome = 'not-checked';
       let reason = declared.reason;
       let complete = false;
@@ -51,12 +55,18 @@ module.exports = {
         details.httpStatus = result.available ? result.status : null;
         details.lastHttpStatus = observation?.status || null;
         details.redirects = result.redirects || [];
-        if (observation) entries.push({ kind: 'response', sourceUrl: observation.url, status: observation.status,
-          redirects: details.redirects, terminal: result.available, fetchError: observation.fetchError || null });
-        if (!details.selfReferential) facts.push({ code: 'different-canonical-target',
-          message: '\u0e0a\u0e35\u0e49 canonical \u0e44\u0e1b\u0e2d\u0e35\u0e01 URL \u0e2d\u0e32\u0e08\u0e15\u0e31\u0e49\u0e07\u0e43\u0e08\u0e23\u0e27\u0e21\u0e2b\u0e19\u0e49\u0e32\u0e0b\u0e49\u0e33 \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e40\u0e19\u0e37\u0e49\u0e2d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e40\u0e08\u0e15\u0e19\u0e32' });
-        if (page.metadata.canonical.some((entry) => new URL(entry.url).hash)) facts.push({ code: 'canonical-fragment',
-          message: 'Canonical \u0e21\u0e35 URL fragment \u0e04\u0e27\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 URL \u0e02\u0e2d\u0e07\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23' });
+        if (observation) entries.push({
+          kind: 'response', sourceUrl: observation.url, status: observation.status,
+          redirects: details.redirects, terminal: result.available, fetchError: observation.fetchError || null
+        });
+        if (!details.selfReferential) facts.push({
+          code: 'different-canonical-target',
+          message: '\u0e0a\u0e35\u0e49 canonical \u0e44\u0e1b\u0e2d\u0e35\u0e01 URL \u0e2d\u0e32\u0e08\u0e15\u0e31\u0e49\u0e07\u0e43\u0e08\u0e23\u0e27\u0e21\u0e2b\u0e19\u0e49\u0e32\u0e0b\u0e49\u0e33 \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e40\u0e19\u0e37\u0e49\u0e2d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e40\u0e08\u0e15\u0e19\u0e32'
+        });
+        if (page.metadata.canonical.some((entry) => new URL(entry.url).hash)) facts.push({
+          code: 'canonical-fragment',
+          message: 'Canonical \u0e21\u0e35 URL fragment \u0e04\u0e27\u0e23\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 URL \u0e02\u0e2d\u0e07\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23'
+        });
         if (details.redirects.length) facts.push({ code: 'canonical-redirect', message: '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e21\u0e35 redirect' });
         const loop = !result.available && result.reason === 'REDIRECT_LOOP';
         if (loop) facts.push({ code: 'canonical-http-loop', message: '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical redirect \u0e27\u0e19\u0e0b\u0e49\u0e33' });
@@ -66,22 +76,28 @@ module.exports = {
           facts.push({ code: 'canonical-http-status', message: '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e15\u0e2d\u0e1a HTTP ' + result.status });
         } else {
           const targetPage = pages.get(result.url);
-          const target = targetPage || { finalUrl: result.url, headers: result.headers || {}, rawHeaders: result.rawHeaders || [],
-            metadata: html.parse({ finalUrl: result.url, html: '', headers: result.headers }) };
+          const target = targetPage || {
+            finalUrl: result.url, headers: result.headers || {}, rawHeaders: result.rawHeaders || [],
+            metadata: html.parse({ finalUrl: result.url, html: '', headers: result.headers })
+          };
           const directives = robots.read(target);
           details.targetNoindex = directives.noindex ? true : targetPage && !directives.truncated ? false : null;
           details.targetMetadataScope = targetPage ? 'initial-html-and-headers' : 'headers-only';
           details.targetCanonicalTargets = target.metadata.canonical.map((entry) => entry.url || entry.value);
           if (directives.noindex || directives.hasExpiration) {
-            facts.push({ code: directives.noindex ? 'canonical-target-noindex' : 'canonical-target-expiration',
-              message: directives.noindex ? '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 noindex \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22 index' : '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e21\u0e35 unavailable_after \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e40\u0e27\u0e25\u0e32' });
+            facts.push({
+              code: directives.noindex ? 'canonical-target-noindex' : 'canonical-target-expiration',
+              message: directives.noindex ? '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 noindex \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22 index' : '\u0e1b\u0e25\u0e32\u0e22\u0e17\u0e32\u0e07 canonical \u0e21\u0e35 unavailable_after \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e40\u0e27\u0e25\u0e32'
+            });
             entries.push(...evidence(target, directives.applicable.map((entry) => entry.evidence)));
           }
           const next = declarations(target.metadata, crawl);
           if (next.reason && next.reason !== 'no-canonical-declaration') entries.push(...evidence(target, target.metadata.canonical));
           if (next.target && next.target !== result.url) {
-            facts.push({ code: next.target === page.finalUrl && !details.selfReferential ? 'canonical-cycle' : 'canonical-chain',
-              message: '\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e1b\u0e49\u0e32\u0e2b\u0e21\u0e32\u0e22\u0e21\u0e35 canonical \u0e0a\u0e35\u0e49\u0e15\u0e48\u0e2d\u0e44\u0e1b\u0e17\u0e35\u0e48 ' + next.target });
+            facts.push({
+              code: next.target === page.finalUrl && !details.selfReferential ? 'canonical-cycle' : 'canonical-chain',
+              message: '\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e1b\u0e49\u0e32\u0e2b\u0e21\u0e32\u0e22\u0e21\u0e35 canonical \u0e0a\u0e35\u0e49\u0e15\u0e48\u0e2d\u0e44\u0e1b\u0e17\u0e35\u0e48 ' + next.target
+            });
             entries.push(...evidence(target, target.metadata.canonical));
           }
           complete = !!targetPage && !directives.truncated && !['canonical-declarations-incomplete', 'invalid-canonical-declaration',
@@ -101,7 +117,8 @@ module.exports = {
       const proof = entries.filter((entry) => entry.kind === 'response' || entry.name === 'X-Robots-Tag' || ['robots', 'googlebot'].includes(entry.name));
       const proofEntries = new Set(proof);
       const selected = [...proof, ...entries.filter((entry) => !proofEntries.has(entry))].slice(0, 200);
-      return { id: 'canonical-target:' + page.finalUrl, ruleId: 'canonical-target', ruleVersion: '1.0', url: page.finalUrl,
+      return {
+        id: 'canonical-target:' + page.finalUrl, ruleId: 'canonical-target', ruleVersion: '1.0', url: page.finalUrl,
         urls: [page.finalUrl], category: 'index', title: '\u0e40\u0e17\u0e35\u0e22\u0e1a canonical \u0e01\u0e31\u0e1a\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e1b\u0e49\u0e32\u0e2b\u0e21\u0e32\u0e22', outcome,
         severity: outcome === 'fail' ? 'warning' : outcome === 'review' ? 'review' : null, complete,
         ...(!complete ? { reason: reason || 'target-unavailable' } : {}),
@@ -113,7 +130,8 @@ module.exports = {
           '\u0e15\u0e23\u0e27\u0e08 HTTP, redirect, noindex \u0e41\u0e25\u0e30 canonical \u0e02\u0e2d\u0e07 URL \u0e40\u0e1b\u0e49\u0e32\u0e2b\u0e21\u0e32\u0e22\u0e08\u0e32\u0e01\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19',
           '\u0e15\u0e23\u0e27\u0e08 Google-selected canonical \u0e43\u0e19 Search Console \u0e02\u0e2d\u0e07\u0e40\u0e08\u0e49\u0e32\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a\u0e41\u0e25\u0e30\u0e15\u0e23\u0e27\u0e08\u0e0b\u0e49\u0e33\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49'],
         evidence: selected.length ? selected : [{ kind: 'observation', sourceUrl: page.finalUrl, selector: 'head link[rel~="canonical"]', header: 'Link', count: 0 }],
-        references: [{ title: 'Google Search Central', url: reference }], details };
+        references: [{ title: 'Google Search Central', url: reference }], details
+      };
     });
   }
 };

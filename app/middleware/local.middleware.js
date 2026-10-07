@@ -4,7 +4,7 @@ module.exports = {
   only: (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     let host;
-    try { host = new URL('http://' + req.get('host')); } catch {}
+    try { host = new URL('http://' + req.get('host')); } catch { }
     if (!host || host.username || host.password || !['localhost', '127.0.0.1'].includes(host.hostname) ||
       Number(host.port || 80) !== req.socket.localPort || host.pathname !== '/' || host.search || host.hash) {
       return res.status(403).json({ schemaVersion: model.version, status: 'failed', error: 'LOCAL_HOST_REQUIRED', message: 'Local access only.' });

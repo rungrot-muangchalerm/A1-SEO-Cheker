@@ -7,14 +7,16 @@ const limits = Object.freeze({ maxTargets: require('../config/crawl.config').dis
 const reference = 'https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap';
 
 function check(url, ruleId, title, outcome, complete, reason, found, evidence, details) {
-  return { id: ruleId + ':' + createHash('sha256').update(url).digest('hex'), ruleId, ruleVersion: '1.0', url, urls: [url],
+  return {
+    id: ruleId + ':' + createHash('sha256').update(url).digest('hex'), ruleId, ruleVersion: '1.0', url, urls: [url],
     category: 'index', title, outcome, severity: outcome === 'fail' ? 'warning' : outcome === 'review' ? 'review' : null,
     complete, ...(!complete ? { reason } : {}), found,
     impact: 'Sitemap \u0e40\u0e2a\u0e19\u0e2d URL \u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e43\u0e2b\u0e49\u0e04\u0e49\u0e19\u0e1e\u0e1a \u0e41\u0e15\u0e48\u0e44\u0e21\u0e48\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e31\u0e19 index \u0e2b\u0e23\u0e37\u0e2d\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a; noindex \u0e41\u0e25\u0e30 redirect \u0e2d\u0e32\u0e08\u0e15\u0e31\u0e49\u0e07\u0e43\u0e08 \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a',
     steps: ['\u0e15\u0e23\u0e27\u0e08 loc \u0e43\u0e19\u0e44\u0e1f\u0e25\u0e4c sitemap \u0e17\u0e35\u0e48\u0e23\u0e30\u0e1a\u0e38 \u0e40\u0e17\u0e35\u0e22\u0e1a\u0e01\u0e31\u0e1a HTTP \u0e41\u0e25\u0e30\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07\u0e02\u0e2d\u0e07 URL \u0e08\u0e23\u0e34\u0e07',
       '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 URL \u0e2b\u0e25\u0e31\u0e01\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23 index \u0e01\u0e48\u0e2d\u0e19\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19 sitemap, redirect \u0e2b\u0e23\u0e37\u0e2d noindex',
       '\u0e15\u0e23\u0e27\u0e08\u0e0b\u0e49\u0e33\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49 \u0e41\u0e25\u0e30\u0e14\u0e39\u0e2a\u0e16\u0e32\u0e19\u0e30\u0e17\u0e35\u0e48 Google \u0e23\u0e39\u0e49\u0e08\u0e31\u0e01\u0e43\u0e19 Search Console \u0e02\u0e2d\u0e07\u0e40\u0e08\u0e49\u0e32\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a'],
-    evidence, details, references: [{ title: 'Google Search Central', url: reference }] };
+    evidence, details, references: [{ title: 'Google Search Central', url: reference }]
+  };
 }
 
 module.exports = {
@@ -44,7 +46,7 @@ module.exports = {
             const candidate = new URL(entry.value);
             policyRestricted = ['http:', 'https:'].includes(candidate.protocol) &&
               (!!candidate.port || !!candidate.username || !!candidate.password || entry.value.length > 8192);
-          } catch {}
+          } catch { }
           if (policyRestricted) {
             restrictedEntries++; restrictedCount++;
             if (restricted.length < limits.maxEvidencePerTarget) restricted.push(proof);
@@ -85,11 +87,15 @@ module.exports = {
       let complete = false;
       let reason = new URL(targetUrl).origin !== crawl.discovery.origin ? 'outside-origin' :
         result.reason === 'not-fetched' ? skipped.get(targetUrl) || 'not-fetched' : result.reason;
-      const details = { target: targetUrl, responseUrl: observation?.url || null,
+      const details = {
+        target: targetUrl, responseUrl: observation?.url || null,
         httpStatus: result.available ? result.status : null, lastHttpStatus: observation?.status || null,
-        redirects: result.redirects || [], targetNoindex: null, sitemapFiles: [...group.files].sort(), evidenceOmitted: group.omitted, facts };
-      if (observation) proof.push({ kind: 'response', sourceUrl: observation.url, status: observation.status,
-        redirects: details.redirects, terminal: result.available, fetchError: observation.fetchError || null });
+        redirects: result.redirects || [], targetNoindex: null, sitemapFiles: [...group.files].sort(), evidenceOmitted: group.omitted, facts
+      };
+      if (observation) proof.push({
+        kind: 'response', sourceUrl: observation.url, status: observation.status,
+        redirects: details.redirects, terminal: result.available, fetchError: observation.fetchError || null
+      });
       if (details.redirects.length || observation?.status >= 300 && observation.status < 400) facts.push({ code: 'sitemap-url-redirect', message: '\u0e1e\u0e1a redirect \u0e02\u0e2d\u0e07 URL \u0e43\u0e19 sitemap' });
       const loop = !result.available && result.reason === 'REDIRECT_LOOP';
       if (loop) facts.push({ code: 'sitemap-url-http-loop', message: '\u0e40\u0e01\u0e34\u0e14 redirect \u0e27\u0e19\u0e0b\u0e49\u0e33' });
@@ -98,8 +104,10 @@ module.exports = {
         facts.push({ code: 'sitemap-url-http-status', message: 'URL \u0e43\u0e19 sitemap \u0e15\u0e2d\u0e1a HTTP ' + result.status });
       } else if (result.available) {
         const targetPage = pages.get(result.url);
-        const page = targetPage || { finalUrl: result.url, headers: result.headers || {}, rawHeaders: result.rawHeaders || [],
-          metadata: html.parse({ finalUrl: result.url, html: '', headers: result.headers }) };
+        const page = targetPage || {
+          finalUrl: result.url, headers: result.headers || {}, rawHeaders: result.rawHeaders || [],
+          metadata: html.parse({ finalUrl: result.url, html: '', headers: result.headers })
+        };
         const directives = robots.read(page);
         details.targetNoindex = directives.noindex ? true : targetPage && !directives.truncated ? false : null;
         details.targetMetadataScope = targetPage ? 'initial-html-and-headers' : 'headers-only';
@@ -107,8 +115,10 @@ module.exports = {
         if (!complete) reason = !targetPage ? 'target-body-unavailable' : 'target-robots-incomplete';
         if (directives.noindex) {
           facts.push({ code: 'sitemap-url-noindex', message: 'URL \u0e43\u0e19 sitemap \u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 noindex \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22 index' });
-          proof.push(...directives.applicable.map((entry) => ({ ...entry.evidence, sourceUrl: page.finalUrl,
-            ...(entry.evidence.kind === 'html' ? { sourceFormat: 'serialized-html' } : {}) })));
+          proof.push(...directives.applicable.map((entry) => ({
+            ...entry.evidence, sourceUrl: page.finalUrl,
+            ...(entry.evidence.kind === 'html' ? { sourceFormat: 'serialized-html' } : {})
+          })));
         }
       }
       if (loop) complete = true;

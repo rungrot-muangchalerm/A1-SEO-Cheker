@@ -7,9 +7,11 @@ const website = require('../data/website.data');
 const robots = require('./robots.service');
 const html = require('./html.service');
 
-const limits = Object.freeze({ maxPages: 2, timeoutMs: 20000, launchTimeoutMs: 5000, settleMs: 1000,
+const limits = Object.freeze({
+  maxPages: 2, timeoutMs: 20000, launchTimeoutMs: 5000, settleMs: 1000,
   maxRequests: 30, minIntervalMs: 250, maxResourceBytes: 512 * 1024, maxTotalBytes: 3 * 1024 * 1024,
-  maxDomBytes: 512 * 1024, maxElements: 10000, maxRedirects: 5, maxRecords: 100 });
+  maxDomBytes: 512 * 1024, maxElements: 10000, maxRedirects: 5, maxRecords: 100
+});
 const allowedTypes = new Set(['Script', 'Stylesheet', 'XHR', 'Fetch']);
 const headerNames = ['content-type', 'content-security-policy', 'x-content-type-options', 'referrer-policy', 'permissions-policy',
   'cross-origin-resource-policy', 'cross-origin-opener-policy', 'cross-origin-embedder-policy', 'access-control-allow-origin',
@@ -21,11 +23,13 @@ function snapshot(source, url) {
   body.find('script, style, noscript, template').remove();
   const text = body.text().replace(/\s+/g, ' ').trim();
   const metadata = html.parse({ finalUrl: url, html: source, headers: {} });
-  return { title: metadata.title, description: metadata.description,
+  return {
+    title: metadata.title, description: metadata.description,
     canonical: metadata.canonical.map((entry) => entry.url || entry.value),
     h1: metadata.headings.filter((entry) => entry.level === 1).map((entry) => entry.value),
     text: { length: text.length, sha256: createHash('sha256').update(text).digest('hex'), preview: text.slice(0, 2000), truncated: text.length > 2000 },
-    metadataComplete: !metadata.truncated.length };
+    metadataComplete: !metadata.truncated.length
+  };
 }
 
 function needed(source) {
@@ -50,7 +54,7 @@ module.exports = {
     const controller = new AbortController();
     let browser;
     let closing;
-    const closeBrowser = () => browser ? (closing ||= browser.close().catch(() => {})) : Promise.resolve();
+    const closeBrowser = () => browser ? (closing ||= browser.close().catch(() => { })) : Promise.resolve();
     const cancel = () => { controller.abort(new website.WebsiteError('CANCELLED')); void closeBrowser(); };
     if (options.signal?.aborted) cancel();
     else options.signal?.addEventListener('abort', cancel, { once: true });
@@ -102,15 +106,19 @@ module.exports = {
           const rules = await robots.load(selected.href, { signal: controller.signal, localOrigin: options.localOrigin, robotsCache, beforeConnect, onConnect });
           if (rules.status === 'not-checked' || rules.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
           if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
-          if (!browser) browser = await chromium.launch({ headless: true, chromiumSandbox: true, timeout: limits.launchTimeoutMs,
+          if (!browser) browser = await chromium.launch({
+            headless: true, chromiumSandbox: true, timeout: limits.launchTimeoutMs,
             ...(process.env.RENDER_BROWSER_CHANNEL ? { channel: process.env.RENDER_BROWSER_CHANNEL } : {}),
             proxy: { server: 'http://127.0.0.1:' + proxy.address().port, bypass: '<-loopback>' },
             args: ['--disable-background-networking', '--disable-quic', '--disable-breakpad', '--disable-crash-reporter',
               '--force-webrtc-ip-handling-policy=disable_non_proxied_udp', '--js-flags=--max-old-space-size=128',
-              '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'] });
+              '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1']
+          });
           controller.signal.throwIfAborted();
-          context = await browser.newContext({ offline: true, serviceWorkers: 'block', acceptDownloads: false,
-            permissions: [], viewport: { width: 1280, height: 800 }, userAgent: 'SEOChecker/0.1' });
+          context = await browser.newContext({
+            offline: true, serviceWorkers: 'block', acceptDownloads: false,
+            permissions: [], viewport: { width: 1280, height: 800 }, userAgent: 'SEOChecker/0.1'
+          });
           await context.addInitScript(() => {
             for (const name of ['RTCPeerConnection', 'webkitRTCPeerConnection', 'WebTransport', 'Worker', 'SharedWorker']) {
               Object.defineProperty(globalThis, name, { value: undefined, configurable: false, writable: false });
@@ -118,11 +126,11 @@ module.exports = {
           });
           await context.routeWebSocket('**/*', (socket) => { record({ url: socket.url(), reason: 'WEBSOCKET_BLOCKED' }); socket.close({ code: 1008, reason: 'Renderer policy' }); });
           const page = await context.newPage();
-          context.on('page', (popup) => { if (popup !== page) { record({ reason: 'POPUP_BLOCKED' }); void popup.close().catch(() => {}); } });
+          context.on('page', (popup) => { if (popup !== page) { record({ reason: 'POPUP_BLOCKED' }); void popup.close().catch(() => { }); } });
           page.on('pageerror', () => ++scriptErrors);
           page.on('console', (message) => { if (message.type() === 'error') ++consoleErrors; });
           page.on('requestfailed', (request) => record({ url: request.url(), reason: 'RENDER_BROWSER_REQUEST_FAILED' }));
-          page.on('dialog', (dialog) => { void dialog.dismiss().catch(() => {}); });
+          page.on('dialog', (dialog) => { void dialog.dismiss().catch(() => { }); });
           let mainUsed = false;
           const cdp = await context.newCDPSession(page);
           const { frameTree } = await cdp.send('Page.getFrameTree');
@@ -139,8 +147,10 @@ module.exports = {
             }
             const fulfill = (status, headers, body) => {
               requestSignal.throwIfAborted();
-              return cdp.send('Fetch.fulfillRequest', { requestId: event.requestId,
-                responseCode: status, responseHeaders: Object.entries(headers).map(([name, value]) => ({ name, value })), body: Buffer.from(body).toString('base64') });
+              return cdp.send('Fetch.fulfillRequest', {
+                requestId: event.requestId,
+                responseCode: status, responseHeaders: Object.entries(headers).map(([name, value]) => ({ name, value })), body: Buffer.from(body).toString('base64')
+              });
             };
             const operation = pending.then(async () => {
               requestSignal.throwIfAborted();
@@ -161,24 +171,28 @@ module.exports = {
               if (remainingBytes <= 0) throw new website.WebsiteError('RENDER_BYTE_LIMIT');
               const allowance = Math.min(limits.maxResourceBytes, remainingBytes);
               stats.budgetBytes += allowance;
-              const result = await website.fetchRenderResource(url.href, { signal: requestSignal, scopeOrigin: selected.origin, onConnect,
+              const result = await website.fetchRenderResource(url.href, {
+                signal: requestSignal, scopeOrigin: selected.origin, onConnect,
                 localOrigin: options.localOrigin,
                 timeoutMs: Math.max(1, Math.min(5000, deadline - Date.now())), maxBytes: allowance,
                 beforeRequest: async (target, signal) => {
                   const policy = await robots.load(target.href, { signal, localOrigin: options.localOrigin, robotsCache, beforeConnect, onConnect });
                   if (policy.status === 'not-checked' || policy.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
                   if (policy.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
-                }, beforeConnect: (target, signal) => beforeConnect(target, signal, rules.crawlDelay) });
+                }, beforeConnect: (target, signal) => beforeConnect(target, signal, rules.crawlDelay)
+              });
               stats.bytes += result.bytes;
               stats.budgetBytes -= allowance - result.bytes;
               record({ url: url.href, status: result.status, bytes: result.bytes, ...(result.redirect ? { destination: result.redirect } : {}) });
               await fulfill(result.status, responseHeaders(result.headers), result.body);
             });
-            pending = operation.then(() => {}, async (error) => {
-              record({ url: request.url, reason: error instanceof website.WebsiteError ? error.code : 'RENDER_RESOURCE_FAILED',
-                ...(error.observation ? { status: error.observation.status } : {}) });
+            pending = operation.then(() => { }, async (error) => {
+              record({
+                url: request.url, reason: error instanceof website.WebsiteError ? error.code : 'RENDER_RESOURCE_FAILED',
+                ...(error.observation ? { status: error.observation.status } : {})
+              });
               if (!requestSignal.aborted && browser.isConnected()) {
-                await cdp.send('Fetch.failRequest', { requestId: event.requestId, errorReason: 'BlockedByClient' }).catch(() => {});
+                await cdp.send('Fetch.failRequest', { requestId: event.requestId, errorReason: 'BlockedByClient' }).catch(() => { });
               }
             });
           });
@@ -200,20 +214,24 @@ module.exports = {
           const changes = ['title', 'description', 'canonical', 'h1'].filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
           if (before.text.sha256 !== after.text.sha256) changes.push('body-text');
           const complete = !records.some((entry) => entry.reason || entry.status >= 400) && !omitted && !scriptErrors && !consoleErrors && before.metadataComplete && after.metadataComplete;
-          item.render = { ...info, status: complete ? 'completed' : 'partial', complete, completedAt: new Date().toISOString(),
+          item.render = {
+            ...info, status: complete ? 'completed' : 'partial', complete, completedAt: new Date().toISOString(),
             engine: { name: 'Chromium', version: browser.version(), playwright: require('playwright/package.json').version },
             before, after: { ...after, html: dom.html, documentUrl: dom.url, sourceFormat: 'rendered-dom' }, changes,
             resources: { records, omitted, scriptErrors, consoleErrors }, limitations: ['same-origin-assets-only', 'GET-only', 'no-images-fonts-media',
-              'no-subframes-popups-workers-service-workers-websockets-webrtc', 'no-interactions', 'bounded-observation-window'] };
+              'no-subframes-popups-workers-service-workers-websockets-webrtc', 'no-interactions', 'bounded-observation-window']
+          };
         } catch (error) {
           if (options.signal?.aborted) throw new website.WebsiteError('CANCELLED');
-          item.render = { ...info, status: 'not-checked', reason: controller.signal.aborted ? controller.signal.reason.code :
-            error instanceof website.WebsiteError ? error.code : !browser ? 'BROWSER_UNAVAILABLE' : 'RENDER_FAILED',
-            completedAt: new Date().toISOString(), resources: { records, omitted, scriptErrors, consoleErrors } };
+          item.render = {
+            ...info, status: 'not-checked', reason: controller.signal.aborted ? controller.signal.reason.code :
+              error instanceof website.WebsiteError ? error.code : !browser ? 'BROWSER_UNAVAILABLE' : 'RENDER_FAILED',
+            completedAt: new Date().toISOString(), resources: { records, omitted, scriptErrors, consoleErrors }
+          };
         } finally {
           requestController.abort(new website.WebsiteError('RENDER_OBSERVATION_ENDED'));
           if (controller.signal.aborted) await closeBrowser();
-          else if (context) await context.close().catch(() => {});
+          else if (context) await context.close().catch(() => { });
           await pending;
           if (item.render) {
             item.render.resources = { records: [...records], omitted, scriptErrors, consoleErrors };

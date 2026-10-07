@@ -37,8 +37,10 @@ module.exports = {
       tree = new XMLParser({
         preserveOrder: true, ignoreAttributes: false, ignoreDeclaration: false, ignorePiTags: false,
         parseTagValue: false, parseAttributeValue: false, maxNestedTags: 20,
-        processEntities: { enabled: true, maxEntityCount: 1, maxEntitySize: 8192, maxExpansionDepth: 2,
-          maxExpandedLength: 512 * 1024, maxTotalExpansions: 50000 }
+        processEntities: {
+          enabled: true, maxEntityCount: 1, maxEntitySize: 8192, maxExpansionDepth: 2,
+          maxExpandedLength: 512 * 1024, maxTotalExpansions: 50000
+        }
       }).parse(xml);
     } catch { throw new website.WebsiteError('SITEMAP_INVALID_XML'); }
     const encoding = tree.find((node) => Object.hasOwn(node, '?xml'))?.[':@']?.['@_encoding'];
@@ -46,7 +48,7 @@ module.exports = {
     const roots = tree.map((node) => element(node)).filter(Boolean);
     const root = roots[0];
     if (roots.length !== 1 || !['urlset', 'sitemapindex'].includes(root.name) ||
-        ![namespace, ''].includes(root.namespace)) throw new website.WebsiteError('SITEMAP_INVALID_ROOT');
+      ![namespace, ''].includes(root.namespace)) throw new website.WebsiteError('SITEMAP_INVALID_ROOT');
     const tag = root.name === 'urlset' ? 'url' : 'sitemap';
     const nodes = root.children.map((node) => element(node, root.bindings)).filter((node) => node?.name === tag && node.namespace === root.namespace);
     const entries = nodes.slice(0, maxEntries).map((node, index) => {
@@ -55,10 +57,12 @@ module.exports = {
       const textOnly = loc && loc.children.every((child) => Object.hasOwn(child, '#text'));
       const value = textOnly ? loc.children.map((child) => child['#text']).join('').trim() : '';
       let url = null;
-      try { if (textOnly && locations.length === 1) url = website.parseUrl(value, options).href; } catch {}
+      try { if (textOnly && locations.length === 1) url = website.parseUrl(value, options).href; } catch { }
       return { value, url, kind: 'sitemap', selector: root.name + ' > ' + tag + ' > loc', entryIndex: index + 1 };
     });
-    return { type: root.name, namespaceVerified: root.namespace === namespace, entries,
-      totalEntries: nodes.length, truncated: nodes.length > entries.length };
+    return {
+      type: root.name, namespaceVerified: root.namespace === namespace, entries,
+      totalEntries: nodes.length, truncated: nodes.length > entries.length
+    };
   }
 };

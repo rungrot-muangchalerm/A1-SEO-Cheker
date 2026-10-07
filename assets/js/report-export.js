@@ -23,8 +23,10 @@
 
     const sheet = (name, headers, rows) => {
       if (cells + headers.length > limits.maxCells) throw new Error('SPREADSHEET_TOO_LARGE');
-      const worksheet = workbook.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1 }],
-        properties: { defaultRowHeight: 30, tabColor: { argb: 'FF15803D' } } });
+      const worksheet = workbook.addWorksheet(name, {
+        views: [{ state: 'frozen', ySplit: 1 }],
+        properties: { defaultRowHeight: 30, tabColor: { argb: 'FF15803D' } }
+      });
       worksheet.columns = headers.map(header => ({ header, width: /URL|Text|Source|Found|Steps|Impact|Details/i.test(header) ? 60 : 28 }));
       cells += headers.length;
       const header = worksheet.getRow(1);
@@ -71,30 +73,30 @@
     sheet('Summary', ['Field', 'Value'], summary);
     if (report.siteFiles?.length) sheet('Site Files', ['File ID', 'Label', 'Status', 'Found', 'Recommendation', 'Steps', 'Evidence', 'Evidence Omitted', 'References'],
       report.siteFiles.map(entry => [entry.id, entry.label, entry.status, entry.found, entry.recommendation,
-        entry.steps, entry.evidence, entry.evidenceOmitted, entry.references]));
+      entry.steps, entry.evidence, entry.evidenceOmitted, entry.references]));
     if (report.pages) sheet('Pages', ['Requested URL', 'Final URL', 'HTTP Status', 'Fetch Status', 'Analysis Status', 'Title', 'Description', 'Canonical', 'Googlebot Allowed'],
       report.pages.map(page => [page.requestedUrl, page.finalUrl, page.status, page.fetchStatus, page.analysisStatus,
-        page.metadata?.title, page.metadata?.description, page.metadata?.canonical, page.robots?.googlebotAllowed]));
+      page.metadata?.title, page.metadata?.description, page.metadata?.canonical, page.robots?.googlebotAllowed]));
     sheet('Issues', ['Issue ID', 'Rule ID', 'Rule Version', 'Outcome', 'Severity', 'Category', 'Title', 'Found', 'Impact', 'Steps', 'Complete', 'Reason', 'Details', 'References'],
       report.issues.map(issue => [issue.id, issue.ruleId, issue.ruleVersion, issue.outcome, issue.severity, issue.category, issue.title,
-        issue.found, issue.impact, issue.steps, issue.complete, issue.reason, issue.details, issue.references]));
+      issue.found, issue.impact, issue.steps, issue.complete, issue.reason, issue.details, issue.references]));
     function* issueUrls() {
       for (const issue of report.issues) for (const url of issue.urls || []) yield [issue.id, issue.ruleId, url];
     }
     sheet('Issue URLs', ['Issue ID', 'Rule ID', 'URL'], issueUrls());
     function* evidence() {
       for (const issue of report.issues) for (const entry of issue.evidence || []) yield [issue.id, entry.sourceUrl || entry.url,
-        entry.kind, entry.selector || entry.name, entry.location?.startLine, entry.location?.startColumn, entry];
+      entry.kind, entry.selector || entry.name, entry.location?.startLine, entry.location?.startColumn, entry];
     }
     sheet('Evidence', ['Issue ID', 'Source URL', 'Kind', 'Selector', 'Line', 'Column', 'Evidence JSON'], evidence());
     if (report.pages) {
       sheet('Scores', ['Category ID', 'Title', 'Score', 'Display Score', 'URL', 'Strategy', 'Provider', 'Fetched At'],
         (report.lighthouse?.categories || []).map(category => [category.id, category.title, category.score, category.displayScore,
-          report.lighthouse.url, report.lighthouse.strategy, report.lighthouse.provider, report.lighthouse.fetchTime]));
+        report.lighthouse.url, report.lighthouse.strategy, report.lighthouse.provider, report.lighthouse.fetchTime]));
       sheet('Agentic', ['Audit ID', 'Title', 'Status', 'Score', 'Reason', 'Description', 'Details', 'Evidence', 'Truncated', 'URL', 'Strategy', 'Engine Version', 'Fetched At'],
         (report.lighthouse?.agentic?.audits || []).map(audit => [audit.id, audit.title, audit.status, audit.score, audit.reason, audit.description,
-          audit.explanation || audit.displayValue, audit.evidence, Boolean(audit.truncated), report.lighthouse.finalUrl || report.lighthouse.url,
-          report.lighthouse.strategy, report.lighthouse.engine?.version, report.lighthouse.fetchTime]));
+        audit.explanation || audit.displayValue, audit.evidence, Boolean(audit.truncated), report.lighthouse.finalUrl || report.lighthouse.url,
+        report.lighthouse.strategy, report.lighthouse.engine?.version, report.lighthouse.fetchTime]));
       sheet('Not Checked', ['Rule ID', 'URL', 'Reason', 'Message'], (report.notChecked || []).map(entry => [entry.id, entry.url, entry.reason, entry.message]));
       sheet('Discovered', ['URL', 'Sources'], (report.discovery?.urls || []).map(entry => [entry.url, entry.sources]));
       sheet('Skipped', ['URL', 'Reason'], (report.coverage?.skipped || []).map(entry => [entry.url, entry.reason]));

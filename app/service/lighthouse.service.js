@@ -6,8 +6,10 @@ const robots = require('./robots.service');
 const result = require('./lighthouse-result.service');
 const gatherers = require('./lighthouse-gatherers.service');
 
-const limits = Object.freeze({ timeoutMs: 90000, launchTimeoutMs: 10000, maxRequests: 300, maxResourceBytes: 4 * 1024 * 1024,
-  maxTotalBytes: 32 * 1024 * 1024, maxRedirects: 5, maxRecords: 100 });
+const limits = Object.freeze({
+  timeoutMs: 90000, launchTimeoutMs: 10000, maxRequests: 300, maxResourceBytes: 4 * 1024 * 1024,
+  maxTotalBytes: 32 * 1024 * 1024, maxRedirects: 5, maxRecords: 100
+});
 const headersAllowed = ['content-type', 'content-security-policy', 'x-content-type-options', 'referrer-policy', 'permissions-policy',
   'cross-origin-resource-policy', 'cross-origin-opener-policy', 'cross-origin-embedder-policy', 'access-control-allow-origin',
   'access-control-allow-credentials', 'access-control-expose-headers', 'location', 'cache-control', 'expires', 'last-modified', 'etag', 'link'];
@@ -22,7 +24,7 @@ module.exports = {
     const controller = new AbortController();
     let browser, closing, pendingRun;
     let pending = Promise.resolve();
-    const close = () => browser ? (closing ||= browser.close().catch(() => {})) : Promise.resolve();
+    const close = () => browser ? (closing ||= browser.close().catch(() => { })) : Promise.resolve();
     const cancel = () => { controller.abort(new website.WebsiteError('CANCELLED')); void close(); };
     if (options.signal?.aborted) cancel();
     else options.signal?.addEventListener('abort', cancel, { once: true });
@@ -54,12 +56,14 @@ module.exports = {
       const { default: lighthouse } = await import('lighthouse');
       controller.signal.throwIfAborted();
       await new Promise((resolve, reject) => { proxy.once('error', reject); proxy.listen(0, '127.0.0.1', resolve); });
-      browser = await puppeteer.launch({ headless: true, defaultViewport: null, timeout: limits.launchTimeoutMs,
+      browser = await puppeteer.launch({
+        headless: true, defaultViewport: null, timeout: limits.launchTimeoutMs,
         ...(process.env.LIGHTHOUSE_BROWSER_CHANNEL === 'chrome' || process.env.RENDER_BROWSER_CHANNEL === 'chrome' ?
           { channel: 'chrome' } : { executablePath: chromium.executablePath() }),
         ignoreDefaultArgs: ['--enable-automation'], args: ['--disable-background-networking', '--disable-quic', '--disable-breakpad',
           '--disable-crash-reporter', '--proxy-server=http://127.0.0.1:' + proxy.address().port, '--proxy-bypass-list=<-loopback>',
-          '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', '--force-webrtc-ip-handling-policy=disable_non_proxied_udp'] });
+          '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1', '--force-webrtc-ip-handling-policy=disable_non_proxied_udp']
+      });
       controller.signal.throwIfAborted();
       const page = await browser.newPage();
       await page.setBypassServiceWorker(true);
@@ -69,8 +73,8 @@ module.exports = {
         }
         if (navigator.serviceWorker) navigator.serviceWorker.register = () => Promise.reject(new Error('Audit policy'));
       });
-      page.on('popup', popup => { record({ reason: 'LIGHTHOUSE_POPUP_BLOCKED' }); void popup.close().catch(() => {}); });
-      page.on('dialog', dialog => { void dialog.dismiss().catch(() => {}); });
+      page.on('popup', popup => { record({ reason: 'LIGHTHOUSE_POPUP_BLOCKED' }); void popup.close().catch(() => { }); });
+      page.on('dialog', dialog => { void dialog.dismiss().catch(() => { }); });
       const fetchResource = async (url, artifact) => {
         controller.signal.throwIfAborted();
         if (budgetBytes >= limits.maxTotalBytes) throw new website.WebsiteError('LIGHTHOUSE_BYTE_LIMIT');
@@ -78,7 +82,8 @@ module.exports = {
         budgetBytes += allowance;
         const localOrigin = url.origin === selected.origin ? options.localOrigin : undefined;
         const fetch = artifact ? website.fetchLighthouseAuditResource : website.fetchLighthouseResource;
-        const response = await fetch(url.href, { signal: controller.signal, localOrigin,
+        const response = await fetch(url.href, {
+          signal: controller.signal, localOrigin,
           scopeOrigin: url.origin, maxBytes: allowance, timeoutMs: 10000,
           beforeRequest: async target => {
             if (artifact && ++requests > limits.maxRequests) {
@@ -88,7 +93,8 @@ module.exports = {
             const policy = await robots.load(target.href, { signal: controller.signal, localOrigin, robotsCache });
             if (policy.status === 'not-checked' || policy.crawlerAllowed === undefined) throw new website.WebsiteError('ROBOTS_UNKNOWN');
             if (policy.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
-          } });
+          }
+        });
         bytes += response.bytes;
         budgetBytes -= allowance - response.bytes;
         const headers = {};
@@ -120,9 +126,9 @@ module.exports = {
           record({ url: url.href, status: response.status, bytes: response.bytes });
           await request.respond({ status: response.status, headers: response.headers, body: response.body });
         });
-        pending = operation.then(() => {}, async error => {
+        pending = operation.then(() => { }, async error => {
           record({ url: request.url(), reason: error instanceof website.WebsiteError ? error.code : 'LIGHTHOUSE_RESOURCE_FAILED' });
-          await request.abort('blockedbyclient').catch(() => {});
+          await request.abort('blockedbyclient').catch(() => { });
         });
       });
       const config = await gatherers.configure(options.strategy, async (value, artifact) => {
@@ -131,8 +137,10 @@ module.exports = {
           controller.signal.throwIfAborted();
           const url = website.parseUrl(value, options);
           const response = await fetchResource(url, artifact);
-          record({ url: url.href, finalUrl: response.finalUrl, redirects: response.redirects,
-            kind: 'audit-resource', artifact, status: response.status, bytes: response.bytes });
+          record({
+            url: url.href, finalUrl: response.finalUrl, redirects: response.redirects,
+            kind: 'audit-resource', artifact, status: response.status, bytes: response.bytes
+          });
           return { status: response.status, content: response.status >= 200 && response.status < 300 ? response.body.toString('utf8') : null, headers: response.headers };
         } catch (error) {
           const reason = error instanceof website.WebsiteError ? error.code : 'LIGHTHOUSE_RESOURCE_FAILED';
@@ -141,9 +149,11 @@ module.exports = {
           throw new website.WebsiteError(reason);
         }
       });
-      pendingRun = lighthouse(selected.href, { onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo', 'agentic-browsing'],
+      pendingRun = lighthouse(selected.href, {
+        onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo', 'agentic-browsing'],
         output: 'json', logLevel: 'silent', enableErrorReporting: false, disableFullPageScreenshot: true,
-        maxWaitForLoad: 15000, maxWaitForFcp: 15000 }, config, page);
+        maxWaitForLoad: 15000, maxWaitForFcp: 15000
+      }, config, page);
       const outcome = await aborted(pendingRun);
       await pending;
       controller.signal.throwIfAborted();
@@ -157,14 +167,16 @@ module.exports = {
       return report;
     } catch (error) {
       if (options.signal?.aborted) throw new website.WebsiteError('CANCELLED');
-      return format({ status: 'not-checked', reason: controller.signal.aborted ? controller.signal.reason.code :
-        error instanceof website.WebsiteError ? error.code : browser ? 'LIGHTHOUSE_FAILED' : 'BROWSER_UNAVAILABLE' });
+      return format({
+        status: 'not-checked', reason: controller.signal.aborted ? controller.signal.reason.code :
+          error instanceof website.WebsiteError ? error.code : browser ? 'LIGHTHOUSE_FAILED' : 'BROWSER_UNAVAILABLE'
+      });
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener('abort', cancel);
       controller.abort(new website.WebsiteError('CANCELLED'));
       await close();
-      await pendingRun?.catch(() => {});
+      await pendingRun?.catch(() => { });
       await pending;
       robotsCache.clear();
       proxy.closeAllConnections();

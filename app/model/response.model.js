@@ -17,13 +17,15 @@ module.exports = {
         const visited = new Set();
         const redirects = [];
         let last;
-        for (;;) {
+        for (; ;) {
           if (visited.has(url)) return { available: false, reason: 'REDIRECT_LOOP', observation: last, redirects };
           visited.add(url);
           const response = entries.get(url);
           if (!response) return { available: false, reason: last?.fetchError || 'not-fetched', observation: last, redirects };
-          if (response.fetchError === 'REDIRECT_LOOP') return { available: false, reason: 'REDIRECT_LOOP',
-            observation: response, redirects: response.redirects || [], reusedResponse: !!last };
+          if (response.fetchError === 'REDIRECT_LOOP') return {
+            available: false, reason: 'REDIRECT_LOOP',
+            observation: response, redirects: response.redirects || [], reusedResponse: !!last
+          };
           const start = (response.redirects || []).findIndex((hop) => website.parseUrl(hop.url, options).href === url);
           if (start >= 0) redirects.push(...response.redirects.slice(start));
           if (response.terminal) return { available: true, ...response, redirects, reusedResponse: !!last };

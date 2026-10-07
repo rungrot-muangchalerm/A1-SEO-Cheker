@@ -33,8 +33,10 @@ function extend(collection, page, includePage = true, includeCanonical = false) 
   collection.linkExtractionComplete &&= !page.metadata.truncated.includes('links');
   for (const link of page.metadata.links) {
     if (!link.url) continue;
-    add(collection, link.url, { kind: 'html-link', sourceUrl: page.finalUrl, selector: link.selector, location: link.location,
-      source: link.source, sourceTruncated: link.sourceTruncated });
+    add(collection, link.url, {
+      kind: 'html-link', sourceUrl: page.finalUrl, selector: link.selector, location: link.location,
+      source: link.source, sourceTruncated: link.sourceTruncated
+    });
   }
   if (includeCanonical) {
     for (const entry of page.metadata.canonical) {
@@ -49,8 +51,10 @@ module.exports = {
   discover: async (page, options = {}) => {
     const origin = new URL(page.finalUrl).origin;
     const skipped = [];
-    const collection = { origin, urls: [], skipped, skippedOmitted: 0, limitReached: false, linkExtractionComplete: true, limits,
-      ...(options.localOrigin ? { localOrigin: options.localOrigin } : {}) };
+    const collection = {
+      origin, urls: [], skipped, skippedOmitted: 0, limitReached: false, linkExtractionComplete: true, limits,
+      ...(options.localOrigin ? { localOrigin: options.localOrigin } : {})
+    };
     add(collection, page.finalUrl, { kind: 'requested-page', sourceUrl: page.finalUrl });
     extend(collection, page, false, options.includeCanonical === true);
     const queue = [];
@@ -83,14 +87,18 @@ module.exports = {
       if (remainingMs <= 0) { collection.limitReached = true; skip(collection, { url: url.href, kind: 'sitemap', reason: 'sitemap-deadline' }); continue; }
       let evidence;
       try {
-        const response = await website.fetchSitemap(url.href, { signal: options.signal, timeoutMs: Math.min(5000, remainingMs), scopeOrigin: origin,
+        const response = await website.fetchSitemap(url.href, {
+          signal: options.signal, timeoutMs: Math.min(5000, remainingMs), scopeOrigin: origin,
           localOrigin: options.localOrigin,
-          beforeRequest: options.beforeRequest, beforeConnect: options.beforeConnect, onConnect: options.onConnect });
+          beforeRequest: options.beforeRequest, beforeConnect: options.beforeConnect, onConnect: options.onConnect
+        });
         options.signal?.throwIfAborted();
         seen.add(response.finalUrl);
-        evidence = { url: url.href, finalUrl: response.finalUrl, httpStatus: response.status, bytes: response.bytes, redirects: response.redirects,
+        evidence = {
+          url: url.href, finalUrl: response.finalUrl, httpStatus: response.status, bytes: response.bytes, redirects: response.redirects,
           contentType: response.headers?.['content-type'] || null,
-          ...(sourceUrl ? { sourceUrl, entryIndex } : {}) };
+          ...(sourceUrl ? { sourceUrl, entryIndex } : {})
+        };
         if (response.status < 200 || response.status >= 300) {
           sitemaps.push({ ...evidence, status: 'not-checked', reason: 'sitemap-http-status' });
           continue;
@@ -106,9 +114,13 @@ module.exports = {
       } catch (error) {
         if (options.signal?.aborted) throw error;
         const observed = error.observation;
-        sitemaps.push({ ...(evidence || (observed ? { finalUrl: observed.url, httpStatus: observed.status,
-          contentType: observed.headers?.['content-type'] || null } : {})),
-          url: url.href, status: 'not-checked', reason: error instanceof website.WebsiteError ? error.code : 'SITEMAP_FAILED' });
+        sitemaps.push({
+          ...(evidence || (observed ? {
+            finalUrl: observed.url, httpStatus: observed.status,
+            contentType: observed.headers?.['content-type'] || null
+          } : {})),
+          url: url.href, status: 'not-checked', reason: error instanceof website.WebsiteError ? error.code : 'SITEMAP_FAILED'
+        });
       } finally {
         await options.onDiscovery?.({ ...collection, sitemaps });
       }

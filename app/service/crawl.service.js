@@ -29,10 +29,12 @@ module.exports = {
     let stopReason = null;
     let discovery;
     const notify = async (phase, currentUrl = null) => {
-      await options.onProgress?.({ phase, currentUrl, origin: discovery?.origin || new URL(pages[0]?.finalUrl || requested.href).origin,
+      await options.onProgress?.({
+        phase, currentUrl, origin: discovery?.origin || new URL(pages[0]?.finalUrl || requested.href).origin,
         discovered: discovery?.urls.length || (pages.length ? 1 : 0), fetched: pages.length, analyzed: pages.length,
         skipped: skipped.length, skippedEntries: [...skipped], limitReached: !!(stopReason || discovery?.limitReached), stopReason,
-        limits, attemptedPages: stats.attemptedPages });
+        limits, attemptedPages: stats.attemptedPages
+      });
     };
     const throttle = async (_url, signal, crawlDelay = 0) => {
       if (stats.requests >= limits.maxRequests) throw new website.WebsiteError('CRAWL_REQUEST_LIMIT');
@@ -58,17 +60,21 @@ module.exports = {
       if (rules.crawlerAllowed === false) throw new website.WebsiteError('ROBOTS_BLOCKED');
       requestCrawlDelay = rules.crawlDelay || 0;
     };
-    const networkOptions = { signal: controller.signal, localOrigin: options.localOrigin, beforeRequest, onConnect,
+    const networkOptions = {
+      signal: controller.signal, localOrigin: options.localOrigin, beforeRequest, onConnect,
       beforeConnect: (url, signal) => throttle(url, signal, requestCrawlDelay), includeCanonical: true,
-      onDiscovery: async (collection) => { discovery = collection; await notify('discovering'); } };
+      onDiscovery: async (collection) => { discovery = collection; await notify('discovering'); }
+    };
     const analyze = async (page) => {
       page.metadata = html.parse(page);
       page.robots = await robots.load(page.finalUrl, policyOptions);
       controller.signal.throwIfAborted();
       page.checks = seo.analyze(page);
       pages.push(page);
-      responses.push({ requestedUrl: page.requestedUrl, url: page.finalUrl, status: page.status, headers: page.headers,
-        rawHeaders: page.rawHeaders, redirects: page.redirects, terminal: true });
+      responses.push({
+        requestedUrl: page.requestedUrl, url: page.finalUrl, status: page.status, headers: page.headers,
+        rawHeaders: page.rawHeaders, redirects: page.redirects, terminal: true
+      });
       seen.add(page.requestedUrl);
       seen.add(page.finalUrl);
       for (const redirect of page.redirects) seen.add(redirect.url);
@@ -83,9 +89,11 @@ module.exports = {
       catch (error) {
         if (options.signal?.aborted || !stopCodes.has(error.code)) throw error;
         stopReason = error.code;
-        discovery = { origin: new URL(root.finalUrl).origin, urls: [], sitemaps: [], skipped: [], skippedOmitted: 0,
+        discovery = {
+          origin: new URL(root.finalUrl).origin, urls: [], sitemaps: [], skipped: [], skippedOmitted: 0,
           limitReached: true, linkExtractionComplete: false, limits: discoveryService.limits,
-          ...(options.localOrigin ? { localOrigin: options.localOrigin } : {}) };
+          ...(options.localOrigin ? { localOrigin: options.localOrigin } : {})
+        };
         discoveryService.extend(discovery, root, true, true);
       }
       // Drain the growing queue, including links found beyond the starting page and sitemap.
@@ -100,8 +108,10 @@ module.exports = {
         await notify('crawling', entry.url);
         const remainingBytes = limits.maxHtmlBytes - stats.htmlBytes;
         try {
-          const page = await website.fetchPage(entry.url, { ...networkOptions, scopeOrigin: discovery.origin,
-            maxBytes: Math.min(website.limits.maxBytes, remainingBytes) });
+          const page = await website.fetchPage(entry.url, {
+            ...networkOptions, scopeOrigin: discovery.origin,
+            maxBytes: Math.min(website.limits.maxBytes, remainingBytes)
+          });
           await analyze(page);
           discoveryService.extend(discovery, page, true, true);
         } catch (error) {
@@ -115,8 +125,10 @@ module.exports = {
         await notify('crawling', entry.url);
       }
       await notify('completed');
-      return { page: root, pages, responses, discovery, skipped, limits, stats, stopReason, limitReached: !!stopReason,
-        ...(options.localOrigin ? { localOrigin: options.localOrigin } : {}) };
+      return {
+        page: root, pages, responses, discovery, skipped, limits, stats, stopReason, limitReached: !!stopReason,
+        ...(options.localOrigin ? { localOrigin: options.localOrigin } : {})
+      };
     } finally {
       clearTimeout(timer);
       options.signal?.removeEventListener('abort', cancel);

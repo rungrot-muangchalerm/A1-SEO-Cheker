@@ -72,9 +72,11 @@ module.exports = {
       }
       audits.push(row);
     }
-    return { status: total ? (notChecked ? 'partial' : 'completed') : 'not-checked',
+    return {
+      status: total ? (notChecked ? 'partial' : 'completed') : 'not-checked',
       ...(notChecked ? { reason: 'incomplete-audit-evidence' } : total ? {} : { reason: 'no-applicable-audits' }),
       displayMode: 'fraction', passed, total, failed: total - passed, notChecked, informational, excluded,
-      ...(engineComplete ? { engineFraction: { passed: enginePassed, total: engineTotal } } : {}), audits };
+      ...(engineComplete ? { engineFraction: { passed: enginePassed, total: engineTotal } } : {}), audits
+    };
   }
 };
