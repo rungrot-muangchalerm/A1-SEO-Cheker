@@ -52,6 +52,30 @@ not all elements were examined. `notChecked` then discloses the missing coverage
 Report status remains partial while renderer, Lighthouse or broader site analysis
 has not been performed. `notChecked` names those unavailable surfaces explicitly.
 
+## Site Files and Optional Advice
+
+`siteFiles` is an additive report field, separate from `issues` and severity/score
+counters. It contains `robots-file` and `sitemap-file` observations for the final
+page origin. Each entry has `label`, `status`, `statusLabel`, `found`, optional
+`recommendation`, `steps`, `evidence`, `evidenceOmitted` and primary `references`.
+`scope: checked-locations` restricts absence statements to observed locations;
+they are not a full-domain file inventory. The field uses existing protected
+robots/discovery responses, without extra requests or weaker network policies.
+
+Statuses are `found`, `missing`, `invalid` (unexpected format, not a full semantic
+validator) and `unavailable`. Only observed 404/410 responses support missing-file
+advice. Access errors, throttling, network errors, bounded/incomplete discovery
+and disabled discovery do not prove absence. A readable custom sitemap or index
+prevents a missing-file recommendation even when `/sitemap.xml` returns 404.
+Unexpected HTML robots responses are disclosed without changing crawl decisions.
+Sitemap parser/type errors preserve actual HTTP response evidence when available.
+
+Recommendations are conditional and informational: robots.txt manages crawling,
+not authentication/index exclusion; sitemaps aid discovery, not guaranteed index
+or rankings. The UI displays both statuses without opening issue details. Full
+and filtered JSON retain these contextual observations; both XLSX scopes add a
+`Site Files` worksheet when observations exist. No round/report is persisted.
+
 ## Issue Groups
 
 `issueGroups` groups only current fail/review issues by `ruleId`, without replacing

@@ -2,7 +2,7 @@ const version = '1.0';
 
 module.exports = {
   version,
-  createReport: (page, startedAt, discovery, crawl, siteChecks = [], lighthouse) => {
+  createReport: (page, startedAt, discovery, crawl, siteChecks = [], lighthouse, siteFiles = []) => {
     const pages = (crawl?.pages || [page]).map((item) => {
       const checks = (item.checks || []).map((entry) => crawl ? { ...entry, id: entry.id + ':' + entry.url } : entry);
       return { ...item, fetchStatus: 'success', analysisStatus: !checks.length ? 'not-checked' :
@@ -98,6 +98,7 @@ module.exports = {
       ...(crawl ? { siteChecks } : {}),
       issues,
       issueGroups,
+      siteFiles,
       notChecked,
       ...(discovery ? { discovery } : {}),
       ...(crawl ? { crawl: { limits: crawl.limits, stats: crawl.stats, stopReason: crawl.stopReason }, responses: crawl.responses } : {}),

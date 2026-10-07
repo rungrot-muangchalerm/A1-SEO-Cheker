@@ -69,6 +69,9 @@
       ['Agentic Not Checked', report.lighthouse?.agentic?.notChecked], ['Agentic Engine Fraction', report.lighthouse?.agentic?.engineFraction]
     ];
     sheet('Summary', ['Field', 'Value'], summary);
+    if (report.siteFiles?.length) sheet('Site Files', ['File ID', 'Label', 'Status', 'Found', 'Recommendation', 'Steps', 'Evidence', 'Evidence Omitted', 'References'],
+      report.siteFiles.map(entry => [entry.id, entry.label, entry.status, entry.found, entry.recommendation,
+        entry.steps, entry.evidence, entry.evidenceOmitted, entry.references]));
     if (report.pages) sheet('Pages', ['Requested URL', 'Final URL', 'HTTP Status', 'Fetch Status', 'Analysis Status', 'Title', 'Description', 'Canonical', 'Googlebot Allowed'],
       report.pages.map(page => [page.requestedUrl, page.finalUrl, page.status, page.fetchStatus, page.analysisStatus,
         page.metadata?.title, page.metadata?.description, page.metadata?.canonical, page.robots?.googlebotAllowed]));

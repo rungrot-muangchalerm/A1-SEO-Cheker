@@ -81,6 +81,8 @@ test('URL-only POST runs discovery, crawl, JavaScript and Lighthouse through one
       report = frames.at(-1).data;
     }
     assert.equal(report.scope.type, 'same-origin-crawl');
+    assert.deepEqual(report.siteFiles.map(entry => entry.id), ['robots-file', 'sitemap-file']);
+    assert.ok(report.siteFiles.every(entry => entry.status === 'found'));
     assert.equal(report.pages.length, 4);
     assert.ok(report.discovery.urls.some(entry => entry.url === site.origin + '/sitemap-only'));
     assert.ok(report.crawl.stats.attemptedPages >= 4);

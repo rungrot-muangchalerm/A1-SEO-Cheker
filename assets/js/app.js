@@ -434,7 +434,8 @@
       query: byId('issue-search').value, view: byId('issue-view-groups').checked ? 'groups' : 'list' };
     return { schemaVersion: state.report.schemaVersion, status: state.report.status, requestedUrl: state.report.requestedUrl,
       startedAt: state.report.startedAt, completedAt: state.report.completedAt, scope: state.report.scope,
-      coverage: state.report.coverage, summary: state.report.summary, issues, issueGroups: visibleIssueGroups(issues), export: metadata };
+      coverage: state.report.coverage, summary: state.report.summary, siteFiles: state.report.siteFiles || [],
+      issues, issueGroups: visibleIssueGroups(issues), export: metadata };
   }
 
   function downloadBlob(content, type, filename) {
@@ -467,7 +468,8 @@
     state.page = 1;
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
-    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'agentic-audits', 'discovery-list', 'skipped-list', 'progress-skipped-list'].forEach((id) => replaceContent(byId(id), ''));
+    byId('site-files-section').hidden = true;
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'agentic-audits', 'discovery-list', 'skipped-list', 'progress-skipped-list', 'site-files-list'].forEach((id) => replaceContent(byId(id), ''));
     byId('lighthouse-metadata').hidden = true;
     byId('agentic-status').hidden = true;
     byId('agentic-status').textContent = '';
@@ -632,7 +634,8 @@
         throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
       }
       if (data.schemaVersion !== "1.0" || !["partial", "completed"].includes(data.status) || !Array.isArray(data.pages) ||
-          !data.pages.length || !Array.isArray(data.issues) || !Array.isArray(data.notChecked)) {
+          !data.pages.length || !Array.isArray(data.issues) || !Array.isArray(data.notChecked) ||
+          data.siteFiles !== undefined && !Array.isArray(data.siteFiles)) {
         throw new Error("Invalid report");
       }
       return data;
@@ -640,6 +643,25 @@
     }).then((data) => {
       if (round !== state.round) return;
       state.report = data;
+      const siteFiles = data.siteFiles || [];
+      byId('site-files-section').hidden = siteFiles.length === 0;
+      replaceContent(byId('site-files-list'), siteFiles.map(entry => {
+        const color = entry.status === 'found' ? 'success' : entry.status === 'missing' ? 'info' : entry.status === 'invalid' ? 'warning' : 'secondary';
+        return '<div class="col-12 col-md-6" data-site-file="' + escapeHtml(entry.id) + '" data-file-status="' + escapeHtml(entry.status) + '">' +
+          '<div class="d-flex align-items-center flex-wrap gap-2 mb-2"><h3 class="h6 mb-0">' + escapeHtml(entry.label) + '</h3>' +
+          '<span class="badge rounded-1 fw-normal bg-' + color + '-subtle text-' + color + '-emphasis">' + escapeHtml(entry.statusLabel) + '</span></div>' +
+          '<p class="small text-break mb-2">' + escapeHtml(entry.found) + '</p>' +
+          (entry.recommendation ? '<p class="small text-break mb-2" data-file-recommendation>' + escapeHtml(entry.recommendation) + '</p>' : '') +
+          (entry.reason ? '<p class="small text-break mb-2">' + escapeHtml(entry.reason) + '</p>' : '') +
+          '<details class="small mb-2"><summary>URL \u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08</summary><ul class="ps-3 mt-2 mb-0">' +
+          (entry.evidence || []).map(proof => '<li class="text-break mb-2">' + escapeHtml(proof.sourceUrl) +
+            (proof.httpStatus !== null && proof.httpStatus !== undefined ? ' &middot; HTTP ' + escapeHtml(proof.httpStatus) : '') +
+            (proof.finalUrl && proof.finalUrl !== proof.sourceUrl ? '<span class="d-block">URL \u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22: ' + escapeHtml(proof.finalUrl) + '</span>' : '') +
+            (proof.reason ? '<span class="d-block">' + escapeHtml(proof.reason) + '</span>' : '') + '</li>').join('') + '</ul>' +
+          (entry.evidenceOmitted ? '<p class="mt-2 mb-0">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e41\u0e19\u0e1a\u0e2d\u0e35\u0e01 ' + escapeHtml(entry.evidenceOmitted) + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</p>' : '') + '</details>' +
+          (entry.steps?.length ? '<details class="small"><summary>\u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48\u0e04\u0e27\u0e23\u0e1e\u0e34\u0e08\u0e32\u0e23\u0e13\u0e32</summary><ol class="ps-3 mt-2 mb-0">' +
+            entry.steps.map(step => '<li class="text-break mb-2">' + escapeHtml(step) + '</li>').join('') + '</ol></details>' : '') + '</div>';
+      }).join(''));
       byId('crawl-progress').hidden = true;
       state.origin = data.scope.origin;
       state.page = 1;

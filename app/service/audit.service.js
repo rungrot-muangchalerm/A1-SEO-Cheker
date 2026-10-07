@@ -11,6 +11,7 @@ const canonicalService = require('./canonical.service');
 const sitemapChecksService = require('./sitemap-checks.service');
 const renderService = require('./render.service');
 const lighthouseService = require('./lighthouse.service');
+const siteFilesService = require('./site-files.service');
 
 module.exports = {
   create: async (body, options = {}) => {
@@ -28,7 +29,8 @@ module.exports = {
         if (body.render === true) await renderService.run(crawl.pages, options);
         const lighthouse = body.lighthouse === true ? await lighthouseService.run(crawl.page.requestedUrl, { ...options, strategy: body.strategy }) : undefined;
         options.signal?.throwIfAborted();
-        return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks, lighthouse) };
+        return { ok: true, data: auditModel.createReport(crawl.page, startedAt, crawl.discovery, crawl, siteChecks, lighthouse,
+          siteFilesService.analyze(crawl.page, crawl.discovery)) };
       }
       const page = await websiteData.fetchPage(body.url, options);
       options.signal?.throwIfAborted();
@@ -41,7 +43,8 @@ module.exports = {
       if (body.render === true) await renderService.run([page], options);
       const lighthouse = body.lighthouse === true ? await lighthouseService.run(page.requestedUrl, { ...options, strategy: body.strategy }) : undefined;
       options.signal?.throwIfAborted();
-      return { ok: true, data: auditModel.createReport(page, startedAt, discovery, undefined, [], lighthouse) };
+      return { ok: true, data: auditModel.createReport(page, startedAt, discovery, undefined, [], lighthouse,
+        siteFilesService.analyze(page, discovery)) };
     } catch (error) {
       return { ok: false, code: error instanceof websiteData.WebsiteError ? error.code : 'INTERNAL_ERROR' };
     }

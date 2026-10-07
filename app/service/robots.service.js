@@ -1,4 +1,5 @@
 const robotsParser = require('robots-parser');
+const cheerio = require('cheerio');
 const website = require('../data/website.data');
 
 module.exports = {
@@ -22,7 +23,7 @@ module.exports = {
     options.signal?.throwIfAborted();
     const evidence = {
       kind: 'robots', url, finalUrl: response.finalUrl, httpStatus: response.status,
-      redirects: response.redirects, bytes: response.bytes
+      redirects: response.redirects, bytes: response.bytes, contentType: response.headers?.['content-type'] || null
     };
     if (response.status >= 400 && response.status < 500 && response.status !== 429) {
       return { ...evidence, status: 'absent', googlebotAllowed: true, crawlerAllowed: true, sitemaps: [] };
@@ -30,6 +31,8 @@ module.exports = {
     if (response.status < 200 || response.status >= 300) {
       return { ...evidence, status: 'not-checked', reason: 'ROBOTS_UNAVAILABLE' };
     }
+    evidence.bodyFormat = response.text.trimStart().startsWith('<') &&
+      cheerio.load(response.text, { sourceCodeLocationInfo: true })('*').toArray().some(entry => entry.sourceCodeLocation) ? 'html' : 'text';
     const lines = response.text.split(/\r\n|\r|\n/);
     const target = new URL(pageUrl);
     const pathLength = target.pathname.length + target.search.length;

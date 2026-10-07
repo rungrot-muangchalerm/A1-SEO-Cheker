@@ -1,0 +1,73 @@
+const statusLabels = { found: '\u0e1e\u0e1a\u0e44\u0e1f\u0e25\u0e4c', missing: '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e1a', invalid: '\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a\u0e15\u0e49\u0e2d\u0e07\u0e15\u0e23\u0e27\u0e08', unavailable: '\u0e22\u0e31\u0e07\u0e15\u0e23\u0e27\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49' };
+const robotsReference = 'https://developers.google.com/search/docs/crawling-indexing/robots/intro';
+const sitemapReference = 'https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview';
+
+function file(id, label, status, found, evidence, recommendation, steps, reference, reason) {
+  return { id, label, status, statusLabel: statusLabels[status], scope: 'checked-locations', found,
+    recommendation, steps, evidence: evidence.slice(0, 50), evidenceOmitted: Math.max(0, evidence.length - 50),
+    references: [{ title: 'Google Search Central', url: reference }], ...(reason ? { reason } : {}) };
+}
+
+module.exports = {
+  analyze: (page, discovery) => {
+    const robots = page.robots;
+    const robotsEvidence = robots ? [{ kind: Number.isInteger(robots.httpStatus) ? 'response' : 'observation', sourceUrl: robots.url,
+      finalUrl: robots.finalUrl || null, httpStatus: robots.httpStatus ?? null,
+      contentType: robots.contentType || null, bodyFormat: robots.bodyFormat || null,
+      ...(robots.reason ? { reason: robots.reason } : {}) }] : [];
+    let robotsFile;
+    if (robots?.status === 'checked' && robots.bodyFormat !== 'html') {
+      robotsFile = file('robots-file', 'robots.txt', 'found', '\u0e2d\u0e48\u0e32\u0e19 robots.txt \u0e44\u0e14\u0e49 \u00b7 HTTP ' + robots.httpStatus,
+        robotsEvidence, null, [], robotsReference);
+    } else if (robots?.bodyFormat === 'html') {
+      robotsFile = file('robots-file', 'robots.txt', 'invalid', 'URL \u0e02\u0e2d\u0e07 robots.txt \u0e15\u0e2d\u0e1a\u0e40\u0e1b\u0e47\u0e19 HTML \u0e41\u0e17\u0e19\u0e44\u0e1f\u0e25\u0e4c\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21',
+        robotsEvidence, '\u0e15\u0e23\u0e27\u0e08 route \u0e2b\u0e23\u0e37\u0e2d\u0e2b\u0e19\u0e49\u0e32 fallback \u0e17\u0e35\u0e48\u0e2a\u0e48\u0e07 HTML \u0e01\u0e25\u0e31\u0e1a\u0e21\u0e32\u0e17\u0e35\u0e48 /robots.txt',
+        ['\u0e43\u0e2b\u0e49 /robots.txt \u0e15\u0e2d\u0e1a\u0e44\u0e1f\u0e25\u0e4c\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21 UTF-8 \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e2b\u0e19\u0e49\u0e32\u0e40\u0e27\u0e47\u0e1a', '\u0e15\u0e23\u0e27\u0e08 User-agent \u0e41\u0e25\u0e30 Allow/Disallow \u0e15\u0e32\u0e21\u0e19\u0e42\u0e22\u0e1a\u0e32\u0e22\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e49\u0e27\u0e15\u0e23\u0e27\u0e08\u0e0b\u0e49\u0e33'], robotsReference, 'ROBOTS_HTML_RESPONSE');
+    } else if (robots?.status === 'absent' && [404, 410].includes(robots.httpStatus)) {
+      robotsFile = file('robots-file', 'robots.txt', 'missing', '\u0e44\u0e21\u0e48\u0e1e\u0e1a robots.txt \u0e17\u0e35\u0e48 URL \u0e23\u0e32\u0e01\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a \u00b7 HTTP ' + robots.httpStatus,
+        robotsEvidence, '\u0e1e\u0e34\u0e08\u0e32\u0e23\u0e13\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e21\u0e37\u0e48\u0e2d\u0e08\u0e30\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e01\u0e0e crawl \u0e2b\u0e23\u0e37\u0e2d\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07 sitemap; \u0e44\u0e21\u0e48\u0e08\u0e33\u0e40\u0e1b\u0e47\u0e19\u0e15\u0e49\u0e2d\u0e07\u0e21\u0e35\u0e17\u0e38\u0e01\u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e30\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e15\u0e34\u0e14\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a',
+        ['\u0e16\u0e49\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e01\u0e0e \u0e43\u0e2b\u0e49\u0e2a\u0e23\u0e49\u0e32\u0e07 /robots.txt \u0e40\u0e1b\u0e47\u0e19\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21 UTF-8',
+          '\u0e01\u0e33\u0e2b\u0e19\u0e14 User-agent \u0e41\u0e25\u0e30 Allow/Disallow \u0e15\u0e32\u0e21\u0e40\u0e08\u0e15\u0e19\u0e32 \u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e1a\u0e25\u0e47\u0e2d\u0e01\u0e2b\u0e19\u0e49\u0e32\u0e2b\u0e23\u0e37\u0e2d resources \u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e43\u0e2b\u0e49 crawler \u0e2d\u0e48\u0e32\u0e19',
+          '\u0e40\u0e21\u0e37\u0e48\u0e2d\u0e21\u0e35 sitemap \u0e43\u0e2b\u0e49\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 Sitemap: \u0e15\u0e32\u0e21 URL \u0e08\u0e23\u0e34\u0e07; robots.txt \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e23\u0e30\u0e1a\u0e1a\u0e1b\u0e49\u0e2d\u0e07\u0e01\u0e31\u0e19\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e2a\u0e48\u0e27\u0e19\u0e15\u0e31\u0e27\u0e2b\u0e23\u0e37\u0e2d\u0e04\u0e33\u0e2a\u0e31\u0e48\u0e07 noindex'], robotsReference);
+    } else {
+      robotsFile = file('robots-file', 'robots.txt', 'unavailable', robots?.httpStatus ?
+        'URL \u0e02\u0e2d\u0e07 robots.txt \u0e15\u0e2d\u0e1a HTTP ' + robots.httpStatus + '; \u0e22\u0e31\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e27\u0e48\u0e32\u0e21\u0e35\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48\u0e21\u0e35\u0e44\u0e1f\u0e25\u0e4c\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49' : '\u0e22\u0e31\u0e07\u0e2d\u0e48\u0e32\u0e19 robots.txt \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49',
+        robotsEvidence, null, ['\u0e15\u0e23\u0e27\u0e08\u0e01\u0e32\u0e23\u0e15\u0e2d\u0e1a\u0e01\u0e25\u0e31\u0e1a \u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07 \u0e2b\u0e23\u0e37\u0e2d\u0e01\u0e32\u0e23\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d \u0e41\u0e25\u0e49\u0e27\u0e25\u0e2d\u0e07\u0e15\u0e23\u0e27\u0e08\u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07'],
+        robotsReference, robots?.reason || (robots ? 'ROBOTS_FILE_UNAVAILABLE' : 'not-requested'));
+    }
+
+    const sitemaps = discovery?.sitemaps || [];
+    const sitemapEvidence = sitemaps.map(entry => ({ kind: Number.isInteger(entry.httpStatus) ? 'response' : 'observation', sourceUrl: entry.url,
+      finalUrl: entry.finalUrl || null, httpStatus: entry.httpStatus ?? null,
+      ...(entry.contentType ? { contentType: entry.contentType } : {}),
+      ...(entry.type ? { type: entry.type, namespaceVerified: entry.namespaceVerified } : {}),
+      ...(entry.reason ? { reason: entry.reason } : {}) }));
+    const found = sitemaps.filter(entry => entry.status === 'checked' && ['urlset', 'sitemapindex'].includes(entry.type));
+    const invalid = sitemaps.filter(entry => ['SITEMAP_INVALID_XML', 'SITEMAP_INVALID_ROOT', 'SITEMAP_DTD_UNSUPPORTED',
+      'SITEMAP_ENCODING'].includes(entry.reason) || entry.reason === 'UNSUPPORTED_TYPE' && entry.httpStatus >= 200 && entry.httpStatus < 300);
+    const missing = sitemaps.length > 0 && sitemaps.every(entry => [404, 410].includes(entry.httpStatus)) &&
+      !discovery.limitReached && !(discovery.skipped || []).some(entry => entry.kind === 'sitemap');
+    let sitemapFile;
+    if (found.length) {
+      sitemapFile = file('sitemap-file', 'Sitemap', 'found', '\u0e1e\u0e1a sitemap \u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19 XML \u0e44\u0e14\u0e49 ' + found.length + ' \u0e44\u0e1f\u0e25\u0e4c; \u0e2d\u0e32\u0e08\u0e43\u0e0a\u0e49\u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e37\u0e48\u0e19\u0e41\u0e17\u0e19 sitemap.xml',
+        sitemapEvidence, null, [], sitemapReference);
+    } else if (invalid.length) {
+      sitemapFile = file('sitemap-file', 'Sitemap', 'invalid', '\u0e1e\u0e1a URL \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a sitemap \u0e41\u0e15\u0e48\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e15\u0e2d\u0e1a\u0e01\u0e25\u0e31\u0e1a\u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48 sitemap XML \u0e17\u0e35\u0e48 checker \u0e2d\u0e48\u0e32\u0e19\u0e44\u0e14\u0e49',
+        sitemapEvidence, '\u0e15\u0e23\u0e27\u0e08 route, Content-Type \u0e41\u0e25\u0e30\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a XML \u0e02\u0e2d\u0e07 sitemap \u0e17\u0e35\u0e48\u0e23\u0e30\u0e1a\u0e38',
+        ['\u0e43\u0e2b\u0e49 URL \u0e15\u0e2d\u0e1a sitemap XML \u0e44\u0e21\u0e48\u0e43\u0e0a\u0e48\u0e2b\u0e19\u0e49\u0e32 HTML \u0e2b\u0e23\u0e37\u0e2d\u0e2b\u0e19\u0e49\u0e32 fallback',
+          '\u0e43\u0e0a\u0e49 urlset \u0e2b\u0e23\u0e37\u0e2d sitemapindex \u0e41\u0e25\u0e30 loc \u0e17\u0e35\u0e48\u0e40\u0e1b\u0e47\u0e19 URL \u0e08\u0e23\u0e34\u0e07\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a \u0e41\u0e25\u0e49\u0e27\u0e15\u0e23\u0e27\u0e08\u0e0b\u0e49\u0e33'], sitemapReference, invalid[0].reason);
+    } else if (missing) {
+      sitemapFile = file('sitemap-file', 'Sitemap', 'missing', '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e1a sitemap \u0e43\u0e19 URL \u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08: /sitemap.xml \u0e41\u0e25\u0e30\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e17\u0e35\u0e48\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28\u0e43\u0e19 robots.txt',
+        sitemapEvidence, '\u0e1e\u0e34\u0e08\u0e32\u0e23\u0e13\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e0a\u0e48\u0e27\u0e22\u0e04\u0e49\u0e19\u0e1e\u0e1a\u0e2b\u0e19\u0e49\u0e32 \u0e42\u0e14\u0e22\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e40\u0e27\u0e47\u0e1a\u0e43\u0e2b\u0e21\u0e48 \u0e40\u0e27\u0e47\u0e1a\u0e43\u0e2b\u0e0d\u0e48 \u0e2b\u0e23\u0e37\u0e2d\u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e21\u0e35\u0e25\u0e34\u0e07\u0e01\u0e4c\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e19\u0e49\u0e2d\u0e22; \u0e44\u0e21\u0e48\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e30\u0e01\u0e31\u0e19 index \u0e2b\u0e23\u0e37\u0e2d\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a',
+        ['\u0e15\u0e23\u0e27\u0e08\u0e27\u0e48\u0e32\u0e21\u0e35 sitemap \u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e37\u0e48\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e41\u0e25\u0e49\u0e27\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48 \u0e01\u0e48\u0e2d\u0e19\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e44\u0e1f\u0e25\u0e4c\u0e0b\u0e49\u0e33',
+          '\u0e16\u0e49\u0e32\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35 \u0e43\u0e2b\u0e49\u0e2a\u0e23\u0e49\u0e32\u0e07 sitemap XML \u0e02\u0e2d\u0e07 URL \u0e2b\u0e25\u0e31\u0e01\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e40\u0e1c\u0e22\u0e41\u0e1e\u0e23\u0e48 \u0e41\u0e25\u0e30\u0e2d\u0e31\u0e1b\u0e40\u0e14\u0e15\u0e15\u0e32\u0e21\u0e2b\u0e19\u0e49\u0e32\u0e17\u0e35\u0e48\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19',
+          '\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 URL \u0e08\u0e23\u0e34\u0e07\u0e43\u0e19 robots.txt; \u0e40\u0e21\u0e37\u0e48\u0e2d\u0e40\u0e1c\u0e22\u0e41\u0e1e\u0e23\u0e48\u0e40\u0e27\u0e47\u0e1a\u0e2a\u0e32\u0e18\u0e32\u0e23\u0e13\u0e30\u0e41\u0e25\u0e49\u0e27\u0e08\u0e36\u0e07\u0e2a\u0e48\u0e07\u0e43\u0e19 Search Console \u0e02\u0e2d\u0e07\u0e40\u0e08\u0e49\u0e32\u0e02\u0e2d\u0e07\u0e40\u0e27\u0e47\u0e1a'], sitemapReference);
+    } else {
+      sitemapFile = file('sitemap-file', 'Sitemap', 'unavailable', discovery ?
+        '\u0e22\u0e31\u0e07\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 sitemap \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e08\u0e32\u0e01\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e14\u0e49; \u0e01\u0e32\u0e23\u0e16\u0e39\u0e01\u0e1a\u0e25\u0e47\u0e2d\u0e01\u0e2b\u0e23\u0e37\u0e2d\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e41\u0e1b\u0e25\u0e27\u0e48\u0e32\u0e44\u0e21\u0e48\u0e21\u0e35\u0e44\u0e1f\u0e25\u0e4c' : '\u0e23\u0e2d\u0e1a\u0e19\u0e35\u0e49\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e04\u0e49\u0e19\u0e2b\u0e32 sitemap',
+        sitemapEvidence, null, ['\u0e15\u0e23\u0e27\u0e08 URL \u0e17\u0e35\u0e48\u0e1b\u0e23\u0e30\u0e01\u0e32\u0e28 \u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c\u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07 \u0e41\u0e25\u0e30\u0e02\u0e49\u0e2d\u0e08\u0e33\u0e01\u0e31\u0e14\u0e02\u0e2d\u0e07\u0e23\u0e2d\u0e1a\u0e15\u0e23\u0e27\u0e08 \u0e01\u0e48\u0e2d\u0e19\u0e2a\u0e23\u0e38\u0e1b\u0e27\u0e48\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e44\u0e1f\u0e25\u0e4c'],
+        sitemapReference, discovery ? sitemaps.find(entry => entry.reason)?.reason || 'discovery-incomplete' : 'not-requested');
+    }
+    return [robotsFile, sitemapFile];
+  }
+};
