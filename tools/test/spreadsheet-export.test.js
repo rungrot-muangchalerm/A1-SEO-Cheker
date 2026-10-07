@@ -32,7 +32,7 @@ test('XLSX round-trips actual report tables, all affected URLs and evidence with
   source.issues[0].urls.push('https://fixture.example/another');
   const original = JSON.stringify(source);
   const workbook = await readWorkbook(await createWorkbook(source, ExcelJS).xlsx.writeBuffer());
-  assert.deepEqual(workbook.worksheets.map(sheet => sheet.name), ['Summary', 'Pages', 'Issues', 'Issue URLs', 'Evidence', 'Scores', 'Agentic', 'Not Checked', 'Discovered', 'Skipped']);
+  assert.deepEqual(workbook.worksheets.map(sheet => sheet.name), ['Summary', 'Core Technical', 'Pages', 'Issues', 'Issue URLs', 'Evidence', 'Scores', 'Agentic', 'Not Checked', 'Discovered', 'Skipped']);
   assert.equal(workbook.getWorksheet('Pages').getCell('B2').value, source.pages[0].finalUrl);
   assert.equal(workbook.getWorksheet('Pages').getCell('F2').value, source.pages[0].metadata.title);
   assert.equal(workbook.getWorksheet('Issues').rowCount, source.issues.length + 1);

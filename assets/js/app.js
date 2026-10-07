@@ -448,6 +448,7 @@
       schemaVersion: state.report.schemaVersion, status: state.report.status, requestedUrl: state.report.requestedUrl,
       startedAt: state.report.startedAt, completedAt: state.report.completedAt, scope: state.report.scope,
       coverage: state.report.coverage, summary: state.report.summary, siteFiles: state.report.siteFiles || [],
+      core_technical_checks: state.report.core_technical_checks || [],
       issues, issueGroups: visibleIssueGroups(issues), export: metadata
     };
   }
@@ -483,7 +484,9 @@
     byId('report').hidden = true;
     byId('report').setAttribute('aria-busy', 'false');
     byId('site-files-section').hidden = true;
-    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'agentic-audits', 'discovery-list', 'skipped-list', 'progress-skipped-list', 'site-files-list'].forEach((id) => replaceContent(byId(id), ''));
+    byId('core-technical-section').hidden = true;
+    byId('core-technical-section').open = false;
+    ['issue-rows', 'page-rows', 'detail-content', 'not-checked-list', 'lighthouse-categories', 'lighthouse-metadata', 'agentic-audits', 'discovery-list', 'skipped-list', 'progress-skipped-list', 'site-files-list', 'core-technical-list'].forEach((id) => replaceContent(byId(id), ''));
     byId('lighthouse-metadata').hidden = true;
     byId('agentic-status').hidden = true;
     byId('agentic-status').textContent = '';
@@ -492,7 +495,7 @@
     ['summary-pages', 'summary-critical', 'summary-warning', 'summary-review', 'report-host', 'affected-summary',
       'issue-count', 'issue-result-status', 'page-result-status', 'pages-pager', 'report-scope', 'report-time', 'report-result',
       'not-checked-count', 'detail-title', 'app-message', 'scan-status', 'discovery-count', 'skipped-count', 'progress-counts', 'progress-url',
-      'crawl-limit', 'progress-limit'].forEach((id) => { byId(id).textContent = ''; });
+      'crawl-limit', 'progress-limit', 'core-technical-count'].forEach((id) => { byId(id).textContent = ''; });
     delete byId('report-result').dataset.result;
     byId('scan-status').dataset.state = 'idle';
     byId('scan-status').classList.remove('text-danger-emphasis');
@@ -651,7 +654,8 @@
         }
         if (data.schemaVersion !== "2.0" || !["partial", "completed"].includes(data.status) || !Array.isArray(data.pages) ||
           !data.pages.length || !Array.isArray(data.issues) || !Array.isArray(data.notChecked) ||
-          data.siteFiles !== undefined && !Array.isArray(data.siteFiles)) {
+          data.siteFiles !== undefined && !Array.isArray(data.siteFiles) ||
+          data.core_technical_checks !== undefined && !Array.isArray(data.core_technical_checks)) {
           throw new Error("Invalid report");
         }
         return data;
@@ -677,6 +681,22 @@
           (entry.evidenceOmitted ? '<p class="mt-2 mb-0">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e17\u0e35\u0e48\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e41\u0e19\u0e1a\u0e2d\u0e35\u0e01 ' + escapeHtml(entry.evidenceOmitted) + ' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23</p>' : '') + '</details>' +
           (entry.steps?.length ? '<details class="small"><summary>\u0e2a\u0e34\u0e48\u0e07\u0e17\u0e35\u0e48\u0e04\u0e27\u0e23\u0e1e\u0e34\u0e08\u0e32\u0e23\u0e13\u0e32</summary><ol class="ps-3 mt-2 mb-0">' +
             entry.steps.map(step => '<li class="text-break mb-2">' + escapeHtml(step) + '</li>').join('') + '</ol></details>' : '') + '</div>';
+      }).join(''));
+      const coreChecks = (data.core_technical_checks || []).filter(entry => entry.group !== 'site-files');
+      byId('core-technical-section').hidden = coreChecks.length === 0;
+      byId('core-technical-count').textContent = '(' + coreChecks.length + ')';
+      replaceContent(byId('core-technical-list'), coreChecks.map(entry => {
+        const color = entry.status === 'pass' ? 'success' : ['fail', 'review'].includes(entry.status) ? 'warning' : 'secondary';
+        return '<details class="border-bottom border-info-subtle py-2 small" data-core-check="' + escapeHtml(entry.id) + '" data-core-status="' + escapeHtml(entry.status) + '">' +
+          '<summary class="text-break"><span class="badge rounded-1 fw-normal bg-' + color + '-subtle text-' + color + '-emphasis me-2">' + escapeHtml(entry.statusLabel) + '</span>' + escapeHtml(entry.title) + '</summary>' +
+          '<div class="mt-2"><p class="text-break mb-2">' + escapeHtml(entry.found) + '</p>' +
+          (entry.recommendation ? '<p class="text-break mb-2">' + escapeHtml(entry.recommendation) + '</p>' : '') +
+          '<p class="text-break mb-2">' + escapeHtml(entry.group) + ' &middot; ' + escapeHtml(entry.scope) + (entry.url ? ' &middot; ' + escapeHtml(entry.url) : '') + '</p>' +
+          (entry.reason ? '<p class="text-break mb-2">' + escapeHtml(entry.reason) + '</p>' : '') +
+          (entry.complete === false ? '<p class="mb-2">\u0e02\u0e2d\u0e1a\u0e40\u0e02\u0e15\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e04\u0e23\u0e1a</p>' : '') +
+          (entry.steps?.length ? '<ol class="ps-3 mb-2">' + entry.steps.map(step => '<li class="text-break mb-2">' + escapeHtml(step) + '</li>').join('') + '</ol>' : '') +
+          (entry.evidence?.length ? '<pre class="bg-dark text-light p-3 rounded-1 small overflow-auto">' + escapeHtml(JSON.stringify(entry.evidence, null, 2)) + '</pre>' : '') +
+          (entry.issueIds || []).map(id => '<button type="button" class="btn btn-link text-success-emphasis p-0 d-block text-start text-break mb-2" data-core-issue-id="' + escapeHtml(id) + '">' + escapeHtml(data.issues.find(issue => issue.id === id)?.title || id) + '</button>').join('') + '</div></details>';
       }).join(''));
       byId('crawl-progress').hidden = true;
       state.origin = data.scope.origin;
@@ -755,6 +775,8 @@
       }).finally(() => { if (copyButton.isConnected) copyButton.disabled = false; });
       return;
     }
+    const coreIssueButton = event.target.closest('[data-core-issue-id]');
+    if (coreIssueButton) { openIssue(coreIssueButton.dataset.coreIssueId, coreIssueButton); return; }
     const issueButton = event.target.closest("[data-issue-id]");
     if (issueButton) { openIssue(issueButton.dataset.issueId, issueButton); return; }
     const pageButton = event.target.closest("[data-page-url]");

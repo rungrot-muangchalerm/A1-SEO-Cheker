@@ -58,6 +58,10 @@ test('real local mobile Lighthouse computes all four categories without a key, e
   assert.equal(report.agentic.status, 'completed');
   assert.equal(report.agentic.audits.length, 7);
   assert.equal(report.agentic.notChecked, 0);
+  assert.ok(report.technicalChecks.some(check => check.id === 'doctype' && check.status === 'pass'));
+  assert.ok(report.technicalChecks.some(check => check.id === 'http-status-code' && check.status === 'pass'));
+  assert.ok(report.technicalChecks.some(check => check.id === 'html-has-lang' && check.status === 'pass'));
+  assert.ok(report.technicalChecks.some(check => check.id === 'viewport-insight'));
   assert.deepEqual(report.agentic.engineFraction, { passed: report.agentic.passed, total: report.agentic.total });
   for (const category of report.categories) {
     assert.equal(category.status, 'completed');
@@ -115,6 +119,8 @@ test('actual browser/API localhost desktop workflow shows real Lighthouse scores
   assert.equal(json.lighthouse.provider, 'lighthouse-local');
   assert.deepEqual(json.lighthouse.categories, report.lighthouse.categories);
   assert.deepEqual(json.lighthouse.agentic, report.lighthouse.agentic);
+  assert.deepEqual(json.core_technical_checks, report.core_technical_checks);
+  assert.ok(json.core_technical_checks.some(check => check.id === 'lighthouse:doctype'));
   assert.ok((await page.locator('#agentic-status').textContent()).includes(report.lighthouse.agentic.passed + '/' + report.lighthouse.agentic.total));
   assert.equal(await page.locator('[data-agentic-audit]').count(), report.lighthouse.agentic.audits.length);
   const workbook = new ExcelJS.Workbook();

@@ -1,4 +1,5 @@
 const resultModel = require('./audit-result.model');
+const coreTechnicalChecks = require('./core-technical-checks.model');
 const version = '2.0';
 
 module.exports = {
@@ -101,6 +102,7 @@ module.exports = {
         ...(['localhost', '127.0.0.1', '[::1]'].includes(new URL(page.finalUrl).hostname) ? { environment: 'local-development' } : {}),
         maxPages: crawl ? crawl.limits.maxPages : 1
       },
+      core_technical_checks: coreTechnicalChecks.analyze({ page, pages, checks, siteFiles, lighthouse }),
       coverage: {
         discovered: discovery ? discovery.urls.length : 1, fetched: pages.length, analyzed: pages.filter((item) => item.checks.length).length,
         skipped: crawl?.skipped || [], limitReached: !!(crawl?.limitReached || discovery?.limitReached)

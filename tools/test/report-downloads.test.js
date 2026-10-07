@@ -120,7 +120,17 @@ test('both JSON scopes create browser Blobs only on explicit clicks, make no exp
 });
 
 test('all JSON/XLSX downloads stay disabled before/during/after failed audits, and successful rounds never download automatically', async (t) => {
-  stubTransport(t, [{ html: bad, delay: 500 }, { status: 404 }, { networkError: true }]);
+  stubTransport(t, [{ html: bad }, { status: 404 }, { networkError: true }]);
+  const service = require('../../app/service/audit.service');
+  const create = service.create;
+  let release;
+  let requests = 0;
+  const pending = new Promise(resolve => { release = resolve; });
+  t.after(() => release());
+  t.mock.method(service, 'create', async (...args) => {
+    if (requests++ === 0) await pending;
+    return create(...args);
+  });
   const { page, errors } = await frontend(t);
   let downloads = 0;
   page.on('download', () => ++downloads);
@@ -133,6 +143,7 @@ test('all JSON/XLSX downloads stay disabled before/during/after failed audits, a
     assert.equal(await page.locator('#' + id).isDisabled(), true);
     await page.locator('#' + id).evaluate(element => element.click());
   }
+  release();
   await page.waitForFunction(() => document.getElementById('report').getAttribute('aria-busy') === 'false');
   assert.equal(await page.locator('#export-json-button').isDisabled(), false);
   assert.equal(downloads, 0);

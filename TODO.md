@@ -273,6 +273,18 @@ Restart PM2 และลอง `POST /api/audits` บน localhost:9999 ด้�
 
 Restart PM2 แล้วทดสอบ `POST /api/audits` บน localhost:9999 กับ fixture localhost จริง เปิด discovery/crawl/render และปิด Lighthouse เฉพาะ smoke test นี้ ได้ schema `2.0`, HTML ที่วิเคราะห์ 2 หน้า และ title หลัง JavaScript ที่เปลี่ยนจริง โดยไม่มี HTML/DOM/header ดิบในรายงาน แต่ยังมีปัญหารูปไม่มี alt พร้อมหลักฐานและวิธีแก้ ชุดทดสอบรวมตรวจ Lighthouse/Agentic จริงด้วย ไม่ได้ crawl เว็บไซต์สาธารณะหรืออัปโหลดเข้า Google Sheets ในรอบนี้
 
+## เช็กลิสต์เทคนิคที่อ่านได้ทันที
+
+- [x] feat: รวมเช็กลิสต์เทคนิคและผล Lighthouse รายข้อ
+
+เพิ่ม `core_technical_checks` ต่อจาก `scope` โดยยังใช้ schema `2.0` รวมสถานะ robots.txt/Sitemap จากข้อมูลที่อ่านจริง พร้อม URL/HTTP หลักฐาน คำแนะนำและขั้นตอนแก้ ก่อนสรุปกฎ Technical SEO เดิมและผล Best Practices/SEO รายข้อจาก Lighthouse เพิ่มผลภาษา ลำดับ heading และ viewport พร้อม Agentic ที่รู้จัก 7 รายการ แยกผ่าน ไม่ผ่าน ต้องยืนยัน ตรวจไม่ได้ ตรวจเอง และ N/A ไม่ถือว่าไฟล์เสริมต้องมีทุกเว็บ ไม่สรุป HTTP 403/429/5xx ว่าขาดไฟล์ และไม่ตีความ llms.txt/catalog N/A เป็น missing โดยไม่มีหลักฐาน HTTP
+
+เพิ่มเช็กลิสต์แบบเปิดรายละเอียดได้ในหน้าเว็บและแท็บ Core Technical ของ XLSX ทั้ง JSON/XLSX รายงานเต็มและตามตัวกรองเก็บบริบทเช็กลิสต์รอบเดียวกัน อ้างอิง issue/check เดิมโดยไม่ส่ง HTML/DOM ทั้งหน้า ไม่เปลี่ยน issue counters หรือสร้างคะแนนใหม่ ผล Lighthouse/Agentic มีขอบเขต URL เดียว ไม่อ้างว่าตรวจทุกหน้าที่ crawl ได้ และ JSON-LD semantics/rich results ยังระบุว่าตรวจไม่ได้ ใช้ผลจากการตรวจเดิม ไม่ยิงคำขอเพิ่ม ไม่เปลี่ยนกฎ crawl/render/SSRF หรือบันทึกประวัติ
+
+ตรวจสอบแล้ว: `npm test` รอบล่าสุดผ่าน 325 ข้อ ไม่มีข้อที่ล้มเหลวหรือถูกข้าม รวมกรณีใหม่ 8 ข้อ ตรวจ JSON/NDJSON, HTML fallback, sitemap ชื่ออื่น, หลักฐานที่ถูกจำกัด, manual/unavailable, การรวม fail/review และ JSON/XLSX ทั้งสองขอบเขต ปรับ regression test ปุ่มดาวน์โหลดให้รอจังหวะ API แน่นอนแทน delay คงที่ ชุดเฉพาะเช็กลิสต์/ดาวน์โหลดผ่าน 14 ข้อ ตรวจ screenshot desktop 1280 px/mobile 320 px แล้วไม่ล้นและ snippet ไม่ทำงาน ลบภาพ fixture หลังตรวจ และ syntax ของ JavaScript ที่เปลี่ยนผ่านครบ 11 ไฟล์
+
+Restart PM2 แล้วลอง `POST /api/audits` บน localhost:9999 ด้วย fixture localhost จริงโดยส่งเพียง URL ได้ HTML 2 หน้า, เช็กลิสต์ 61 รายการ, robots/Sitemap ที่ยังไม่พบพร้อมหลักฐาน HTTP 404 และวิธีแก้, JavaScript สำเร็จ 1 หน้า, Lighthouse 13.5.0 สำเร็จครบ 4 หมวดพร้อม doctype audit ที่ผ่าน และ Agentic 7 รายการ ทุกคำขอไป fixture เป็น GET และไม่มี source document/private marker ใน JSON ไม่ได้ crawl เว็บไซต์สาธารณะหรืออัปโหลดเข้า Google Sheets จริงในรอบนี้
+
 ## งานเพิ่มหลังเวอร์ชันแรก
 
 - [ ] เชื่อม Search Console ของเจ้าของเว็บไซต์เพื่อดูสถานะ index ที่ Google รู้จัก

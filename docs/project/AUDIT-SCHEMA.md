@@ -67,7 +67,50 @@ not all elements were examined. `notChecked` then discloses the missing coverage
 Report status remains partial while renderer, Lighthouse or broader site analysis
 has not been performed. `notChecked` names those unavailable surfaces explicitly.
 
-## Site Files and Optional Advice
+## Core Technical Checklist
+
+`core_technical_checks` is an additive field in schema `2.0`, placed immediately
+after `scope` for human-readable JSON. Its first two entries summarize actual
+robots.txt and sitemap observations, including HTTP/URL evidence, recommendations
+and steps. Existing `siteFiles` is retained for compatibility. File observations
+describe checked HTTP locations, not physical files in a repository. Missing optional
+files are not automatically critical defects or ranking failures.
+
+Each entry has a stable `id`, `title`, `group`, `status`, `statusLabel`, `scope`,
+`complete`, `found` and `steps`; reasons and localized evidence accompany unavailable
+or problematic observations when provided. SEO aggregates include `counts`,
+`checkIds` and `issueIds` linking to the original round's checks/issues without
+copying every page's markup. A proven failure remains a failure when coverage is
+incomplete, with `complete: false`. Rules without an observed result are not passing.
+
+The checklist covers existing HTTP/crawl/index directives, title/description and
+reuse, canonical, internal/sitemap targets, image alt, OG, JSON-LD syntax and bounded
+JavaScript comparison. Absence of JSON-LD is scoped N/A, not a syntax failure;
+semantics/rich-result eligibility remains explicitly unimplemented. Static pages
+whose renderer reported no executable script are N/A, not invented JS executions.
+
+`lighthouse.technicalChecks` exposes Best Practices/SEO audit references actually
+returned by the engine, plus language, heading order and viewport insight results.
+Engine error/missing/malformed results are unavailable; manual, informational and
+N/A outcomes remain distinct. Up to 100 references/category and 20 bounded evidence
+records/audit are retained. Reference limits add an unavailable coverage row;
+evidence/text truncation is disclosed. Private error messages, complete raw details,
+source documents and unrelated provider fields are not exported. These results
+and seven known Agentic audits are summarized in the checklist with `single-url`
+scope; they are not audits of every crawled page. Manual results are not complete
+automatic checks. They do not change the existing HTML issue/score counters.
+
+llms.txt/catalog N/A is not relabeled "missing": an engine N/A can also follow
+other client-error HTTP responses. Optional discovery-resource advice is conditional.
+The checker does not claim to execute agent transactions or WebMCP tools.
+
+The browser has one expandable checklist below site-file observations; file results
+are not repeated there. Whole and filtered JSON retain the same full-round checklist
+context, independent of selected issue filters. Both XLSX scopes include a `Core
+Technical` worksheet. Referenced IDs describe the original round even if their
+issues were excluded from a filtered export. Refresh/new rounds clear this context.
+
+## Site File Details
 
 `siteFiles` is an additive report field, separate from `issues` and severity/score
 counters. It contains `robots-file` and `sitemap-file` observations for the final

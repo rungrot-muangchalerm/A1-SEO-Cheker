@@ -82,6 +82,8 @@ test('URL-only POST runs discovery, crawl, JavaScript and Lighthouse through one
       report = frames.at(-1).data;
     }
     assert.equal(report.scope.type, 'same-origin-crawl');
+    assert.deepEqual(report.core_technical_checks.slice(0, 2).map(entry => entry.id), ['robots-file', 'sitemap-file']);
+    assert.ok(report.core_technical_checks.slice(0, 2).every(entry => entry.status === 'found' && entry.evidence.length));
     assert.deepEqual(report.siteFiles.map(entry => entry.id), ['robots-file', 'sitemap-file']);
     assert.ok(report.siteFiles.every(entry => entry.status === 'found'));
     assert.equal(report.pages.length, 4);

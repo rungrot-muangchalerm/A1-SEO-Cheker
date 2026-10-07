@@ -1,5 +1,6 @@
 const website = require('../data/website.data');
 const agentic = require('./agentic.service');
+const technicalChecks = require('./lighthouse-checks.service');
 const labels = { performance: 'Performance', accessibility: 'Accessibility', 'best-practices': 'Best Practices', seo: 'SEO' };
 const text = (value, max = 256) => typeof value === 'string' && value.length <= max ? value : undefined;
 
@@ -40,7 +41,7 @@ module.exports = {
     };
     const result = {
       ...base, completedAt, status: categories.every((entry) => entry.status === 'completed') ? 'completed' : 'partial',
-      requestedUrl, finalUrl, categories, agentic: agentic.analyze(lhr, options.agenticUnavailable), fetchTime: text(lhr.fetchTime) && Number.isFinite(Date.parse(lhr.fetchTime)) ? lhr.fetchTime : undefined,
+      requestedUrl, finalUrl, categories, technicalChecks: technicalChecks.analyze(lhr), agentic: agentic.analyze(lhr, options.agenticUnavailable), fetchTime: text(lhr.fetchTime) && Number.isFinite(Date.parse(lhr.fetchTime)) ? lhr.fetchTime : undefined,
       engine: { name: 'Lighthouse', version: text(lhr.lighthouseVersion), userAgent: text(lhr.environment?.hostUserAgent || lhr.userAgent, 1024) },
       mode: { formFactor, throttlingMethod: text(lhr.configSettings?.throttlingMethod) }, warningCount: Array.isArray(lhr.runWarnings) ? lhr.runWarnings.length : 0
     };

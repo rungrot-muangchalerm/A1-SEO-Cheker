@@ -71,6 +71,10 @@
       ['Agentic Not Checked', report.lighthouse?.agentic?.notChecked], ['Agentic Engine Fraction', report.lighthouse?.agentic?.engineFraction]
     ];
     sheet('Summary', ['Field', 'Value'], summary);
+    if (report.core_technical_checks?.length) sheet('Core Technical',
+      ['Check ID', 'Title', 'Group', 'Status', 'Scope', 'URL', 'Complete', 'Found', 'Recommendation', 'Steps', 'Reason', 'Counts', 'Issue IDs', 'Evidence', 'References'],
+      report.core_technical_checks.map(entry => [entry.id, entry.title, entry.group, entry.status, entry.scope, entry.url,
+        entry.complete, entry.found, entry.recommendation, entry.steps, entry.reason, entry.counts, entry.issueIds, entry.evidence, entry.references]));
     if (report.siteFiles?.length) sheet('Site Files', ['File ID', 'Label', 'Status', 'Found', 'Recommendation', 'Steps', 'Evidence', 'Evidence Omitted', 'References'],
       report.siteFiles.map(entry => [entry.id, entry.label, entry.status, entry.found, entry.recommendation,
       entry.steps, entry.evidence, entry.evidenceOmitted, entry.references]));
