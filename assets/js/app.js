@@ -383,9 +383,7 @@
         (entry.content.length > 1024 ? '<span class="d-block">\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19</span>' : '') +
         (entry.resolvedUrl && entry.resolvedUrl !== entry.content ? '<span class="d-block mt-1">URL: ' + escapeHtml(entry.resolvedUrl.slice(0, 1024)) +
           (entry.resolvedUrl.length > 1024 ? ' (\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') + '</span>' : '') +
-        '<details class="mt-2"><summary>HTML' + (entry.location ? ' &middot; \u0e1a\u0e23\u0e23\u0e17\u0e31\u0e14 ' + escapeHtml(entry.location.startLine) + ':' + escapeHtml(entry.location.startColumn) : '') +
-        '</summary><pre class="bg-dark text-light p-3 rounded-1 small overflow-auto mt-2 mb-0"><code>' + escapeHtml(entry.source) + '</code></pre>' +
-        (entry.sourceTruncated ? '<span class="d-block">\u0e2b\u0e25\u0e31\u0e01\u0e10\u0e32\u0e19\u0e16\u0e39\u0e01\u0e15\u0e31\u0e14\u0e17\u0e2d\u0e19</span>' : '') + '</details></dd>').join('') + '</dl>' :
+        '</dd>').join('') + '</dl>' :
         '<p class="small mb-0">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e1e\u0e1a Open Graph \u0e43\u0e19 HTML \u0e17\u0e35\u0e48\u0e2d\u0e48\u0e32\u0e19\u0e44\u0e14\u0e49</p>') +
       (openGraph?.complete === false ? '<p class="small mt-2 mb-0">\u0e2d\u0e48\u0e32\u0e19 metadata \u0e44\u0e14\u0e49\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19</p>' : '') + '</section>' +
       (rendered ? '<section class="mb-4" data-render-comparison><h3 class="h6">JavaScript</h3><p class="small text-break">' +
@@ -397,10 +395,8 @@
           '</p>' + ['before', 'after'].map((phase) => '<h4 class="h6 mt-3">' + (phase === 'before' ? 'HTML \u0e40\u0e23\u0e34\u0e48\u0e21\u0e15\u0e49\u0e19' : 'DOM \u0e2b\u0e25\u0e31\u0e07 JavaScript') +
             '</h4><dl class="small" data-render-phase="' + phase + '">' + ['title', 'description', 'canonical', 'h1'].map((key) =>
               '<dt>' + escapeHtml(key) + '</dt><dd class="text-break mb-2">' + escapeHtml(Array.isArray(rendered[phase][key]) ? rendered[phase][key].join('\n') : rendered[phase][key]) + '</dd>').join('') +
-            '<dt>\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e43\u0e19 body</dt><dd class="text-break mb-2">' + escapeHtml(rendered[phase].text.preview) +
-            (rendered[phase].text.truncated ? ' (\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19)' : '') + '</dd></dl>').join('') +
-          '<details class="small mt-3"><summary>DOM \u0e2b\u0e25\u0e31\u0e07 JavaScript</summary><pre class="bg-dark text-light p-3 rounded-1 overflow-auto mt-2"><code>' +
-          escapeHtml(rendered.after.html) + '</code></pre></details>' : '') +
+            '<dt>\u0e04\u0e27\u0e32\u0e21\u0e22\u0e32\u0e27\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e43\u0e19 body</dt><dd class="text-break mb-2">' + escapeHtml(rendered[phase].text.length) +
+            ' \u0e15\u0e31\u0e27\u0e2d\u0e31\u0e01\u0e29\u0e23</dd></dl>').join('') : '') +
         (rendered.resources?.records.length ? '<details class="small mt-3"><summary>\u0e17\u0e23\u0e31\u0e1e\u0e22\u0e32\u0e01\u0e23\u0e02\u0e2d\u0e07 renderer</summary><ul class="ps-3 mt-2">' +
           rendered.resources.records.map((entry) => '<li class="text-break mb-2">' + escapeHtml(entry.url || '') + ' &middot; ' +
             escapeHtml(entry.reason || 'HTTP ' + entry.status) + '</li>').join('') + '</ul></details>' : '') + '</section>' : '') +
@@ -412,11 +408,7 @@
         '<li class="mb-2"><button type="button" class="btn btn-link text-primary-emphasis text-start text-break p-0 text-decoration-none small" data-issue-id="' +
         escapeHtml(issue.id) + '">' + escapeHtml(issue.title) + '</button></li>'
       )).join('') + '</ul>' : '<p class="small mb-0">\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e15\u0e32\u0e21\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e44\u0e14\u0e49</p>') +
-      '</section><details class="mb-4"><summary class="small">HTTP headers</summary><pre class="bg-dark text-light small p-3 mt-2 rounded-1 overflow-auto"><code>' +
-      escapeHtml(JSON.stringify(page.headers, null, 2)) + '</code></pre></details>' +
-      '<details><summary class="small">HTML \u0e17\u0e35\u0e48\u0e14\u0e36\u0e07\u0e44\u0e14\u0e49</summary><pre class="bg-dark text-light small p-3 mt-2 rounded-1 overflow-auto"><code>' +
-      escapeHtml(page.html.slice(0, 16384)) + '</code></pre>' +
-      (page.html.length > 16384 ? '<p class="small">\u0e41\u0e2a\u0e14\u0e07 HTML \u0e40\u0e09\u0e1e\u0e32\u0e30 16,384 \u0e15\u0e31\u0e27\u0e2d\u0e31\u0e01\u0e29\u0e23\u0e41\u0e23\u0e01</p>' : '') + '</details>', trigger);
+      '</section>', trigger);
   }
 
   function resetIssueFilters() {
@@ -657,7 +649,7 @@
         if (!response.ok || data.status === "failed") {
           throw Object.assign(new Error("Audit failed"), { publicMessage: data.message, code: data.error });
         }
-        if (data.schemaVersion !== "1.0" || !["partial", "completed"].includes(data.status) || !Array.isArray(data.pages) ||
+        if (data.schemaVersion !== "2.0" || !["partial", "completed"].includes(data.status) || !Array.isArray(data.pages) ||
           !data.pages.length || !Array.isArray(data.issues) || !Array.isArray(data.notChecked) ||
           data.siteFiles !== undefined && !Array.isArray(data.siteFiles)) {
           throw new Error("Invalid report");

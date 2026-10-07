@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
 const audit = require('../../app/service/audit.service');
 const renderer = require('../../app/service/render.service');
 const { stubTransport } = require('./helpers/transport');
-const { frontend, scan, report, good, setAuditOptions } = require('./helpers/frontend');
+const { frontend, scan, setAuditOptions } = require('./helpers/frontend');
 
 const base = 'https://site.example/';
 const document = (scripts = '', title = 'Initial') => '<!doctype html><html><head><title>' + title +
@@ -18,13 +18,14 @@ const inline = '<script>document.title="Rendered title";document.querySelector("
   'document.querySelector("#content").textContent="Rendered body";</script>';
 const networkResponses = (markup, extra = []) => [{ html: markup }, { status: 404 }, { status: 404 }, ...extra];
 
-test('real Chromium executes inline JS and compares initial title/description/canonical/h1/body text without replacing fetched HTML or inventing scores', async (t) => {
+test('real Chromium compares initial and rendered metadata without returning source documents or inventing scores', async (t) => {
   const source = document(inline);
   const transport = stubTransport(t, networkResponses(source));
   const result = await audit.create({ url: base, render: true });
   assert.equal(result.ok, true);
   const page = result.data.pages[0];
-  assert.equal(page.html, source);
+  assert.equal(page.html, undefined);
+  assert.equal(page.render.after.html, undefined);
   assert.equal(page.metadata.title, 'Initial');
   assert.equal(page.render.status, 'completed', JSON.stringify(page.render));
   assert.equal(page.render.before.title, 'Initial');
@@ -33,7 +34,8 @@ test('real Chromium executes inline JS and compares initial title/description/ca
   assert.deepEqual(page.render.after.canonical, [base + 'rendered']);
   assert.deepEqual(page.render.before.h1, ['Initial heading']);
   assert.deepEqual(page.render.after.h1, ['Rendered heading']);
-  assert.ok(page.render.after.text.preview.includes('Rendered body'));
+  assert.ok(page.render.after.text.length > 0);
+  assert.equal(page.render.after.text.preview, undefined);
   assert.equal(page.render.after.sourceFormat, 'rendered-dom');
   assert.deepEqual(page.render.changes, ['title', 'description', 'canonical', 'h1', 'body-text']);
   assert.ok(page.render.engine.version && page.render.engine.playwright);
@@ -59,7 +61,8 @@ test('same-origin JS, redirected modules and JSON fetch use the pinned protected
   const rendered = result.pages[0].render;
   assert.equal(rendered.status, 'completed', JSON.stringify(rendered));
   assert.equal(rendered.after.title, 'Fetched render title', JSON.stringify({ rendered, calls: transport.calls.map((entry) => entry.url) }));
-  assert.ok(rendered.after.text.preview.includes('Fetched render body'));
+  assert.ok(rendered.changes.includes('body-text'));
+  assert.ok(rendered.after.text.length > 0);
   assert.deepEqual(transport.calls.slice(3).map((entry) => entry.url), [base + 'alias.js', base + 'scripts/app.js', base + 'scripts/child.js', base + 'api/content']);
   assert.ok(transport.calls.every((entry) => typeof entry.options.lookup === 'function' && entry.options.agent === false));
   assert.equal(rendered.resources.records[0].status, 302);
@@ -81,7 +84,10 @@ test('renderer is explicit, only selects pages with executable content and caps 
   assert.equal(second.calls.length, 2);
   t.mock.restoreAll();
   stubTransport(t, [{ status: 404 }]);
-  const pages = Array.from({ length: 3 }, (_, index) => report(base + 'p-' + index, document(inline)).pages[0]);
+  const pages = Array.from({ length: 3 }, (_, index) => ({
+    requestedUrl: base + 'p-' + index, finalUrl: base + 'p-' + index,
+    status: 200, headers: { 'content-type': 'text/html' }, html: document(inline)
+  }));
   await renderer.run(pages);
   assert.equal(pages[0].render.after.title, 'Rendered title');
   assert.equal(pages[1].render.after.title, 'Rendered title');
@@ -122,7 +128,7 @@ test('blocked resources and script errors keep genuine observed DOM changes but 
   assert.ok(rendered.resources.records.some((entry) => entry.reason === 'OUTSIDE_SCOPE'));
   assert.equal(transport.calls.length, 3);
   assert.ok(result.notChecked.some((entry) => entry.id === 'javascript-render' && entry.reason === 'render-incomplete'));
-  assert.equal(JSON.stringify(rendered).includes('Private script error'), true); // Source proof, not an error log.
+  assert.equal(JSON.stringify(rendered).includes('Private script error'), false);
 });
 
 test('new round executes changed current JS without carrying cookies/browser storage from the previous context or editing the earlier report', async (t) => {
@@ -137,7 +143,7 @@ test('new round executes changed current JS without carrying cookies/browser sto
   assert.equal(second.pages[0].render.before.title, 'Initial');
 });
 
-test('API-rendered results display escaped before/after fields and DOM proof on desktop/mobile without a checkbox; refresh clears results', async (t) => {
+test('API-rendered results display escaped before/after metadata without full DOM on desktop/mobile; refresh clears results', async (t) => {
   const source = document('<script>document.title="Rendered browser title";document.querySelector("#content").textContent=' +
     '"<img src=x onerror=globalThis.__renderXss=true>";</script>');
   stubTransport(t, networkResponses(source));
@@ -153,7 +159,7 @@ test('API-rendered results display escaped before/after fields and DOM proof on 
   });
   const comparison = page.locator('[data-render-comparison]');
   assert.ok((await comparison.locator('[data-google-index-status]').textContent()).includes('ยังตรวจไม่ได้'));
-  assert.ok((await comparison.locator('[data-render-phase="before"]').textContent()).includes('Initial body'));
+  assert.ok((await comparison.locator('[data-render-phase="before"]').textContent()).includes('Initial heading'));
   assert.ok((await comparison.locator('[data-render-phase="after"]').textContent()).includes('Rendered browser title'));
   assert.equal(await comparison.locator('img, script, iframe').count(), 0);
   assert.equal(await page.evaluate(() => globalThis.__renderXss), undefined);
@@ -163,8 +169,8 @@ test('API-rendered results display escaped before/after fields and DOM proof on 
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     if (process.env.SEO_SCREENSHOTS === 'true') await page.screenshot({ path: path.join(os.tmpdir(), 'seo-checker-render-' + name + '.png'), fullPage: false });
   }
-  await comparison.locator('summary').first().click();
-  assert.ok((await comparison.locator('pre').textContent()).includes('document.title='));
+  assert.equal(await comparison.locator('pre').count(), 0);
+  assert.ok(!(await comparison.textContent()).includes('document.title='));
   await page.reload();
   assert.equal(await page.locator('#render-pages').count(), 0);
   assert.equal(await page.locator('[data-render-comparison]').count(), 0);
@@ -185,9 +191,9 @@ test('added, removed and unchanged DOM text do not infer Google indexing, and re
     const page = result.pages[0];
     assert.equal(page.render.indexing.status, 'not-checked');
     assert.ok(!result.issues.some((entry) => entry.ruleId.startsWith('javascript')));
-    assert.equal(page.html, source);
+    assert.equal(page.html, undefined);
+    assert.equal(page.render.after.html, undefined);
     if (source.includes('name="robots"')) {
-      assert.ok(!page.render.after.html.includes('name="robots"'));
       assert.equal(page.checks.find((entry) => entry.ruleId === 'robots-indexing').outcome, 'review');
     }
     t.mock.restoreAll();

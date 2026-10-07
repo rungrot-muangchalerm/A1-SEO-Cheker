@@ -23,7 +23,8 @@ test('report distinguishes fetched evidence from analysis that was not performed
   assert.equal(report.pages[0].analysisStatus, 'partial');
   assert.equal(report.pages[0].checks.length, 9);
   assert.ok(report.pages[0].checks.slice(0, 3).every((entry) => entry.outcome === 'pass'));
-  assert.equal(report.pages[0].html, page.html);
+  assert.equal(report.pages[0].html, undefined);
+  assert.equal(report.pages[0].metadata.title, 'Actual page');
   assert.equal(report.notChecked[0].id, 'robots-crawling');
   assert.equal(report.notChecked[0].url, page.finalUrl);
   assert.equal(report.issues.length, 3);

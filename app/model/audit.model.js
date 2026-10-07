@@ -1,14 +1,12 @@
-const version = '1.0';
+const resultModel = require('./audit-result.model');
+const version = '2.0';
 
 module.exports = {
   version,
   createReport: (page, startedAt, discovery, crawl, siteChecks = [], lighthouse, siteFiles = []) => {
     const pages = (crawl?.pages || [page]).map((item) => {
       const checks = (item.checks || []).map((entry) => crawl ? { ...entry, id: entry.id + ':' + entry.url } : entry);
-      return {
-        ...item, fetchStatus: 'success', analysisStatus: !checks.length ? 'not-checked' :
-          checks.some((entry) => entry.outcome === 'not-checked' || entry.complete === false) ? 'partial' : 'complete', checks
-      };
+      return resultModel.page(item, checks);
     });
     const checks = [...pages.flatMap((item) => item.checks), ...siteChecks];
     const issues = checks.filter((entry) => ['fail', 'review'].includes(entry.outcome));
@@ -126,8 +124,8 @@ module.exports = {
       issueGroups,
       siteFiles,
       notChecked,
-      ...(discovery ? { discovery } : {}),
-      ...(crawl ? { crawl: { limits: crawl.limits, stats: crawl.stats, stopReason: crawl.stopReason }, responses: crawl.responses } : {}),
+      ...(discovery ? { discovery: resultModel.discovery(discovery) } : {}),
+      ...(crawl ? { crawl: { limits: crawl.limits, stats: crawl.stats, stopReason: crawl.stopReason }, responses: (crawl.responses || []).map(resultModel.response) } : {}),
       lighthouse: lighthouse || { status: 'not-checked', categories: [], reason: 'not-requested' }
     };
   }

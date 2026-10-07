@@ -8,7 +8,6 @@ const website = require('../../app/data/website.data');
 const audit = require('../../app/service/audit.service');
 const renderer = require('../../app/service/render.service');
 const { stubTransport } = require('./helpers/transport');
-const { report } = require('./helpers/frontend');
 
 const base = 'https://site.example/';
 const markup = (scripts = '', extra = '') => '<title>Security fixture</title><meta name="description" content="Security">' +
@@ -154,7 +153,8 @@ test('DOM element/byte limits and CSP-blocked execution disclose unavailable or 
   assert.equal(rendered.after.title, 'Security fixture');
   assert.equal(rendered.status, 'partial');
   assert.ok(rendered.resources.consoleErrors > 0);
-  assert.equal(rendered.after.html.includes('Must not execute'), true);
+  assert.equal(rendered.after.html, undefined);
+  assert.equal(JSON.stringify(rendered).includes('Must not execute'), false);
 });
 
 test('a real CPU-bound infinite script is stopped by the round deadline and the browser is closed without a fake snapshot', async (t) => {
@@ -174,7 +174,8 @@ test('cancelling before launch opens no socket; cancelling a pending asset close
   const stopped = new AbortController();
   stopped.abort();
   const untouched = stubTransport(t);
-  const page = report(base, markup(script('document.title="Should not run";'))).pages[0];
+  const page = { requestedUrl: base, finalUrl: base, status: 200, headers: {},
+    html: markup(script('document.title="Should not run";')) };
   await assert.rejects(renderer.run([page], { signal: stopped.signal }), { code: 'CANCELLED' });
   assert.equal(untouched.calls.length, 0);
   t.mock.restoreAll();

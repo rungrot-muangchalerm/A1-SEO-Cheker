@@ -89,7 +89,9 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   assert.equal(await page.locator('#page-rows tr').count(), 3);
   await page.locator('[data-page-url="' + base + 'child"]').click();
   await page.locator('#issue-drawer.show').waitFor();
-  assert.equal((await page.locator('#detail-content details code').allTextContents())[1], child);
+  assert.ok((await page.locator('#detail-content').textContent()).includes('Repeated title'));
+  assert.equal(await page.locator('#detail-content details pre').count(), 0);
+  assert.equal(result.pages.find(entry => entry.finalUrl === base + 'child').html, undefined);
   await page.locator('#issue-drawer [data-bs-dismiss="offcanvas"]').click();
   await page.locator('#issue-drawer.show').waitFor({ state: 'hidden' });
   setAuditOptions(page, { crawl: false });
@@ -101,7 +103,8 @@ test('complete browser/API workflow crawls, analyzes, opens factual evidence, ex
   const next = JSON.parse(await download(page, '#export-json-button'));
   assert.equal(next.requestedUrl, base + 'fresh');
   assert.equal(next.pages.length, 1);
-  assert.equal(next.pages[0].html, good);
+  assert.equal(next.pages[0].html, undefined);
+  assert.equal(next.pages[0].metadata.title, 'Workshop Schedule | Sample Studio');
   assert.equal(next.lighthouse.reason, 'not-requested');
   assert.deepEqual(next.lighthouse.categories, []);
   await page.reload();

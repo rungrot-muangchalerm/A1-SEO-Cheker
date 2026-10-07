@@ -45,14 +45,15 @@ test('manual JSON contains the entire actual API round, independent of issue fil
   assert.ok(Number.isFinite(Date.parse(parsed.export.exportedAt)));
   delete parsed.export;
   assert.deepEqual(parsed, original);
-  assert.equal(JSON.parse(downloaded.text).pages[0].html, bad);
+  assert.equal(JSON.parse(downloaded.text).pages[0].html, undefined);
+  assert.ok(JSON.parse(downloaded.text).issues.find(issue => issue.ruleId === 'image-alt').evidence[0].source.includes('missing-alt.jpg'));
   assert.equal(JSON.parse(downloaded.text).lighthouse.categories[0].displayScore, 72);
   assert.ok(JSON.parse(downloaded.text).notChecked.length > 0);
   assert.ok(!downloaded.text.includes('SERVER_ONLY_TEST_KEY'));
   assert.deepEqual(errors, []);
 });
 
-test('zero-issue rounds still export JSON; exported HTML is inert text and never produces markup or runs source code', async (t) => {
+test('zero-issue rounds still export JSON without unrelated HTML or script contents', async (t) => {
   const source = good.replace('</body>', '<script>globalThis.__jsonXss=true;</script></body>');
   const result = report(base, source);
   const { page, errors } = await frontend(t, { width: 390, height: 844 });
@@ -60,7 +61,9 @@ test('zero-issue rounds still export JSON; exported HTML is inert text and never
   await scan(page, base);
   assert.equal(await page.locator('#export-json-button').isDisabled(), false);
   const downloaded = await readDownload(page, '#export-json-button');
-  assert.equal(JSON.parse(downloaded.text).pages[0].html, source);
+  assert.equal(JSON.parse(downloaded.text).pages[0].html, undefined);
+  assert.equal(JSON.parse(downloaded.text).pages[0].metadata.title, result.pages[0].metadata.title);
+  assert.equal(downloaded.text.includes('__jsonXss'), false);
   assert.equal(await page.evaluate(() => globalThis.__jsonXss), undefined);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   assert.deepEqual(errors, []);
@@ -158,7 +161,8 @@ test('new audit replaces export contents and F5 clears the report while an expli
   await scan(page, second.requestedUrl);
   const current = JSON.parse((await readDownload(page, '#export-json-button')).text);
   assert.equal(current.requestedUrl, second.requestedUrl);
-  assert.equal(current.pages[0].html, good);
+  assert.equal(current.pages[0].html, undefined);
+  assert.equal(current.pages[0].metadata.title, second.pages[0].metadata.title);
   assert.equal(await fs.readFile(destination, 'utf8'), saved);
   await page.reload();
   assert.equal(await page.locator('#website-url').inputValue(), '');

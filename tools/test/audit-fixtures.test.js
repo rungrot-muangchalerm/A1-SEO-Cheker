@@ -59,7 +59,8 @@ test('real HTTP fixture content and headers produce passing and problematic API 
   const passing = await audit('https://fixture.example/good');
   assert.equal(passing.pages[0].metadata.title, 'Workshop Schedule | Sample Studio');
   assert.equal(passing.pages[0].metadata.headings.length, 2);
-  assert.equal(passing.pages[0].metadata.links[0].url, 'https://fixture.example/registration?session=2');
+  assert.ok(passing.pages[0].metadata.counts.links > 0);
+  assert.equal(passing.pages[0].metadata.links, undefined);
   assert.equal(passing.pages[0].analysisStatus, 'complete');
   assert.deepEqual(passing.issues, []);
   assert.equal(passing.summary.checks.pass, 9);
@@ -88,7 +89,9 @@ test('changing bytes on the same URL changes the next round and never reuses a p
   const first = await audit('https://fixture.example/good');
   fixture.html = bad;
   const second = await audit('https://fixture.example/good');
-  assert.notEqual(first.pages[0].html, second.pages[0].html);
+  assert.notEqual(first.pages[0].metadata.title, second.pages[0].metadata.title);
+  assert.equal(first.pages[0].html, undefined);
+  assert.equal(second.pages[0].html, undefined);
   assert.equal(second.pages[0].metadata.title, '');
   assert.ok(second.issues.some((entry) => entry.ruleId === 'title-content'));
   assert.equal(second.summary.critical, 0);

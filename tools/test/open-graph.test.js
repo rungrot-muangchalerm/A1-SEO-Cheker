@@ -125,7 +125,7 @@ test('OG/metadata caps disclose incomplete observations rather than claiming all
   assert.ok(!report.issues.some((entry) => entry.ruleId === 'open-graph'));
 });
 
-test('desktop/mobile page details show sharing values and source proof as escaped text, without fetching private media or overflowing', async (t) => {
+test('desktop/mobile page details show sharing values without raw tag inventories, private media requests or overflow', async (t) => {
   const transport = stubTransport(t, [{ html: markup(og() + meta('og:site_name', 'Long'.repeat(500))) }, { status: 404 }]);
   const { page, errors } = await frontend(t);
   const requests = [];
@@ -155,8 +155,7 @@ test('desktop/mobile page details show sharing values and source proof as escape
     assert.ok((await section.locator('[data-og-property="og:site_name"]').textContent()).includes('\u0e41\u0e2a\u0e14\u0e07\u0e1a\u0e32\u0e07\u0e2a\u0e48\u0e27\u0e19'));
     if (process.env.SEO_SCREENSHOTS === 'true') await page.screenshot({ path: path.join(os.tmpdir(), 'seo-checker-og-' + name + '.png'), fullPage: false });
   }
-  await section.locator('[data-og-property="og:title"] summary').click();
-  assert.ok((await section.locator('[data-og-property="og:title"] pre').textContent()).includes('<meta property="og:title"'));
+  assert.equal(await section.locator('pre, summary').count(), 0);
   assert.deepEqual(errors, []);
 });
 

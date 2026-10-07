@@ -33,7 +33,8 @@ test('POST returns data for this request only; no stored-report GET exists', asy
     assert.equal(response.headers.get('set-cookie'), null);
     const report = await response.json();
     assert.equal(report.status, 'partial');
-    assert.equal(report.pages[0].html, '<title>Version ' + version + '</title>');
+    assert.equal(report.pages[0].metadata.title, 'Version ' + version);
+    assert.equal(report.pages[0].html, undefined);
     assert.equal(report.auditId, undefined);
   }
   assert.equal((await fetch(origin + '/api/audits/anything')).status, 404);
@@ -52,7 +53,7 @@ test('invalid input and failures do not create example reports', async (t) => {
   const failure = await invalid.json();
   assert.equal(failure.error, 'INVALID_URL');
   assert.equal(failure.status, 'failed');
-  assert.equal(failure.schemaVersion, '1.0');
+  assert.equal(failure.schemaVersion, '2.0');
   const failed = await auditService.create({ url: 'file:///etc/passwd' });
   assert.deepEqual(failed, { ok: false, code: 'INVALID_URL' });
 });
@@ -86,7 +87,9 @@ test('URL-only POST runs discovery, crawl, JavaScript and Lighthouse through one
     assert.equal(report.pages.length, 4);
     assert.ok(report.discovery.urls.some(entry => entry.url === site.origin + '/sitemap-only'));
     assert.ok(report.crawl.stats.attemptedPages >= 4);
-    assert.ok(report.pages.every(page => page.html && page.metadata && page.checks.length && page.render));
+    assert.equal(report.schemaVersion, '2.0');
+    assert.ok(report.pages.every(page => page.html === undefined && page.metadata && page.checks.length && page.render));
+    assert.ok(report.pages.every(page => !page.render.after || page.render.after.html === undefined));
     assert.ok(report.pages.every(page => page.render.reason !== 'not-requested'));
     assert.equal(report.lighthouse.categories.length, 4);
     assert.equal(report.lighthouse.reason, undefined);

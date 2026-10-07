@@ -39,8 +39,9 @@ test('summary, issues, pages and both detail views read the same real report fie
   await page.locator('#issue-drawer.show').waitFor();
   assert.equal(await page.locator('#detail-content [data-issue-id]').count(), result.issues.length);
   const code = await page.locator('#detail-content details code').allTextContents();
-  assert.equal(code[0], JSON.stringify(result.pages[0].headers, null, 2));
-  assert.equal(code[1], result.pages[0].html);
+  assert.deepEqual(code, []);
+  assert.equal(result.pages[0].html, undefined);
+  assert.equal(result.pages[0].headers, undefined);
   assert.equal(await page.evaluate(() => globalThis.__auditFixtureScriptRan), undefined);
   assert.deepEqual(errors, []);
 });

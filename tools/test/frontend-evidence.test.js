@@ -88,7 +88,8 @@ test('actual API HTML with scripts, event attributes, iframe and markup in metad
   assert.ok((await page.locator('#page-rows').textContent()).includes(payload));
   await page.locator('#page-rows [data-page-url]').click();
   await page.locator('#issue-drawer.show').waitFor();
-  assert.equal((await page.locator('#detail-content details code').allTextContents())[1], source);
+  assert.equal(await page.locator('#detail-content details code').count(), 0);
+  assert.equal(result.pages[0].html, undefined);
   for (const width of [320, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.evaluate(() => globalThis.__evidenceXss), undefined);

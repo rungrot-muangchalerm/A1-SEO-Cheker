@@ -107,11 +107,14 @@ and data modules. Do not add audit history or persistence.
   or unsupported encodings are disclosed rather than replaced with fake URLs.
   Saxes 6's upstream repository is archived; it is used only as a bounded, non-network
   XML syntax validator. Keep dependency audits and malformed-XML regression tests.
-- The response uses schema version `1.0` with `pages`, `issues`, `notChecked`,
+- The response uses schema version `2.0` with `pages`, `issues`, `notChecked`,
   `coverage`, `summary`, timestamps, and a Lighthouse availability state. Each page
-  contains actual HTTP status, headers, HTML, final URL, and redirect evidence.
-- Each page includes parsed metadata, headings, links, and images with HTML
-  evidence. Relative URLs honor the document base URL. HTML byte decoding respects
+  contains actual HTTP status, final URL, redirect facts and analysis summaries,
+  not complete HTML/DOM or raw HTTP headers.
+- Each page includes relevant metadata/heading/OG values and extraction counts;
+  raw tag/link/image inventories and JSON-LD script content remain internal.
+  Relevant checks/issues retain localized HTML/header evidence and corrective steps.
+  Relative URLs honor the document base URL. HTML byte decoding respects
   BOM, response charset, and meta charset. Element/evidence limits are disclosed.
 - Crawl reports include `siteChecks` for duplicate title/description values across
   fetched 2xx HTML pages. Each matching group has all related URLs, original parsed
@@ -143,7 +146,8 @@ and data modules. Do not add audit history or persistence.
 - The URL form sends POST requests and holds the current API report only in
   page memory. Mock data and mock scores have been removed. Summary, issue/page
   tables, and both detail views use that one report; errors never substitute fixtures.
-  HTML and headers are displayed as escaped evidence, not reconstructed examples.
+  Localized HTML/header proof is displayed as escaped evidence for findings;
+  full-document previews have been removed.
   Loading, partial/completed coverage, no findings, and failure states are distinct.
   Scope, real coverage counts, completion time, and unavailable checks remain visible
   even when no issues were found. Starting another round clears the prior details.

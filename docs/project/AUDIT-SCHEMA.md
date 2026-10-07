@@ -8,8 +8,23 @@ Ordinary clients receive one JSON report; `Accept: application/x-ndjson` receive
 progress frames and one terminal report on the same connection. Neither mode stores
 reports, issues job IDs or creates a polling/history endpoint.
 
-The report schema is versioned by `schemaVersion`. Each page contains `checks`;
+The report schema is `2.0`. Each page contains `checks`;
 `issues` contains only checks with a fail or review outcome, never every check.
+
+Version 2 removes source-document payloads from both JSON and NDJSON responses and
+manual exports. `pages[].html`, raw `headers`/`rawHeaders`, renderer `after.html`,
+body-text previews/hashes, parser `meta`/`titles`/`descriptions`/`links`/`images`
+inventories and JSON-LD script contents are no longer public fields. HTML is still
+fetched and analyzed internally; only the result projection crosses the API boundary.
+No opt-in source dump is provided. Consumers of version 1 must update their schema.
+
+Pages retain URLs, observed HTTP status/bytes/redirects, fetch/analysis statuses,
+title/description/language, canonical values/parameters, heading values, OG values,
+extraction counts/completeness and crawler availability. Markup and locations live
+in relevant check/issue evidence, not a second raw-tag inventory. Sitemap summaries
+retain HTTP status, type, counts and limits without duplicate `entries` arrays;
+the complete discovered URL inventory remains in `discovery.urls`. `responses`
+retains URL/status/redirect/fetch-error facts without upstream header collections.
 
 Every check includes:
 
@@ -103,17 +118,18 @@ Rendering adds `pages[].render` by default for pages selected from fetched HTML
 with executable scripts/load/error handlers (JSON-LD/data-only scripts do not
 trigger execution). At most two eligible pages are rendered; static/non-2xx/XHTML,
 unknown/denied robots, browser failures and later pages have explicit unavailable
-reasons, not invented DOM. This does not change the original `html`, `metadata`,
-initial-HTML checks, discovered URLs or page counts.
+reasons, not invented DOM. This does not change internally fetched HTML, initial
+metadata/checks, discovered URLs or page counts.
 
 The initial document is replayed from the fetched decoded HTML at its original
 final URL. Chromium runs in a fresh non-persistent context, preserving the page's
 CSP. Before/after snapshots compare title, description, HTML canonical, h1 and
 normalized DOM body text (not a visibility/accessibility/content-quality measure).
-Body text excludes script/style/noscript/template and has full-value SHA-256,
-length and a 2,000-character preview; a shortened preview does not change matching.
-`changes` identifies fields with observed differences. `after.html` is serialized
-rendered DOM with `sourceFormat: rendered-dom`, never original repository code or
+Body text excludes script/style/noscript/template. Full-value SHA-256 is used only
+internally for matching. The response contains body-text length, not the preview,
+hash or serialized DOM. `changes` identifies fields with observed differences.
+Before/after summaries contain title, description, canonical and h1 values;
+`sourceFormat: rendered-dom` identifies the after-summary, not a source dump or
 an initial-HTML line reference. Engine versions, URL, timestamps and mode accompany
 the result. Change/absence is not Google's indexing or rendering verdict.
 Every attempted/selected render result has `indexing: { status: not-checked,
@@ -163,8 +179,8 @@ covered by browser-backed tests; both close the browser and transport work.
 ## Manual Downloads
 
 Manual JSON download serializes the entire current report, independently of issue
-filters. It includes original and any rendered source proof as JSON strings, not
-an executable HTML document. Even a zero-issue report is downloadable; no report
+filters. It includes findings, actions and localized evidence, never full initial
+HTML or rendered DOM. Even a zero-issue report is downloadable; no report
 means no export. Generation uses a browser Blob only on an explicit click, never
 a backend file/job/download URL. Refresh/new round clears the source report.
 JSON adds an `export` metadata object (format, scope, export time) to a shallow
@@ -176,7 +192,7 @@ Filenames use the UTC completion timestamp and a page-local round sequence, not
 the inspected URL or a stored job ID. CSV is no longer generated.
 
 Each scope also has a browser-only ExcelJS XLSX projection for manual Google Sheets
-import. JSON remains authoritative for complete fetched HTML and rendered snapshots;
+import. JSON preserves the structured result and localized evidence;
 XLSX contains Summary, Issues, Issue URLs and Evidence, plus Pages, Scores, Agentic,
 Not Checked, Discovered and Skipped for whole-round exports. Every cell is literal;
 formula prefixes are neutralized only in XLSX, not the JSON or in-memory report.

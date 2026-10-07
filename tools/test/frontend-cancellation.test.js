@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const website = require('../../app/data/website.data');
-const { frontend, scan, report, bad } = require('./helpers/frontend');
+const { frontend, scan, bad } = require('./helpers/frontend');
 
 function latch() {
   let release;
@@ -14,7 +14,8 @@ function slowBackend(t) {
   const cancelled = latch();
   let signal;
   t.mock.method(website, 'fetchPage', (url, options) => {
-    if (!url.includes('/slow')) return Promise.resolve(report(url, bad).pages[0]);
+    if (!url.includes('/slow')) return Promise.resolve({ requestedUrl: url, finalUrl: url, html: bad,
+      status: 200, headers: {}, rawHeaders: [], bytes: Buffer.byteLength(bad), redirects: [] });
     signal = options.signal;
     started.release();
     return new Promise((resolve, reject) => {

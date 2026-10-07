@@ -39,7 +39,9 @@ test('native localhost crawl reads links, sitemap-only pages, canonical and actu
   const broken = report.issues.find(issue => issue.ruleId === 'internal-link-target');
   assert.equal(broken.details.httpStatus, 404);
   assert.equal(broken.details.target, site.origin + '/missing');
-  assert.equal(report.discovery.sitemaps[0].entries[0].url, site.origin + '/sitemap-only');
+  assert.equal(report.discovery.sitemaps[0].entries, undefined);
+  assert.ok(report.discovery.urls.some(entry => entry.url === site.origin + '/sitemap-only' &&
+    entry.sources.some(source => source.sourceUrl === site.origin + '/sitemap.xml')));
   assert.ok(site.requests.every(request => request.method === 'GET' && !request.headers.cookie && !request.headers.authorization));
   assert.equal(report.lighthouse.reason, 'not-requested');
 });
