@@ -227,6 +227,8 @@ Lighthouse ในเครื่องขอหมวด `agentic-browsing` จ�
 
 ## รันเบื้องหลังใน Windows
 
+อัปเดต: ใช้ ecosystem ภายนอกแทนแล้ว จึงลบ `ecosystem.config.js` ของโปรเจกต์ คำสั่ง npm สำหรับ PM2 และชุดทดสอบ config เดิมออก รายละเอียดด้านล่างเป็นประวัติการตั้งค่าครั้งก่อน
+
 - [x] chore: ตั้ง PM2 ให้ SEO Checker รันเบื้องหลัง
 
 เพิ่ม `ecosystem.config.js` กับคำสั่ง npm สำหรับ start/restart/stop/status/logs ใช้หนึ่งโปรเซสแบบ fork ปิด watch/LiveReload และรักษา `.env` เดิม เริ่มเว็บผ่าน PM2 บน `http://localhost:9999` แล้ว พร้อมบันทึกรายการด้วย `pm2 save` ยังไม่ได้ตั้ง Windows Service หรือ Task Scheduler จึงไม่เปิดอัตโนมัติหลังบูต/login

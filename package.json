@@ -7,12 +7,7 @@
     "start": "node index.js",
     "test": "node --test --test-concurrency=4 tools/test/*.test.js",
     "pack:check": "npm pack --dry-run",
-    "dev": "nodemon index.js",
-    "pm2:start": "pm2 start ecosystem.config.js --only seo-checker",
-    "pm2:restart": "pm2 restart ecosystem.config.js --only seo-checker --update-env",
-    "pm2:stop": "pm2 stop seo-checker",
-    "pm2:status": "pm2 list",
-    "pm2:logs": "pm2 logs seo-checker --lines 50"
+    "dev": "nodemon index.js"
   },
   "files": [
     "app",
@@ -20,7 +15,6 @@
     "docs",
     "tools",
     "views",
-    "ecosystem.config.js",
     "example.env",
     "index.js"
   ],
