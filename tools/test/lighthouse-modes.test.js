@@ -67,7 +67,8 @@ test('device controls post the chosen mode, metadata is escaped on mobile/deskto
   await page.locator('label[for="strategy-desktop"]').click();
   await scan(page, base, { lighthouse: true });
   assert.equal(engine.calls[0].strategy, 'desktop');
-  await page.locator('[data-bs-target="#lighthouse-scores"]').click();
+  assert.equal(await page.locator('#lighthouse-scores').isVisible(), true);
+  await page.locator('#lighthouse-metadata').evaluate(node => { node.closest('details').open = true; });
   await page.waitForFunction(() => document.getElementById('lighthouse-scores').classList.contains('show'));
   const metadata = page.locator('#lighthouse-metadata');
   assert.ok((await metadata.textContent()).includes(agent));

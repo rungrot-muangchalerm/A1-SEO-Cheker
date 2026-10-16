@@ -46,7 +46,7 @@ test('real transport failures replace earlier success honestly and keep desktop/
   assert.equal(await page.locator('#lighthouse-categories [data-score-value]').count(), 0);
   assert.ok((await page.locator('#lighthouse-status').textContent()).includes('LIGHTHOUSE_REQUEST_LIMIT'));
   assert.equal(transport.calls.length, 10);
-  await page.locator('[data-bs-target="#lighthouse-scores"]').click();
+  assert.equal(await page.locator('#lighthouse-scores').isVisible(), true);
   for (const [name, viewport] of [['desktop', { width: 1440, height: 900 }], ['mobile', { width: 390, height: 844 }]]) {
     await page.setViewportSize(viewport);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

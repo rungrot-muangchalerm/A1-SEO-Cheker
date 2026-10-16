@@ -90,7 +90,7 @@ test('API service reports optional missing files without inventing SEO failures 
   const result = await audit.create({ url: origin + '/', discover: true });
   assert.equal(result.ok, true);
   assert.deepEqual(result.data.siteFiles.map(entry => entry.status), ['missing', 'missing']);
-  assert.ok(!result.data.issues.some(entry => ['robots-file', 'sitemap-file'].includes(entry.ruleId)));
+  assert.equal(result.data.issues.filter(entry => ['robots-file', 'sitemap-file'].includes(entry.ruleId) && entry.severity === 'review').length, 2);
   assert.equal(result.data.pages[0].checks.find(entry => entry.ruleId === 'robots-crawling').outcome, 'pass');
   assert.equal(transport.calls.length, 3);
 });
@@ -114,9 +114,9 @@ test('recommendations are visible without opening issue details and survive JSON
   t.mock.method(audit, 'create', async (...args) => { const outcome = await create(...args); result = outcome.data; return outcome; });
   const { page: browserPage, errors } = await frontend(t);
   await scan(browserPage, origin + '/', { discover: true });
-  assert.equal(await browserPage.locator('#site-files-section').isVisible(), true);
-  assert.equal(await browserPage.locator('[data-file-status="missing"]').count(), 2);
-  assert.ok((await browserPage.locator('#site-files-list').textContent()).includes('\u0e1e\u0e34\u0e08\u0e32\u0e23\u0e13\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21'));
+  assert.equal(await browserPage.locator('#site-files-section').count(), 0);
+  assert.equal(await browserPage.locator('#issue-rows [data-issue-id^="site-file:"]').count(), 2);
+  assert.ok((await browserPage.locator('#issue-rows').textContent()).includes('\u0e1e\u0e34\u0e08\u0e32\u0e23\u0e13\u0e32\u0e40\u0e1e\u0e34\u0e48\u0e21'));
   const exported = JSON.parse((await download(browserPage, '#export-json-button')).toString());
   assert.deepEqual(exported.siteFiles, result.siteFiles);
   const selected = JSON.parse((await download(browserPage, '#export-button')).toString());
@@ -130,8 +130,8 @@ test('recommendations are visible without opening issue details and survive JSON
   if (process.env.SEO_TEST_SCREENSHOT_PREFIX) await browserPage.screenshot({ path: process.env.SEO_TEST_SCREENSHOT_PREFIX + '-desktop.png', fullPage: true });
   await browserPage.reload();
   await browserPage.waitForFunction(() => document.querySelector('header svg'));
-  assert.equal(await browserPage.locator('#site-files-section').isVisible(), false);
-  assert.equal(await browserPage.locator('#site-files-list').textContent(), '');
+  assert.equal(await browserPage.locator('#site-files-section').count(), 0);
+  assert.equal(await browserPage.locator('#issue-rows').textContent(), '');
   assert.deepEqual(errors, []);
 });
 
@@ -141,10 +141,9 @@ test('mobile shows found custom sitemap URLs without overflowing or recommending
     { html: xml, headers: { 'content-type': 'application/xml' } }, { status: 404 }]);
   const { page: browserPage, errors } = await frontend(t, { width: 320, height: 740 });
   await scan(browserPage, origin + '/', { discover: true });
-  assert.equal(await browserPage.locator('[data-file-status="found"]').count(), 2);
+  assert.equal(await browserPage.locator('#issue-rows [data-issue-id^="site-file:"]').count(), 0);
   assert.equal(await browserPage.locator('[data-file-recommendation]').count(), 0);
-  await browserPage.locator('[data-site-file="sitemap-file"] summary').click();
-  assert.ok((await browserPage.locator('[data-site-file="sitemap-file"]').textContent()).includes(custom));
+  assert.equal(await browserPage.locator('#site-files-section').count(), 0);
   assert.equal(await browserPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
   if (process.env.SEO_TEST_SCREENSHOT_PREFIX) await browserPage.screenshot({ path: process.env.SEO_TEST_SCREENSHOT_PREFIX + '-mobile.png', fullPage: true });
   assert.deepEqual(errors, []);

@@ -30,6 +30,10 @@ module.exports = {
       for (const [key, max] of [['description', 2048], ['displayValue', 512]]) {
         const value = clipped(result?.[key], max); if (value !== undefined) row[key] = value;
       }
+      if (ref.id === 'webmcp-form-coverage' && row.description?.startsWith('Consider adding')) {
+        row.title = 'การรองรับ WebMCP ของแบบฟอร์ม';
+        row.description = 'พิจารณาเพิ่มข้อมูลกำกับ WebMCP ให้แบบฟอร์มที่แสดงด้านล่าง เพื่อช่วยให้ AI agent ระบุและใช้งานแบบฟอร์มได้แม่นยำขึ้น ดูรายละเอียด: https://developer.chrome.com/docs/ai/webmcp';
+      }
       const valid = result && ['binary', 'numeric', 'error', 'informative', 'manual', 'notApplicable'].includes(result.scoreDisplayMode);
       const scoreValid = typeof result?.score === 'number' && Number.isFinite(result.score) && result.score >= 0 && result.score <= 1;
       if (!valid || (['binary', 'numeric'].includes(row.mode) && !scoreValid)) {

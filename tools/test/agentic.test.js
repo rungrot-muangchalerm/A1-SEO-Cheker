@@ -118,7 +118,8 @@ test('Agentic titles and HTML snippets stay inert text and fit expanded details 
   stubTransport(t, [{ html: good }, { status: 404 }]);
   const { page, errors } = await frontend(t);
   await scan(page, base, { lighthouse: true });
-  await page.locator('[data-bs-target="#lighthouse-scores"]').click();
+  assert.equal(await page.locator('#lighthouse-scores').isVisible(), true);
+  await page.locator('#lighthouse-metadata').evaluate(node => { node.closest('details').open = true; });
   await page.waitForFunction(() => document.getElementById('lighthouse-scores').classList.contains('show'));
   await page.locator('[data-agentic-audit="fail"] summary').click();
   assert.ok((await page.locator('[data-agentic-audit="fail"]').textContent()).includes('<script>'));

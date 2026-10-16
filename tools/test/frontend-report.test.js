@@ -15,6 +15,9 @@ test('summary, issues, pages and both detail views read the same real report fie
     assert.equal(await page.locator('#summary-' + field).textContent(), String(result.summary[field]));
   }
   assert.equal(await page.locator('#issue-rows tr').count(), result.issues.length);
+  const priority = { critical: 0, warning: 1, review: 2 };
+  const expectedOrder = [...result.issues].sort((a, b) => priority[a.severity] - priority[b.severity]).map(issue => issue.id);
+  assert.deepEqual(await page.locator('#issue-rows [data-issue-id]').evaluateAll(nodes => nodes.map(node => node.dataset.issueId)), expectedOrder);
   for (const issue of result.issues) {
     assert.equal(await page.locator('[data-issue-id="' + issue.id + '"]').count(), 1);
   }

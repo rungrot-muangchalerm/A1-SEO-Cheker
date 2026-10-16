@@ -150,6 +150,7 @@ module.exports = {
         }
       });
       pendingRun = lighthouse(selected.href, {
+        locale: 'th',
         onlyCategories: ['performance', 'accessibility', 'best-practices', 'seo', 'agentic-browsing'],
         output: 'json', logLevel: 'silent', enableErrorReporting: false, disableFullPageScreenshot: true,
         maxWaitForLoad: 15000, maxWaitForFcp: 15000

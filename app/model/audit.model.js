@@ -11,6 +11,20 @@ module.exports = {
     });
     const checks = [...pages.flatMap((item) => item.checks), ...siteChecks];
     const issues = checks.filter((entry) => ['fail', 'review'].includes(entry.outcome));
+    for (const file of siteFiles.filter(file => file.status !== 'found')) {
+      const url = file.evidence?.[0]?.sourceUrl || new URL(file.id === 'robots-file' ? '/robots.txt' : '/sitemap.xml', page.finalUrl).href;
+      issues.push({
+        id: 'site-file:' + file.id, ruleId: file.id, category: 'site-files',
+        title: file.statusLabel + ' ' + file.label,
+        outcome: file.status === 'invalid' ? 'fail' : 'review',
+        severity: file.status === 'invalid' ? 'warning' : 'review',
+        complete: file.status !== 'unavailable', url, urls: [url],
+        found: file.found,
+        impact: file.recommendation || 'ยังยืนยันสถานะไฟล์ไม่ได้ ตรวจการตอบกลับและการเข้าถึงก่อนตัดสินใจเพิ่มหรือแก้ไฟล์',
+        steps: file.steps || [], evidence: file.evidence || [], references: file.references || [],
+        ...(file.reason ? { reason: file.reason } : {})
+      });
+    }
     const grouped = new Map();
     for (const issue of issues) {
       if (!grouped.has(issue.ruleId)) grouped.set(issue.ruleId, {
