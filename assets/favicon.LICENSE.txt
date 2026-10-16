@@ -1,0 +1,5 @@
+Icon: Magnifying Glass Tilted Left (U+1F50D), Twemoji v14.0.2
+Copyright 2020 Twitter, Inc and other contributors.
+Source: https://github.com/twitter/twemoji/blob/v14.0.2/assets/72x72/1f50d.png
+Graphics licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+Modification: PNG image packaged in an ICO container.
