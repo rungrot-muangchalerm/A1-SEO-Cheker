@@ -8,7 +8,8 @@ const definitions = [
   ['internal-link-target', 'Internal link targets', 'internal-link-coverage'],
   ['sitemap-url-target', 'Sitemap URL targets', 'sitemap-url-coverage', 'sitemap-restricted-loc'],
   ['image-alt', 'Image alt'], ['open-graph', 'Open Graph'],
-  ['jsonld-syntax', 'JSON-LD syntax', 'jsonld-extraction']
+  ['jsonld-syntax', 'JSON-LD syntax', 'jsonld-extraction'],
+  ['jsonld-semantics', 'Structured Data: Google properties']
 ];
 const agenticDefinitions = [
   ['agent-accessibility-tree', 'Agent accessibility tree', 'Review the observed node evidence; use semantic elements, accessible names and valid ARIA relationships.'],
@@ -45,7 +46,7 @@ module.exports = {
       const status = counts.fail ? 'fail' : counts.review ? 'review' : !complete ? 'not-checked' : 'pass';
       const issues = matches.filter(check => ['fail', 'review'].includes(check.outcome));
       const first = issues.find(check => check.outcome === status) || matches.find(check => check.outcome === 'not-checked' || check.complete === false);
-      const noJsonLd = id === 'jsonld-syntax' && !matches.length && pages.length > 0 &&
+      const noJsonLd = ['jsonld-syntax', 'jsonld-semantics'].includes(id) && !matches.length && pages.length > 0 &&
         pages.every(page => page.metadata?.jsonLd?.count === 0 && page.metadata.jsonLd.complete);
       results.push(entry({
         id, title, group: 'technical-seo', scope: 'observed-pages-and-targets', status: noJsonLd ? 'not-applicable' : status,
@@ -91,10 +92,6 @@ module.exports = {
         references: [{ title: 'Lighthouse Agentic Browsing', url: 'https://developer.chrome.com/docs/lighthouse/agentic-browsing/scoring' }]
       }));
     }
-    results.push(entry({ id: 'jsonld-semantics', title: 'Structured data semantics / rich results', group: 'technical-seo',
-      scope: 'outside-scope', status: 'not-checked', complete: false, reason: 'not-implemented',
-      found: '\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19 schema type, \u0e04\u0e27\u0e32\u0e21\u0e2b\u0e21\u0e32\u0e22 \u0e2b\u0e23\u0e37\u0e2d\u0e04\u0e38\u0e13\u0e2a\u0e21\u0e1a\u0e31\u0e15\u0e34 rich results',
-      steps: [], references: [{ title: 'Google Search Central', url: 'https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data' }] }));
     return results;
   }
 };

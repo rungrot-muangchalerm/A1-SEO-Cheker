@@ -334,7 +334,7 @@
       return;
     }
     state.selectedIssue = issue;
-    const guide = codeGuides[issue.ruleId];
+    const guide = issue.ruleId === 'jsonld-semantics' && issue.details?.example ? ['แก้ JSON-LD บล็อกและตำแหน่งที่ระบุในหลักฐาน ตัวอย่างนี้เป็นแนวทาง ต้องแทนข้อมูลให้ตรงกับเนื้อหาจริง ห้ามสร้างราคา รีวิว หรือผู้เขียนที่ไม่มีอยู่จริง', issue.details.example] : codeGuides[issue.ruleId];
     openDrawer(issue.title,
       (issue.severity === 'review' ? '<p class="alert alert-warning small">ข้อนี้ต้องตรวจยืนยันเจตนาของหน้า ยังไม่ใช่ข้อผิดพลาดที่ควรเพิ่มโค้ดทันที</p>' : '') +
       '<section class="mb-4" data-code-guide><h3 class="h6">แก้ตรงไหน และเขียนอย่างไร</h3><p class="small text-break">' + escapeHtml(guide?.[0] || 'ดู URL และตำแหน่งในหลักฐานด้านล่าง แล้วแก้ template, route หรือการตั้งค่าที่สร้างหน้านั้น เครื่องมือไม่ทราบชื่อไฟล์ในโปรเจกต์ของคุณ') + '</p>' +

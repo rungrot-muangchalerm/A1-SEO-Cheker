@@ -1,3 +1,4 @@
+const semanticRules = require('./structured-data-rules.service');
 const limits = Object.freeze({ maxScripts: 50, maxScriptBytes: 128 * 1024, maxTotalBytes: 512 * 1024, maxDepth: 64, maxNodes: 10000 });
 
 function inspect(value) {
@@ -22,6 +23,7 @@ module.exports = {
   analyze: (page) => {
     const data = page.metadata.jsonLd;
     if (!data) return [];
+    const semantics = [];
     const checks = data.scripts.map((script) => {
       let outcome = 'not-checked';
       let reason = script.reason;
@@ -36,6 +38,7 @@ module.exports = {
         else {
           shape = value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value;
           observation = inspect(value);
+          if (observation.complete) semantics.push(...semanticRules.analyze(page, script, value));
           if (!observation.complete) reason = observation.reason;
           else outcome = ['object', 'array'].includes(shape) ? 'pass' : 'review';
         }
@@ -73,6 +76,6 @@ module.exports = {
       evidence: [{ kind: 'observation', sourceUrl: page.finalUrl, selector: 'script[type="application/ld+json"]', count: data.count, complete: false }],
       details: { limits, retainedBytes: data.bytes }, references: [{ title: 'W3C JSON-LD', url: 'https://www.w3.org/TR/json-ld11/' }]
     });
-    return checks;
+    return [...checks, ...semantics];
   }
 };
